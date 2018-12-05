@@ -17,14 +17,14 @@ vidDataDir= ['/n/scratch2/mjm60/', expDate, '/BehaviorVideo'];
 imgSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/ImagingData'];
 vidSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/BehaviorVideo'];
 
-% Create save directories if they do not exist
-disp(isdir(imgSaveDir))
-if ~isdir(imgSaveDir)
-    mkdir(imgSaveDir)
-end
-if ~isdir(vidSaveDir)
-    mkdir(vidSaveDir)
-end
+% % Create save directories if they do not exist
+% disp(isdir(imgSaveDir))
+% if ~isdir(imgSaveDir)
+%     mkdir(imgSaveDir)
+% end
+% if ~isdir(vidSaveDir)
+%     mkdir(vidSaveDir)
+% end
 % 
 % % Check for irregularities caused by gapless acquisition
 % clean_scanimage_files(imgDataDir, sid);
@@ -50,7 +50,7 @@ inputArgs = {vidDataDir, vidSaveDir, sid}
 disp(inputArgs)
 c.batch(@make_behavior_vids, 0, inputArgs);
 
-
+% 
 % 
 % 
 % 
@@ -140,6 +140,6 @@ c.batch(@make_behavior_vids, 0, inputArgs);
 % c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
 % inputArgs = {imgSaveDir, ['rigid_sid_', num2str(sid), '_sessionFile.mat']};
 % pcaCalcJob{1} = c.batch(@pca_calc, 0, inputArgs);
-
+% 
 
 end%function

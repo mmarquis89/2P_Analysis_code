@@ -1,4 +1,4 @@
-function select_video_ROIs(parentDir)
+function roiData = select_video_ROIs(parentDir)
 %===================================================================================================
 % DEFINE ROI FOR FLY MOVEMENT IN BEHAVIOR VIDEO 
 %
@@ -16,9 +16,17 @@ if nargin < 1
    parentDir = ''; 
 end
 
-[imgFile, imgDir, ~] = uigetfile(fullfile(parentDir, '*.png'));
+[imgFile, imgDir, ~] = uigetfile(fullfile(parentDir, '*'));
 
-plotImg = uint8(imread(fullfile(imgDir, imgFile)));
+% Read image (or extract first frame if image is a video)
+if regexp(imgFile, '.*(.avi|.mp4|.mov)')
+    myVid = VideoReader(fullfile(imgDir, imgFile));
+    firstFrame = readFrame(myVid);
+    plotImg = uint8(firstFrame(:,:,1));
+else
+    plotImg = uint8(imread(fullfile(imgDir, imgFile)));
+end
+
 h = figure(1);clf; hold on
 im = imshow(plotImg, []);
 

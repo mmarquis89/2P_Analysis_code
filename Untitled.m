@@ -96,8 +96,9 @@ for iFrame = 1:size(vidArr, 3)
     end
 end
 
-% ---------------- Calculate optic flow -----------------------------------------------
+%% ---------------- Calculate optic flow -----------------------------------------------
 
+roiData = select_video_ROIs('D:\Dropbox (HMS)\2P Data\Behavior Vids');
 
 for iFrame = 1:size(vidArr, 3)
     
