@@ -26,31 +26,31 @@ if ~isdir(vidSaveDir)
     mkdir(vidSaveDir)
 end
 % 
-% Check for irregularities caused by gapless acquisition
-clean_scanimage_files(imgDataDir, sid);
-
-% Copy any output files over to the vid directory
-if exist(fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), 'file')
-    copyfile(fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), ...
-        fullfile(vidDataDir, ['sid_', num2str(sid), '_volume_counts.mat']));
-end
-if ~isempty(dir(fullfile(imgDataDir, ['sid_', num2str(sid), '_bid_*_single_vol_trials.mat'])))
-    copyfile(fullfile(imgDataDir, ['sid_', num2str(sid), '_bid_*_single_vol_trials.mat']), ...
-        vidDataDir);
-end
-
-
-% % Start behavior vid creation job
-% memGB = 2;
-% timeLimitMin = 600;
-% queueName = 'short';
-% jobName = 'make_behavior_vids'
-% c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-% inputArgs = {vidDataDir, vidSaveDir, sid}
-% disp(inputArgs)
-% c.batch(@make_behavior_vids, 0, inputArgs);
+% % Check for irregularities caused by gapless acquisition
+% clean_scanimage_files(imgDataDir, sid);
 % 
-% % 
+% % Copy any output files over to the vid directory
+% if exist(fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), 'file')
+%     copyfile(fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), ...
+%         fullfile(vidDataDir, ['sid_', num2str(sid), '_volume_counts.mat']));
+% end
+% if ~isempty(dir(fullfile(imgDataDir, ['sid_', num2str(sid), '_bid_*_single_vol_trials.mat'])))
+%     copyfile(fullfile(imgDataDir, ['sid_', num2str(sid), '_bid_*_single_vol_trials.mat']), ...
+%         vidDataDir);
+% end
+
+
+% Start behavior vid creation job
+memGB = 2;
+timeLimitMin = 400;
+queueName = 'short';
+jobName = 'make_behavior_vids'
+c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
+inputArgs = {vidDataDir, vidSaveDir, sid}
+disp(inputArgs)
+c.batch(@make_behavior_vids, 0, inputArgs);
+
+
 % 
 % 
 % 
@@ -63,10 +63,10 @@ end
 % inputArgs = {imgDataDir, sid, 'OutputDir', imgSaveDir}
 % disp(inputArgs)
 % testJob = c.batch(@create_average_fluorescence_vid, 0, inputArgs);
-% 
-% 
-% 
-% 
+% % 
+% % 
+% % 
+% % 
 % % Create anatomy stack
 % memGB = 16;
 % timeLimitMin = 30;
@@ -90,10 +90,10 @@ end
 %                 'OutputFilePrefix', outputFilePrefix}
 %     c.batch(@create_anatomy_stack, 0, inputArgs);
 % end
-% 
-% 
-% 
-% 
+% % 
+% % 
+% % 
+% % 
 % % Run pre-registration routine
 % memGB = 150;
 % timeLimitMin = 240;
@@ -105,13 +105,13 @@ end
 % 
 % % Pause execution until pre-reg job is finished
 % preRegJob = wait_for_jobs(preRegJob);
-%  
-%  
-%  
- 
-% Figure out how big the wholeSession array is
-m = matfile(regexprep(fullfile(imgSaveDir, ['sid_', num2str(sid), '_sessionFile.mat']), '\', '\\\'));
-[~, ~, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession')
+% % 
+% % 
+% % 
+% % 
+% % Figure out how big the wholeSession array is
+% m = matfile(regexprep(fullfile(imgSaveDir, ['sid_', num2str(sid), '_sessionFile.mat']), '\', '\\\'));
+% [~, ~, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession');
 % 
 % % Run NorRMCorre registration
 % fileName = ['sid_', num2str(sid), '_sessionFile.mat'];
@@ -128,25 +128,18 @@ m = matfile(regexprep(fullfile(imgSaveDir, ['sid_', num2str(sid), '_sessionFile.
 % 
 % % Pause execution until reg job is finished
 % regJob = wait_for_jobs(regJob);
-% 
-% 
-% 
-% 
-% 
-% Calculate and save PCA data 
-memGB = ceil(0.0005 * nTrials * nVolumes * nPlanes);
-if memGB > 249
-    memGB = 249;
-end
-timeLimitMin = ceil(0.0025 * nTrials * nVolumes * nPlanes)
-if timeLimitMin > 700
-    timeLimitMin = 700;
-end
-queueName = 'short';
-jobName = 'pca_calc';
-c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
-inputArgs = {imgSaveDir, ['rigid_sid_', num2str(sid), '_sessionFile.mat']};
-pcaCalcJob{1} = c.batch(@pca_calc, 0, inputArgs);
+% % 
+% % % 
+% % 
+% % % 
+% % Calculate and save PCA data 
+% memGB = ceil(0.0005 * nTrials * nVolumes * nPlanes);
+% timeLimitMin = ceil(0.0025 * nTrials * nVolumes * nPlanes);
+% queueName = 'short';
+% jobName = 'pca_calc';
+% c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
+% inputArgs = {imgSaveDir, ['rigid_sid_', num2str(sid), '_sessionFile.mat']};
+% pcaCalcJob{1} = c.batch(@pca_calc, 0, inputArgs);
 
 
 end%function

@@ -1,5 +1,5 @@
 %% CREATE FICTRAC + BEHAVIOR VIDS
-parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_05_exp_2\_Movies'
+parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_05_exp_2\_Movies'
 
 vidFiles = dir(fullfile(parentDir, ['sid*tid*.mp4']));
 

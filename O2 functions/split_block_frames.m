@@ -84,7 +84,7 @@ try
         memGB = 2;
         queueName = 'short';
         jobName = 'extract_lum';
-        timeLimitMin = 60;
+        timeLimitMin = 30;
         lumJobArr = [];
         for iJob = 1:nJobs
             
@@ -219,7 +219,7 @@ try
         
     end%iTrial
 catch ME
-    write_to_log(getReport(ME), mfilename);
+    write_to_log(ME.message, mfilename);
 end
 
 end%function

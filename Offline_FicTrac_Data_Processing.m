@@ -124,7 +124,7 @@ axis image
 % ax.YTickLabel = {'Quiescence', 'Locomotion', 'Grooming', 'IsolatedMovement'};
 
 %% CREATE FICTRAC + BEHAVIOR VIDS
-vidDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2018_06_29\_Movies'
+vidDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_06_29\_Movies'
 
 vidFiles = dir(fullfile(vidDir, ['sid*tid*.mp4']));
 

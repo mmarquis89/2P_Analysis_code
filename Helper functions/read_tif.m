@@ -1,6 +1,6 @@
 function [ output ] = read_tif( tifPath )
 %===================================================================================================
-% Reads a .tif stack of scanaimge 2P data into an array.
+% Reads a .tif stack of scanimage 2P data into an array.
 %
 % Uses read_patterned_tifdata() so it doesn't break if scanimage saved a file that is >4GB since
 % that isn't allowed in normal .tif files, and the official ScanImage tifReaders are based on .mex

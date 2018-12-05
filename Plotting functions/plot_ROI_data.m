@@ -30,10 +30,10 @@ function plot_ROI_data(ax, ROIDffAvg, varargin)
 %       'StdDevShading'    = (default: 1) boolean specifying whether to shade 1 standard deviation
 %                            above and below the mean dF/F line.
 %
-%       'EventShading'     = (default: []) n x 2 element vector specifying times in seconds to shade to
+%       'EventShading'     = (default: []) two element vector specifying times in seconds to shade to
 %                            indicate stimulus presentation
 %
-%       'EventShadeColor'  = (default: [0 0 0]) the color of each event shading as an n x 3 element RGB vector
+%       'EventShadeColor'  = (default: [0 0 0]) the color of the event shading as a 3-element RGB vector
 %
 %       'SmoothWinSize'    = (default: 3) the width in volumes of the moving average smoothing window
 %                            that will be applied to BOTH the mean dF/F plot and the individual trial
@@ -59,7 +59,7 @@ function plot_ROI_data(ax, ROIDffAvg, varargin)
 %
 %       'AnnotValues'      = (default:[]) a vector of numbers to include when plotting behavior annotation
 %                            segments. By default, all segments will be plotted, but passing a restricted
-%                            list will only plot segments when their annotation value is a member of this
+%                            list will only plot segments when their annotation value is a member of this 
 %                            list.
 %       'Colormap'         = (default: parula(numel(unique(annotArr))) )
 %
@@ -122,7 +122,7 @@ xlim(ax, [min(volTimes), max(volTimes)]);
 % for iTrial = 1:size(ROIDffAvg, 2)
 %     if max(abs(ROIDffAvg(:, iTrial) - trialAvgDff) > (outlierSD * mean(std(ROIDffAvg, 0, 2))))
 %         outliers(iTrial) = 1;
-%
+%         
 %     end
 % end
 % if sum(outliers) > 0
@@ -138,9 +138,9 @@ xlim(ax, [min(volTimes), max(volTimes)]);
 if ~isempty(annotArr)
     if isempty(cm)
         cm =[rgb('RoyalBlue') * 0.6; ...
-            rgb('Orange'); ...
-            rgb('Crimson'); ...
+            rgb('Magenta'); ...
             rgb('Cyan') * 0.85; ...
+            rgb('Crimson'); ...
             rgb('Gold') * 0.9; ...
             rgb('Yellow'); ...
             rgb('Green'); ...
@@ -184,26 +184,23 @@ for iGroup = 1:nGroups
     groupDff = ROIDffAvg(:, trialGroups == iGroup); % --> [volume, trial]
     
     % Discard any trials that are too many SDs from mean
-    outliers = zeros(1, size(ROIDffAvg, 2));
-    for iTrial = 1:size(ROIDffAvg, 2)
-        if trialGroups(iTrial) == iGroup
-            if max(abs(ROIDffAvg(:, iTrial) - groupAvgDff) > (outlierSD * mean(std(ROIDffAvg, 0, 2))))
-                outliers(iTrial) = 1;
-            end
+    outliers = zeros(1, size(groupDff, 2));
+    for iTrial = 1:size(groupDff, 2)
+        if max(abs(groupDff(:, iTrial) - groupAvgDff) > (outlierSD * mean(std(ROIDffAvg, 0, 2))))
+            outliers(iTrial) = 1;
         end
     end
-    groupOutliers = outliers(trialGroups == iGroup);
-    if sum(groupOutliers) > 0
-        disp(['Omitting ' num2str(sum(groupOutliers)), ' outlier trials'])
+    if sum(outliers) > 0
+        disp(['Omitting ' num2str(sum(outliers)), ' outlier trials'])
     end
-    groupDff(:, logical(groupOutliers)) = [];
+    groupDff(:, logical(outliers)) = [];
     if ~isempty(annotArr)
-        annotArr(:, logical(groupOutliers)) = [];
+        annotArr(:, logical(outliers)) = [];
     end
     groupStdDev = std(groupDff, 0, 2);
     
     % Re-calculate average without outliers
-    groupAvgDff = mean(ROIDffAvg(:,  logical((trialGroups == iGroup) .* ~logical(outliers))), 2);
+    groupAvgDff = mean(ROIDffAvg(:,  logical((trialGroups == iGroup) .* ~logical(outliers))), 2);    
     
     % Plot individual trials in background
     if singleTrials
@@ -266,7 +263,7 @@ for iGroup = 1:nGroups
                     if ismember(currVolType, annotValues)
                         plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
                         plt.Color(4) = singleTrialAlpha;
-                        meanAnnotData(startVol:endVol, iTrial, uniqueAnnotVals == currVolType) = currData(startVol:endVol); % --> [volume, trial, annotVal]
+                        meanAnnotData(startVol:endVol, iTrial, uniqueAnnotVals == currVolType) = currData(startVol:endVol); % --> [volume, trial, annotVal]   
                     end
                 end
                 
@@ -293,10 +290,10 @@ for iGroup = 1:nGroups
     
     % Plot mean response line
     if ~isempty(annotArr)
-        for iAnnot = 1:length(uniqueAnnotVals)
-            currMeanAnnotData = mean(meanAnnotData(:,:,iAnnot), 2, 'omitnan'); % --> [volume]
-            meanPlots(iAnnot) = plot(ax, volTimes, smooth(currMeanAnnotData, smoothWin), 'LineWidth', 2, 'Color', cm(uniqueAnnotVals(iAnnot) + 1, :));
-        end
+       for iAnnot = 1:length(uniqueAnnotVals)
+           currMeanAnnotData = mean(meanAnnotData(:,:,iAnnot), 2, 'omitnan'); % --> [volume]
+           meanPlots(iAnnot) = plot(ax, volTimes, smooth(currMeanAnnotData, smoothWin), 'LineWidth', 2, 'Color', cm(uniqueAnnotVals(iAnnot) + 1, :));
+       end
     end
     
     meanPlots(iGroup) = plot(ax, volTimes, smooth(groupAvgDff, smoothWin), 'LineWidth', 2, 'Color', meanLineColor * 1);
@@ -312,17 +309,10 @@ ylim(yL);
 
 % Shade event timing if applicable
 if ~isempty(eventShading)
-    for iShade = 1:size(eventShading, 1)
-        onsetTime = eventShading(iShade, 1);
-        offsetTime = eventShading(iShade, 2);
-        if size(eventShadeColor, 1) == size(eventShading, 1)
-            shadeColor = eventShadeColor(iShade, :);
-        else
-            shadeColor = eventShadeColor;
-        end
-        fill(ax, [onsetTime, onsetTime, offsetTime, offsetTime], [-100, 100, 100, -100], shadeColor, 'facealpha', 0.1, 'edgealpha', 0); % Huge numbers so the bars don't get cut off if I increase the ylims later
-        ylim(yL);
-    end
+    onsetTime = eventShading(1);
+    offsetTime = eventShading(2);
+    fill(ax, [onsetTime, onsetTime, offsetTime, offsetTime], [-100, 100, 100, -100], eventShadeColor, 'facealpha', 0.1, 'edgealpha', 0); % Huge numbers so the bars don't get cut off if I increase the ylims later
+    ylim(yL);
 end
 
 % Add legend if applicable

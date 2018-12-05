@@ -1,4 +1,4 @@
-function select_video_ROIs(parentDir, sid)
+function select_video_ROIs(parentDir)
 %===================================================================================================
 % DEFINE ROI FOR FLY MOVEMENT IN BEHAVIOR VIDEO 
 %
@@ -8,26 +8,17 @@ function select_video_ROIs(parentDir, sid)
 % in creation of combined optic flow + behavior videos.
 %
 % INPUTS:
-%   parentDir = the directory containing the behavior videos for the experiment you want to analyze
+%   parentDir = the directory containing the snapshot of the behavior video
 %
-%   sid       = the session ID that you want to define an ROI for
 %===================================================================================================
 
-% Load and plot 1st frame acquired during the first trial (number choice is arbitrary)
-myFolders = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*tid*']));
-myFolders = myFolders([myFolders.isdir]);
-if isempty(myFolders)
-    myFolders = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*bid*']));
-    myFolders = myFolders([myFolders.isdir]);
+if nargin < 1
+   parentDir = ''; 
 end
 
-iTrial = 1;
-myFrames = dir(fullfile(parentDir, myFolders(iTrial).name, '*.tif'));
-while isempty(myFrames) % In case the first trial doesn't have any video frames
-    iTrial = iTrial + 1;
-    myFrames = dir(fullfile(parentDir, myFolders(iTrial).name, '*.tif'));
-end
-plotImg = uint8(imread(fullfile(parentDir, myFolders(iTrial).name, myFrames(1).name)));
+[imgFile, imgDir, ~] = uigetfile(fullfile(parentDir, '*.png'));
+
+plotImg = uint8(imread(fullfile(imgDir, imgFile)));
 h = figure(1);clf; hold on
 im = imshow(plotImg, []);
 

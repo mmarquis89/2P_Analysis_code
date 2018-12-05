@@ -106,6 +106,6 @@ try
         end%iBlock
     end%if
 catch ME
-    disp(getReport(ME))
-    write_to_log(getReport(ME), mfilename);
+    disp(ME.message)
+    write_to_log(ME.message, mfilename);
 end%function

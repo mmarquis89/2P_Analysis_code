@@ -26,7 +26,6 @@ for iFile = 1:numel(frameNums)
     frameSD(iFile) = std(double(currFrame(:))); % To watch out for artifact white frames
     cornerLum(iFile) = mean(currROI(:));
 end
-% write_to_log(['Lum job #', num2str(jobNum), ': all luminance extracted. Saving...']);
 
 % Save data
 saveFileName = fullfile(parentDir, ['lumData_', pad(num2str(jobNum), 3, 'left', '0'), '.mat']);

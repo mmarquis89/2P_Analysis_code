@@ -14,9 +14,8 @@ try
         bid = bidList(iBlock);
         disp(['Processing block #', num2str(bid)])
         write_to_log(['Processing block #', num2str(bid)], mfilename);
-        trialVidDirs = dir(fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', num2str(bid), ...
-                                '*tid*']));
-        trialVidDirs(~[trialVidDirs.isdir]) = [];
+        trialVids = dir(fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', num2str(bid), ...
+                                '*tid*.avi']));
         if ~isdir(fullfile(vidDataDir, 'BadTrialsBackup'))
             mkdir(fullfile(vidDataDir, 'BadTrialsBackup'))
         end
@@ -31,28 +30,23 @@ try
                 % Extract ID numbers from filenames
                 disp('Extracting ID numbers...')
                 match_func = @(x) str2double(regexp(x, '(?<=tid_).*', 'match'));
-                vidDirNames = {trialVidDirs.name};
-                trialNums = cellfun(match_func, vidDirNames);
-                
-                % Fix sorting order to represent actual time of frame acquisition
-                disp('Sorting file names...')
-                [~, sortOrder] = sort(trialNums);
-                vidDirsSorted = vidDirNames(sortOrder);
+                vidNames = {trialVids.name};
+                trialNums = cellfun(match_func, vidNames);
                 
                 % Remove excess behavior video
                 disp('Moving behavior video...')
-                for iDir = 1:numel(trialVidDirs)
+                for iDir = 1:numel(trialVids)
                     if iDir > numel(newNames)
-                        movefile(fullfile(vidDataDir, vidDirsSorted{iDir}), fullfile(vidDataDir, ...
-                                'BadTrialsBackup', vidDirsSorted{iDir}));
+                        movefile(fullfile(vidDataDir, vidNames{iDir}), fullfile(vidDataDir, ...
+                                'BadTrialsBackup', vidNames{iDir}));
                     end
                 end
                 
-                % Double check that directories have actually been moved before continuing
+                % Double check that files have actually been moved before continuing
                 loopCount = 0;
-                while exist(fullfile(vidDataDir, vidDirsSorted{iDir}), 'dir') && loopCount < 15 
+                while exist(fullfile(vidDataDir, vidNames{iDir}), 'file') && loopCount < 15 
                     write_to_log('Waiting 5 seconds for move to complete...', mfilename);
-                    write_to_log(fullfile(vidDataDir, vidDirsSorted{iDir}), mfilename);
+                    write_to_log(fullfile(vidDataDir, vidNames{iDir}), mfilename);
                     loopCount = loopCount + 1;
                     pause(5);
                 end               

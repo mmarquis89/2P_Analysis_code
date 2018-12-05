@@ -30,7 +30,7 @@ close all
 %++++++++++++++++++++++++ INITIALIZATION TASKS +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 % Prompt user for ref images data file
-[dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+[dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'B:\Dropbox (HMS)\2P Data\Imaging Data\');
 
 % Load ref images data file
 disp(['Loading ' dataFile, '...'])

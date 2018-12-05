@@ -53,7 +53,7 @@ try
 p = inputParser;
 addParameter(p, 'sid', []);
 addParameter(p, 'StimMetadataFile', 'stimMetadata.mat');
-addParameter(p, 'AnnotFile', 'autoAnnotations.mat');
+addParameter(p, 'AnnotFile', 'Annotations.mat');
 addParameter(p, 'imgMetadataFile', 'imgMetadata.mat');
 addParameter(p, 'refImgFile', 'refImages_Reg.mat')
 addParameter(p, 'LoadSessionData', 0);
@@ -66,9 +66,7 @@ loadSessionData = p.Results.LoadSessionData;
 wholeSession = [];
 
 % Get sid if not provided
-if isempty(sid)
-    sid = str2double(regexp(sessionDataFile, '(?<=sid_).(?=_)', 'match'));
-end
+sid = str2double(regexp(sessionDataFile, '(?<=sid_).(?=_)', 'match'));
 
 % Load imaging data session file
 disp(['Loading ' sessionDataFile, '...'])
@@ -82,14 +80,12 @@ else
     m = matfile(fullfile(parentDir, sessionDataFile));
     [~, ~, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession');
 end
-write_to_log('Session data loaded', mfilename)
 disp('Session data loaded')
 
 % Load imaging metadata file
 imgMetadata = load(fullfile(parentDir, imgMetadataFileName)); % fields 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
 imgMetadata.sid = sid;
 
-write_to_log('Imaging metadata loaded', mfilename)
 disp('Imaging metadata loaded')
 
 % Add info from stim computer metadata files
@@ -109,27 +105,19 @@ for iFile = 1:numel(stimDataFiles)
     % Add info to overall session data
     imgMetadata.trialDuration = metaData.trialDuration;
     
-    write_to_log('Adding output data', mfilename)
-    disp('Adding output data');
-    try
-        % Add downsampled output data broken down into trials
-        currOutput = metaData.outputData';
-        sampPerTrial = size(currOutput, 2) / metaData.nTrials;
-        rsOutput = reshape(currOutput, size(currOutput, 1), sampPerTrial, metaData.nTrials);   % --> [channel, sample, trial]
-        disp(size(rsOutput))
-        imgMetadata.outputData = cat(3, imgMetadata.outputData, permute(rsOutput(:,1:100:end,:), [2 1 3]));    % --> [sample, channel, trial]
-    catch
-        disp('Error adding output data')
-        write_to_log('Error adding output data', mfilename)
-        imgMetadata.outputData = [];
-    end
+    disp('Adding output data')
+    % Add downsampled output data broken down into trials
+    currOutput = metaData.outputData';
+    sampPerTrial = size(currOutput, 2) / metaData.nTrials;
+    rsOutput = reshape(currOutput, size(currOutput, 1), sampPerTrial, metaData.nTrials);   % --> [channel, sample, trial]
+    disp(size(rsOutput))
+    imgMetadata.outputData = cat(3, imgMetadata.outputData, permute(rsOutput(:,1:100:end,:), [2 1 3]));    % --> [sample, channel, trial]
     
     % Add trial type info
-    write_to_log('Adding trialType info', mfilename);
     disp('Adding trialType info');
     for iTrial = 1:metaData.nTrials
         currStim = metaData.stimTypes{iTrial};
-        if strcmp(currStim, 'ClosedLoop') || contains(currStim, 'Closed_Loop')
+        if strcmp(currStim, 'ClosedLoop')
             imgMetadata.stimOnsetTimes(end + 1) = nan;
             imgMetadata.stimDurs(end + 1) = nan;
             imgMetadata.trialType{end + 1} = 'ClosedLoop';
@@ -145,7 +133,6 @@ for iFile = 1:numel(stimDataFiles)
     
 end%iFile
 
-write_to_log('Imaging data read', mfilename)
 disp('Imaging data read')
 
 % Load annotation data file
@@ -155,10 +142,9 @@ if ~isempty(annotFileName) && exist(fullfile(parentDir, annotFileName), 'file')
     annotData.nFrames = annotData.frameInfo.nFrames;
     annotData.frameTimes = annotData.frameInfo.frameTimes;
     annotData.FRAME_RATE = annotData.frameInfo.FRAME_RATE; % This is the frame rate of the behavior video, not the GCaMP imaging
-    write_to_log([annotFileName, ' loaded'], mfilename)
+    disp([annotFileName, ' loaded'])
 else
-    write_to_log('No behavioral annotation data loaded', mfilename)
-    disp('Imaging data read')
+    disp('No behavioral annotation data loaded')
     annotData.trialAnnotations = [];
     annotData.annotParams = [];
     annotData.ftData = [];
@@ -172,7 +158,6 @@ else
 end
 
 disp('annotation data loaded')
-write_to_log('annotation data loaded')
 
 % Combine imaging data and annotation data into one structure
 outputMetadata = setstructfields(imgMetadata, annotData);
@@ -182,7 +167,6 @@ outputMetadata.nVolumes = nVolumes;
 outputMetadata.stimTypes = sort(unique(outputMetadata.trialType));
 
 disp('Behavior data loaded')
-write_to_log('Behavior data loaded', mfilename);
 
 % Extract metadata from scanimage info
 if isfield(outputMetadata, 'scanimageInfo')
@@ -218,7 +202,6 @@ else
 end
 
 disp('Loading reference images');
-write_to_log('Loading reference images', mfilename);
 
 % Load a reference images file
 if ~isempty(refImgFileName)
@@ -233,7 +216,7 @@ end
 outputMetadata = orderfields(outputMetadata);
 
 catch ME
-    write_to_log(getReport(ME), mfilename);
+    write_to_log(ME.message, mfilename);
 end
 
 end

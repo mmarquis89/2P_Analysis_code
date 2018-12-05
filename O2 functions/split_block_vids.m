@@ -1,4 +1,26 @@
 function split_block_vids(vidDataDir, blockVidName, varargin)
+%===================================================================================================
+% SEPARATE BEHAVIOR BLOCK VIDEO INTO INDIVIDUAL TRIALS
+%
+% Uses a flash of light in the lower-left corner of the first frame of each trial to divide behavior
+% video for an entire block into individual trials. The size of the ROI that is inspected can be
+% changed to a different size, specified in pixels. Also does a check to make sure the entire frame
+% isn't white since that is an occasional failure mode with Point Grey cameras.
+%
+% INPUTS:
+%       vidDataDir      = parent directory for this experiment's behavior video
+%
+%       blockVidName    = the name (minus the .avi extension) of the behavior video to be split
+%
+% OPTIONAL NAME-VALUE PAIR INPUTS:
+%
+%       'roiDims' = (default: [100 50]) the size of the rectangle in the lower-left corner to watch
+%
+%       'ClosedLoop' = (default: 0) boolean specifying whether the block is only a single trial
+%
+%       'FRAME_RATE' = (default: 25) the frame rate that the behavior video was acquired at
+%
+%===================================================================================================
 try
     
     addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
@@ -16,6 +38,11 @@ try
     roiDims = p.Results.roiDims;
     closedLoop = p.Results.ClosedLoop;
     FRAME_RATE = p.Results.FRAME_RATE;
+    
+    % Remove file extension if it was included in the block name
+    if contains(blockVidName, '.avi')
+        blockVidName = blockVidName(1:end - 4);
+    end
     
     write_to_log('Starting extraction', mfilename)
     
@@ -85,7 +112,6 @@ try
     
     % Re-open video reader for full block video
     rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
-    
     
     
     % ---------------- Write individual trial videos -----------------------------------------------

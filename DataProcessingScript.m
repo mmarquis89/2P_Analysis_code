@@ -16,7 +16,7 @@ for iExp = 1:length(expDates)
     expDate = expDates{iExp}
     targetPlane = targetPlanes(iExp);
     
-    dirPath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    dirPath = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     tic
     disp(['Extracting sample frames from anatomy stacks...']);
     extract_sample_frames(dirPath, fileStr, targetPlane);
@@ -33,22 +33,14 @@ clear expDates targetPlanes fileStr dirPath
 expDates = {...
     '2018_11_11_exp_3' ...
             }
-
-sids = [ ...
-    0 ...
-    ];
      
-
- FRAME_RATE = 25;
-
  for iExp = 1:length(expDates)
      
      expDate = expDates{iExp}
-     sid = sids(iExp)
      
      %%% Define ROIs for optic flow combined vids
-     parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
-     select_video_ROIs(parentDir, sid);
+     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+     select_video_ROIs(parentDir);
  end
  
 %% ==================================================================================================
@@ -61,8 +53,8 @@ trialDuration = 300;
 expDate = '2018_10_30_exp_1';
 sid = 0;
 
-parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
-saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
+parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
+saveDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
 annotationFileName = [expDate, '_Annotation.txt'];
 % annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];
 
@@ -82,38 +74,24 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_10_24_exp_3';
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
+expDateTemp = '2018_10_09_exp_1';
+parentDirTemp = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 sidTemp = 0;
 
 %%% Archive raw anatomy stacks
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 archiveName = 'AnatomyStacks';
 filterString = '*Stack*';
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
 
 %%% Archive raw imaging data files
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 archiveName = ['TrialData_sid_', num2str(sidTemp)];
 filterString = ['*sid_', num2str(sidTemp), '_b*'];
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
-if isdir(fullfile(parentDirTemp, 'BadTrialsBackup'))
-    archiveName = ['sid_', num2str(sidTemp), '_BadTrialsBackup'];
-    system7zip(parentDirTemp, archiveName, '7z', 'BadTrialsBackup', 1);
-end
-
 
 %%% Archive raw video frames
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+parentDirTemp = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
 archiveName = ['sid_', num2str(sidTemp), '_RawFrames'];
 system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
-if isdir(fullfile(parentDirTemp, 'BlockVids'))
-    archiveName = ['sid_', num2str(sidTemp), '_BlockVids'];
-    system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
-end
-if isdir(fullfile(parentDirTemp, 'BadTrialsBackup'))
-    archiveName = ['sid_', num2str(sidTemp), '_BadTrialsBackup'];
-    system7zip(parentDirTemp, archiveName, '7z', 'BadTrialsBackup', 1);
-end
 
+clear parentDir archiveName filterString
 % -------------------------------------------------------------------------------------------------

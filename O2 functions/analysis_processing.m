@@ -12,7 +12,7 @@ vidSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/BehaviorVid
 sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
 
 % Initialize cluster communication
-% configCluster;
+configCluster;
 c = parcluster; 
 
 % Save structure of analysis metadata + hardcoded parameters ('analysisMetadata.mat')
@@ -40,7 +40,6 @@ end
 save(fullfile(imgSaveDir, 'analysisMetadata.mat'), 'analysisMetadata', '-v7.3')
 [annotationTypes, annotationTypeSummary] = process_annotation_types(analysisMetadata);
 save(fullfile(imgSaveDir, 'annotationTypes.mat'), 'annotationTypes', 'annotationTypeSummary', '-v7.3');
-write_to_log('Annotation types saved', mfilename);
 
 nTrials = analysisMetadata.nTrials; 
 nVolumes = analysisMetadata.nVolumes; 
@@ -62,7 +61,7 @@ memGB = ceil(0.001 * nTrials * nVolumes * nPlanes);
 if memGB > 249
     memGB = 249;
 end
-timeLimitMin = ceil(0.001 * nTrials * nVolumes * nPlanes);
+timeLimitMin = ceil(0.0005 * nTrials * nVolumes * nPlanes);
 queueName = 'short';
 jobName = 'extract_ROI_data';
 c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
