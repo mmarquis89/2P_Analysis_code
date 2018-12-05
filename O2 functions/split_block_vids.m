@@ -10,7 +10,7 @@ function split_block_vids(vidDataDir, blockVidName, varargin)
 % INPUTS:
 %       vidDataDir      = parent directory for this experiment's behavior video
 %
-%       blockVidName    = the name (minus the .avi extension) of the behavior video to be split
+%       blockVidName    = the name (minus the .mp4 extension) of the behavior video to be split
 %
 % OPTIONAL NAME-VALUE PAIR INPUTS:
 %
@@ -25,9 +25,9 @@ try
     
     addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
     
-    % Initialize cluster communication
-    c = parcluster;
-    write_to_log('Cluster communication opened...', mfilename)
+%     % Initialize cluster communication
+%     c = parcluster;
+%     write_to_log('Cluster communication opened...', mfilename)
     
     % Parse optional arguments
     p = inputParser;
@@ -40,18 +40,24 @@ try
     FRAME_RATE = p.Results.FRAME_RATE;
     
     % Remove file extension if it was included in the block name
-    if contains(blockVidName, '.avi')
+    if contains(blockVidName, '.mp4')
         blockVidName = blockVidName(1:end - 4);
     end
     
     write_to_log('Starting extraction', mfilename)
-    
+    write_to_log(num2str(closedLoop), mfilename);
     if ~closedLoop
-    
+        
         % Extract corner luminance from each frame
-        rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
-        currFrame = []; cornerLum = []; frameSD = [];
+        write_to_log(fullfile(vidDataDir, [blockVidName, '.mp4']), mfilename)
+        rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.mp4']));
+        write_to_log('Video reader opened', mfilename);
+        currFrame = []; cornerLum = []; frameSD = [];frameCount = 0;
         while hasframe(rawVid)
+            frameCount = frameCount + 1;
+            if ~mod(frameCount, 100)
+               write_to_log(['Reading frame ', num2str(frameCount)]); 
+            end
             currFrame =  readFrame(rawVid);
             currROI = currFrame(end-roiDims(1):end, 1:roiDims(2));
             frameSD(end + 1) = std(double(currFrame(:))); % To watch out for artifact white frames
@@ -111,7 +117,7 @@ try
     end
     
     % Re-open video reader for full block video
-    rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
+    rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.mp4']));
     
     
     % ---------------- Write individual trial videos -----------------------------------------------

@@ -18,7 +18,7 @@ try
         write_to_log('Splitting block videos into individual trials...', mfilename)
         
         % Identify block vids
-        blockVids = dir(fullfile(vidDataDir, ['*sid_', num2str(sid), '*.avi']));
+        blockVids = dir(fullfile(vidDataDir, ['*sid_', num2str(sid), '*.mp4']));
         blockVids = blockVids(~contains({blockVids.name}, 'tid')); % In case there are already single trial vids
         nBlocks = numel(blockVids);
         write_to_log(['nBlocks = ', num2str(nBlocks)],mfilename);
@@ -38,7 +38,7 @@ try
 %                splitJobArr = wait_for_jobs(splitJobArr);
 %             end
             
-            currBid = regexp(blockVids(iBlock).name, '(?<=bid_).*(?=.avi)', 'match');
+            currBid = regexp(blockVids(iBlock).name, '(?<=bid_).*(?=.mp4)', 'match');
             write_to_log(['Block ID = ', currBid{:}], mfilename);
             
             % Check whether this block has already been separated into trials
@@ -77,7 +77,7 @@ try
     
 
     % Update vid files to reflect any changes from imaging data cleanup, then move to output dir
-    vid_dir_cleanup(vidDataDir, vidSaveDir, sid);
+    vid_dir_cleanup(vidDataDir, sid);
     
     
     %-----------------------------------------------------------------------------------------------
@@ -174,45 +174,45 @@ try
     write_to_log('Flow data normalized...', mfilename)
 %     
     
+% %     %---------------------------------------------------------------------------------------------------
+%     
+%     
+%     % Start jobs to create optic flow vids
+%     a = 0.006;
+%     b = 0.08;
+%     memGB = ceil(a * maxFrames);
+%     timeLimitMin = ceil(b * maxFrames);
+%     queueName = 'short';
+%     jobName = 'makeOpticFlowVid'
+%     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
+%     frameCountFile = ['sid_', num2str(sid), '_frameCounts.txt'];
+%     flowVidDir = fullfile(vidSaveDir, 'opticFlowVids');
+%     flowVidJobArr = [];
+%     for iTrial = 1:numel(trialVidNames)
+%         inputArgs = {vidSaveDir, sid, tidList(iTrial), frameCountFile, 'OutputDir', flowVidDir};
+%         disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(tidList(iTrial)), ' ', frameCountFile, ' ', flowVidDir])
+%         flowVidJobArr{iTrial} = c.batch(@create_single_trial_optic_flow_vid, 0, inputArgs);
+%     end
+%     
+%     % Pause execution until all jobs are done
+%     flowVidJobArr = wait_for_jobs(flowVidJobArr);
+%     
+%     write_to_log('Flow vids created...', mfilename)
+%     
+%     
 %     %---------------------------------------------------------------------------------------------------
-    
-    
-    % Start jobs to create optic flow vids
-    a = 0.006;
-    b = 0.08;
-    memGB = ceil(a * maxFrames);
-    timeLimitMin = ceil(b * maxFrames);
-    queueName = 'short';
-    jobName = 'makeOpticFlowVid'
-    c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-    frameCountFile = ['sid_', num2str(sid), '_frameCounts.txt'];
-    flowVidDir = fullfile(vidSaveDir, 'opticFlowVids');
-    flowVidJobArr = [];
-    for iTrial = 1:numel(dirNames)
-        inputArgs = {vidSaveDir, sid, tidList(iTrial), frameCountFile, 'OutputDir', flowVidDir};
-        disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(tidList(iTrial)), ' ', frameCountFile, ' ', flowVidDir])
-        flowVidJobArr{iTrial} = c.batch(@create_single_trial_optic_flow_vid, 0, inputArgs);
-    end
-    
-    % Pause execution until all jobs are done
-    flowVidJobArr = wait_for_jobs(flowVidJobArr);
-    
-    write_to_log('Flow vids created...', mfilename)
-    
-    
-    %---------------------------------------------------------------------------------------------------
-    
-    
-    % Start job to concatenate optic flow vids
-    memGB = 1;
-    timeLimitMin = 120;
-    queueName = 'short';
-    jobName = 'concatFlowVids'
-    c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-    fileStr = ['*sid_', num2str(sid), '_tid*_With_Optic_Flow.avi'];
-    outputFileName = ['sid_', num2str(sid), '_AllTrials_With_Optic_Flow'];
-    inputArgs = {flowVidDir, fileStr, 'OutputFile', outputFileName};
-    concatFlowVidJob = c.batch(@concat_vids, 0, inputArgs);
+%     
+%     
+%     % Start job to concatenate optic flow vids
+%     memGB = 1;
+%     timeLimitMin = 120;
+%     queueName = 'short';
+%     jobName = 'concatFlowVids'
+%     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
+%     fileStr = ['*sid_', num2str(sid), '_tid*_With_Optic_Flow.avi'];
+%     outputFileName = ['sid_', num2str(sid), '_AllTrials_With_Optic_Flow'];
+%     inputArgs = {flowVidDir, fileStr, 'OutputFile', outputFileName};
+%     concatFlowVidJob = c.batch(@concat_vids, 0, inputArgs);
     
     
     

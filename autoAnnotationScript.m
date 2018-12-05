@@ -2,15 +2,16 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2018_10_30_exp_2';
-sid = 3;
+expDate = '2018_12_03_exp_1';
+sid = 0;
 FRAME_RATE = 25;
-trialDuration = 600;
+trialDuration = 20;
 
 behaviorLabels = {'Quiescence', 'Locomotion', 'IsolatedMovement'};
 
 imgDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)'];
-vidDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
+vidDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+imgDir = vidDir;
 
 % Get frame count info
 frameInfo = [];
@@ -72,10 +73,10 @@ annotParams = struct('expDate', expDate, 'flowThresh', flowThresh, 'moveThresh',
 save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams', 'ftData', 'flowArr', 'goodTrials', 'behaviorLabels', 'frameInfo')
 
 %%
-t = 1;
+t = 23;
 
-flowThresh = 0.06;
-moveThresh = 0.08;
+flowThresh = 0.05;
+moveThresh = 0.05;
 
 smWin = 3;
 smWinAlt = 1;
@@ -85,7 +86,7 @@ flowSmReps = 3;
 
 minIsoMoveLen = 6;
 minLocEpochLen = 6;
-minQuiescenceLen = 4;
+minQuiescenceLen = 6;
 
 % Extract variables from ftData
 moveSpeed = ftData.moveSpeed * FRAME_RATE * 4.5;      % --> [frame, trial]
