@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+<annotation-spec>
+  <head>
+    <valuetype-def>
+      <valueset name="ActionTypes">
+        <value-el color="#66FF66" key="c">AbdominalContraction</value-el>
+        <value-el color="#9999FF" key="d">Locomotion</value-el>
+        <value-el color="#FF3333" key="g">Grooming</value-el>
+        <value-el color="#66FFFF" key="a">IsolatedLegMovement</value-el>
+      </valueset>
+    </valuetype-def>
+  </head>
+  <body>
+    <font color="#000000" face="SansSerif.plain" size="12" style="plain"/>
+    <track-spec color-attr="ActionTypes" name="ActionTypes" type="primary">
+      <font color="#000000" face="Dialog.plain" size="10" style="plain"/>
+      <attribute name="ActionTypes" valuetype="ActionTypes"/>
+    </track-spec>
+  </body>
+</annotation-spec>
