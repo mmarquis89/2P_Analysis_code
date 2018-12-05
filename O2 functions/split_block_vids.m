@@ -70,7 +70,7 @@ try
             [~, firstFrameLocs] = findpeaks(cornerLum, 'MinPeakHeight', peakThresh, ...
                 'MinPeakDistance', MIN_DIST);
         catch ME
-            write_to_log(ME.message, mfilename);
+            write_to_log(getReport(ME), mfilename);
         end
         write_to_log(['First frames detected'], mfilename)
         
@@ -151,5 +151,5 @@ try
     end
     
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%function

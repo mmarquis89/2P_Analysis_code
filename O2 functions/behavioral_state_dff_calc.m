@@ -65,6 +65,6 @@ for iType = 1:numel(behaviorNames)
     save(fullfile(parentDir, ['actionDff_', behaviorNames{iType}]), 'actionDff', '-v7.3')
 end
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%try
 end

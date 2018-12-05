@@ -37,6 +37,6 @@ end
 % Save output 
 save(fullfile(parentDir, ['PCA_data_', sessionDataFile]), 'pcaData', 'explained', '-v7.3');
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%try
 end

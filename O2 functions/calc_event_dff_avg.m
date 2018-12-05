@@ -148,6 +148,6 @@ for iFile = 1:numel(eventDataFiles)
     
 end% iFile
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%try
 end% function

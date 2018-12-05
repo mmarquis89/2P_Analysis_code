@@ -84,6 +84,6 @@ end
  save(fullfile(parentDir, ['refImages_Reg.mat']), 'refImages', '-v7.3');
 
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%try
 end

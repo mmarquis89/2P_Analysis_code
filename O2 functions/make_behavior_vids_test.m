@@ -49,6 +49,6 @@ try
         splitJobArr = wait_for_jobs(splitJobArr);
     end
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%try
 end%function

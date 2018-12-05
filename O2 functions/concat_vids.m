@@ -73,6 +73,6 @@ clear('myMovie')
 % Save frame count log
 save(fullfile(vidDir, [outputFileName, '_frameCountLog.mat']), 'frameCount', '-v7.3')
 catch ME
-    write_to_log(ME.message, mfilename);
+    write_to_log(getReport(ME), mfilename);
 end%try
 end%function
