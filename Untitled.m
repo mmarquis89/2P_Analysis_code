@@ -18,7 +18,6 @@ for iBlock = 1:numel(blockVids)
     disp('Reading block vid...')
     opticFlow = opticalFlowFarneback;
     myVid = VideoReader(fullfile(vidDir, blockVids(iBlock).name));
-    firstFrame = readFrame(myVid);
     frameCount = 0; frameSD = []; cornerLum = []; meanFlowMag = [];
     while hasFrame(myVid)
         
@@ -86,15 +85,20 @@ for iBlock = 1:numel(blockVids)
    
 end%iBlock
 
+% Separate optic flow data into individual trials
+trialFlowMag = [];
+for iFrame = 1:numel(meanFlowMag)
+   
+    
+end
 
 
-% Save optic flow data
-save(fullfile(vidDir, ['sid_', num2str(sid), '_tid_', pad(num2str(iTrial), 3, 'left', '0'), '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
 
 % Calculate max flow value in this trial for later normalization
 maxFlowMag = max(meanFlowMag(2:end)); % First frame is artificially high so don't count that
 
-
+% Save optic flow data
+save(fullfile(vidDir, ['sid_', num2str(sid), '_tid_', pad(num2str(iTrial), 3, 'left', '0'), '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
 
 
 

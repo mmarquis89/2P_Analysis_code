@@ -10,7 +10,7 @@ function split_block_vids(vidDataDir, blockVidName, varargin)
 % INPUTS:
 %       vidDataDir      = parent directory for this experiment's behavior video
 %
-%       blockVidName    = the name (minus the .mp4 extension) of the behavior video to be split
+%       blockVidName    = the name (minus the .avi extension) of the behavior video to be split
 %
 % OPTIONAL NAME-VALUE PAIR INPUTS:
 %
@@ -40,7 +40,7 @@ try
     FRAME_RATE = p.Results.FRAME_RATE;
     
     % Remove file extension if it was included in the block name
-    if contains(blockVidName, '.mp4')
+    if contains(blockVidName, '.avi')
         blockVidName = blockVidName(1:end - 4);
     end
     
@@ -49,11 +49,12 @@ try
     if ~closedLoop
         
         % Extract corner luminance from each frame
-        write_to_log(fullfile(vidDataDir, [blockVidName, '.mp4']), mfilename)
-        rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.mp4']));
+        write_to_log(fullfile(vidDataDir, [blockVidName, '.avi']), mfilename)
+        rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
         write_to_log('Video reader opened', mfilename);
         currFrame = []; cornerLum = []; frameSD = [];frameCount = 0;
-        while hasframe(rawVid)
+        tic
+        while hasFrame(rawVid)
             frameCount = frameCount + 1;
             if ~mod(frameCount, 100)
                write_to_log(['Reading frame ', num2str(frameCount)]); 
@@ -117,15 +118,14 @@ try
     end
     
     % Re-open video reader for full block video
-    rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.mp4']));
+    rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
     
     
     % ---------------- Write individual trial videos -----------------------------------------------
     trialCount = 1; frameCount = 0;
     
     % Create video writer for first trial
-    trialVidName = fullfile(vidDataDir, [blockVidName, '_tid_', ...
-                    pad(num2str(trialCount-1), 3, 'left', '0')]);
+    trialVidName = [blockVidName, '_tid_', pad(num2str(trialCount-1), 3, 'left', '0')];
     trialVid = VideoWriter(fullfile(vidDataDir, trialVidName), 'Motion JPEG AVI');
     trialVid.FrameRate = FRAME_RATE;
     open(trialVid);
@@ -137,13 +137,15 @@ try
         if frameCount >= newFrameCounts(trialCount)
             
             % Move onto the next trial
+            close(trialVid);
             write_to_log(['Wrote video for trial #', num2str(trialCount), ' of ', ...
                         num2str(numel(newFrameCounts))], mfilename);
             trialCount = trialCount + 1;
+            if trialCount > numel(newFrameCounts)
+               break 
+            end
             frameCount = 0;
-            trialVidName = fullfile(vidDataDir, [blockVidName, '_tid_', ...
-                            pad(num2str(trialCount-1), 3, 'left', '0')]);
-            close(trialVid)
+            trialVidName = [blockVidName, '_tid_', pad(num2str(trialCount-1), 3, 'left', '0')];
             trialVid = VideoWriter(fullfile(vidDataDir, trialVidName), 'Motion JPEG AVI');
             trialVid.FrameRate = FRAME_RATE;
             open(trialVid);
