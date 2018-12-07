@@ -54,7 +54,7 @@ goodTrials = frameCountInfo.goodTrials;
 
 % Prompt user to select input directory if none was provided
 if isempty(parentDir)
-    parentDir = uigetdir('B:\Dropbox (HMS)\2P Data\Behavior Vids', 'Select a directory of FicTrac Data');
+    parentDir = uigetdir('D:\Dropbox (HMS)\2P Data\Behavior Vids', 'Select a directory of FicTrac Data');
 end
 
 % Load FicTrac data from each trial into a single array

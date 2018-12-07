@@ -18,14 +18,14 @@
 %===================================================================================================
 
 % Load annotation type data
-[annotTypeFileName, parentDir] = uigetfile('B:\Dropbox (HMS)\2P Data\Imaging Data', 'Select an annotationType data file');
+[annotTypeFileName, parentDir] = uigetfile('D:\Dropbox (HMS)\2P Data\Imaging Data', 'Select an annotationType data file');
 load(fullfile(parentDir, annotTypeFileName)) % Vars 'annotationTypes', 'annotationTypeSummary'
 
 % Load analysis metadata
 if exist(fullfile(parentDir, 'analysisMetadata.mat'), 'file')
     load(fullfile(parentDir, 'analysisMetadata.mat')) % 'analysisMetadata'
 else
-    [analysisMetadataFile, parentDir] = uigetfile('B:\Dropbox (HMS)\2P Data\ImagingData');
+    [analysisMetadataFile, parentDir] = uigetfile('D:\Dropbox (HMS)\2P Data\ImagingData');
     load(fullfile(parentDir, analysisMetadataFile)); % 'analysisMetadata'
 end
 volumeRate = analysisMetadata.volumeRate;

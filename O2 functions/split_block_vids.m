@@ -52,17 +52,19 @@ try
         write_to_log(fullfile(vidDataDir, [blockVidName, '.avi']), mfilename)
         rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
         write_to_log('Video reader opened', mfilename);
-        currFrame = []; cornerLum = []; frameSD = [];frameCount = 0;
+        currFrame = []; cornerLum = []; frameSD = [];frameCount = 0; frameMed = [];
         tic
         while hasFrame(rawVid)
             frameCount = frameCount + 1;
             if ~mod(frameCount, 100)
-               write_to_log(['Reading frame ', num2str(frameCount)]); 
+               write_to_log(['Reading frame ', num2str(frameCount)], mfilename);
+               disp(['Reading frame ', num2str(frameCount)]);
             end
             currFrame =  readFrame(rawVid);
             currROI = currFrame(end-roiDims(1):end, 1:roiDims(2));
             frameSD(end + 1) = std(double(currFrame(:))); % To watch out for artifact white frames
             cornerLum(end + 1) = mean(currROI(:));
+            frameMed(end + 1) = median(currFrame(:));
         end
          
         write_to_log(['Luminance extracted in ', num2str(toc), ' sec'], mfilename)
@@ -81,10 +83,12 @@ try
         end
         write_to_log(['First frames detected'], mfilename)
         
-         % Eliminate any completely white frames
+         % Eliminate any frames with major changes to median frame luminance (FlyCap2 artifacts)
          badInds = [];
+         meanFrameMed = mean(frameMed);
+         baseSubMed = abs(frameMed - meanFrameMed);
          for iLoc = 1:numel(firstFrameLocs)
-             if (firstFrameLocs(iLoc) <= numel(frameSD)) && (frameSD(firstFrameLocs(iLoc)) < 15)
+             if (firstFrameLocs(iLoc) <= numel(frameMed)) && (baseSubMed(firstFrameLocs(iLoc)) > 50)              
                  badInds = [badInds, iLoc];
              end
          end
@@ -130,11 +134,13 @@ try
     trialVid.FrameRate = FRAME_RATE;
     open(trialVid);
     
+    write_to_log(num2str(newFrameCounts), mfilename);
+    
     while hasFrame(rawVid)
         currFrame = uint8(readFrame(rawVid));
         frameCount = frameCount + 1;
         
-        if frameCount >= newFrameCounts(trialCount)
+        if frameCount > newFrameCounts(trialCount)
             
             % Move onto the next trial
             close(trialVid);
@@ -144,7 +150,7 @@ try
             if trialCount > numel(newFrameCounts)
                break 
             end
-            frameCount = 0;
+            frameCount = 1;
             trialVidName = [blockVidName, '_tid_', pad(num2str(trialCount-1), 3, 'left', '0')];
             trialVid = VideoWriter(fullfile(vidDataDir, trialVidName), 'Motion JPEG AVI');
             trialVid.FrameRate = FRAME_RATE;

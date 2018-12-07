@@ -46,7 +46,7 @@ volumeRate = infoStruct.volumeRate;
 
 % Prompt user for save directory if none was provided
 if isempty(saveDir)
-    saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+    saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
     if saveDir == 0
         % Throw error if user canceled without choosing a directory
         error('ERROR: you must select a save directory or provide one as an argument');

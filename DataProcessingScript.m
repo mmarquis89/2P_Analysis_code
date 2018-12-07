@@ -16,7 +16,7 @@ for iExp = 1:length(expDates)
     expDate = expDates{iExp}
     targetPlane = targetPlanes(iExp);
     
-    dirPath = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    dirPath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     tic
     disp(['Extracting sample frames from anatomy stacks...']);
     extract_sample_frames(dirPath, fileStr, targetPlane);
@@ -39,7 +39,7 @@ expDates = {...
      expDate = expDates{iExp}
      
      %%% Define ROIs for optic flow combined vids
-     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+     parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
      select_video_ROIs(parentDir);
  end
  
@@ -53,8 +53,8 @@ trialDuration = 300;
 expDate = '2018_10_30_exp_1';
 sid = 0;
 
-parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
-saveDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
+parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
+saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
 annotationFileName = [expDate, '_Annotation.txt'];
 % annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];
 
@@ -75,7 +75,7 @@ clear parentDir saveDir annotationFileName
 %        
 
 expDateTemp = '2018_10_09_exp_1';
-parentDirTemp = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 sidTemp = 0;
 
 %%% Archive raw anatomy stacks
@@ -89,7 +89,7 @@ filterString = ['*sid_', num2str(sidTemp), '_b*'];
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
 
 %%% Archive raw video frames
-parentDirTemp = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
 archiveName = ['sid_', num2str(sidTemp), '_RawFrames'];
 system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
 

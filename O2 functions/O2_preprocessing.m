@@ -17,15 +17,15 @@ vidDataDir= ['/n/scratch2/mjm60/', expDate, '/BehaviorVideo'];
 imgSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/ImagingData'];
 vidSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/BehaviorVideo'];
 
-% % Create save directories if they do not exist
-% disp(isdir(imgSaveDir))
-% if ~isdir(imgSaveDir)
-%     mkdir(imgSaveDir)
-% end
-% if ~isdir(vidSaveDir)
-%     mkdir(vidSaveDir)
-% end
-% 
+% Create save directories if they do not exist
+disp(isdir(imgSaveDir))
+if ~isdir(imgSaveDir)
+    mkdir(imgSaveDir)
+end
+if ~isdir(vidSaveDir)
+    mkdir(vidSaveDir)
+end
+
 % % Check for irregularities caused by gapless acquisition
 % clean_scanimage_files(imgDataDir, sid);
 % 

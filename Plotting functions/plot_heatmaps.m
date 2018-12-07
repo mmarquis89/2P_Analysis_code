@@ -98,7 +98,7 @@ end
 if makeVid
     
     if isempty(saveDir)
-        startDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', infoStruct.expDate, '\sid_', num2str(infoStruct.sid), '\Analysis'];
+        startDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', infoStruct.expDate, '\sid_', num2str(infoStruct.sid), '\Analysis'];
         if ~isdir(startDir)
            mkdir(startDir) 
         end
@@ -341,7 +341,7 @@ end
 function ROISaveButton_Callback(~,~)
 
     % Prompt user for save directory
-    saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+    saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
     if saveDir == 0
         % Throw error if user canceled without choosing a directory
         disp('ERROR: you must select a save directory or provide one as an argument');
