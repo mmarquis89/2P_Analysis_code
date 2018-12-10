@@ -110,7 +110,7 @@ rawFlAvg = squeeze(min(min(volAvgSessionData, [], 1), [], 2)); % --> [plane, tri
 flThresh = []; 
 omitTrials = [];
 % omitTrials = [1:10 15 17 22 25:29 32:35 39 80 82 91 101];
-% omitTrials = find(rawFlAvg(5,:) > 50)
+% omitTrials = find(rawFlAvg(5,:) > 50 | rawFlAvg(5,:) < 35)
 
 if ~isempty(omitTrials)
     rawFlAvg(:,omitTrials) = [];
@@ -138,20 +138,22 @@ try
 saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 s = stimSepTrials;
 
-stimNames = {'EtOH\_neat', 'EtOH\_e-2'};
+stimNames = {'EtOH\_neat', 'EtOH\_e-3'};
 stimTrialGroups = [s.OdorA + 2 * s.OdorB];
 stimGroupNames = {'OdorA', 'OdorB'};
+stimShading = {[8 11]};%{[4 5], [4 5; 6 7]};
+stimShadingColors = {'red', 'green'};
+rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
 
-trialGroups = [];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
-plotAnnotTypes = [2]; % 1 = stims, 2 = behavior
+% trialGroups = [];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
+% plotAnnotTypes = [2]; % 1 = stims, 2 = behavior
 
-%
-% trialGroups = stimTrialGroups; 
-% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-% plotAnnotTypes = [2]; % 1 = odor stims, 2 = behavior
+trialGroups = stimTrialGroups; 
+plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+plotAnnotTypes = [2]; % 1 = odor stims, 2 = behavior
 
 try
 
@@ -215,10 +217,13 @@ for iPlot = 1:nPlots
     
     % Plot stim times
     hold on
-    stimOnsetFrame = stimOnsetTimes(1) * FRAME_RATE;
-    stimOffsetFrame = (stimOnsetTimes(1) + stimDurs(1)) * FRAME_RATE;
-    plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
-    plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:nStimEpochs
+        stimOnsetFrame = stimShading{idx}(iStim, 1) * FRAME_RATE;
+        stimOffsetFrame = stimShading{idx}(iStim, 2) * FRAME_RATE;
+        plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+        plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+    end
 end
 
 if saveFig
@@ -268,20 +273,20 @@ saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 actionNum = [3]; % locomotionLabel = 3; noActionLabel = 0; isoMovementLabel = 1;
 actionName = actionNames{actionNum};
 figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial (red = stim period)'], '_', '\\_');
-% 
+% % 
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = ['_AllTrials_', actionName];
 % groupNames = {'All trials'};
-% % 
+
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
 % fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
 % groupNames = stimNames;
-% 
+
 % % GROUP BY EARLY/LATE
 % groupNames = [];
-% groupBounds = [1, 20, 40];
+% groupBounds = [1, 30 60];
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
@@ -290,19 +295,17 @@ figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial (red 
 % trialGroups(groupBounds(end):end) = numel(groupBounds);
 % groupNames{end + 1} = ['Trials ', num2str(groupBounds(end)), '-', num2str(nTrials)];
 % fileNameSuffix = '_EarlyVsLateTrials';
-% % % % 
 
-stimShadingColors = {'red', 'green'};
 
 try
-   
-% Get odor stim times
-odorOnset = mode(analysisMetadata.stimOnsetTimes(logical(s.OdorA + s.OdorB)));
-odorOffset = odorOnset + mode(analysisMetadata.stimDurs(logical(s.OdorA + s.OdorB)));
-odorTimes = [odorOnset, odorOffset];
-odorFrames = floor(odorTimes * FRAME_RATE);
 
-stimShading = {odorFrames};
+% % Get odor stim times
+% odorOnset = mode(analysisMetadata.stimOnsetTimes(logical(s.OdorA + s.OdorB)));
+% odorOffset = odorOnset + mode(analysisMetadata.stimDurs(logical(s.OdorA + s.OdorB)));
+% odorTimes = [odorOnset, odorOffset];
+% odorFrames = floor(odorTimes * FRAME_RATE);
+% 
+% stimShading = {odorFrames};
 
 % Create array of annotation data
 f = figure(2); clf; hold on
@@ -313,21 +316,10 @@ if isempty(trialGroups)
     
     % Plot summed movement data
     annotArrSum = sum(ismember(behaviorAnnotArr, actionNum), 1) ./ nTrials;
-    ax = gca(); 
+    ax = gca();
     ax.FontSize = 14;
     plot_behavior_summary_1D(analysisMetadata, annotArrSum(2:end-1), ax, figTitle);
     
-    % Add shading during stimulus presentations
-    yL = ylim();
-    for iType = 1:numel(stimShading)
-        for iStim = 1:size(stimShading{iType}, 1)
-            stimStart = stimShading{iType}(iStim, 1);
-            stimLength = stimShading{iType}(iStim, 2) - stimShading{iType}(iStim, 1);
-            rectPos = [stimStart, yL(1), stimLength, diff(yL)]; % [x y width height]
-            rectangle('Position', rectPos, 'FaceColor', [rgb(stimShadingColors{iType}), 0.1], 'EdgeColor', 'none');
-            ylim(yL);
-        end
-    end
 else
     annotArrSum = [];
     yLimsAll = [];
@@ -337,11 +329,6 @@ else
     cm = [rgb('blue'); rgb('green'); rgb('red'); rgb('magenta'); rgb('cyan')];
     for iGroup = 1:nGroups
         
-        % Plot summed movement data
-%         if length(unique(trialGroups(trialGroups ~= 0))) > 1
-%             f.Position = [100 50 1000 950];
-%         end
-%         ax{iGroup} = subplot(nGroups, 1, iGroup);
         ax = gca();
         ax.FontSize = 14;
         colormap(jet(nGroups))
@@ -351,29 +338,21 @@ else
         if iGroup ~= length(unique(trialGroups))
             xlabel('');
         end
-        
-        % Add shading during stimulus presentations
-        yL = ylim();
-        yLimsAll(iGroup, :) = yL;
-        for iType = 1:numel(stimShading)
-            for iStim = 1:size(stimShading{iType}, 1)
-                stimStart = stimShading{iType}(iStim, 1);
-                stimLength = stimShading{iType}(iStim, 2) - stimShading{iType}(iStim, 1);
-                rectPos = [stimStart, 0, stimLength, 1000]; % using large height value in case yLims increase later
-                rectangle('Position', rectPos, 'FaceColor', [rgb(stimShadingColors{iType}), 0.05], 'EdgeColor', 'none');
-                ylim(yL);
-            end
-        end
     end%iGroup
-    legend(groupNames, 'FontSize', 14, 'Location', 'Best')
+    
+    legend(groupNames, 'FontSize', 14, 'Location', 'Best', 'AutoUpdate', 'off')
     ax.XLim = [20 nFrames-20]; % to improve plot appearance
     ax.YLim = [0 1];
-%     % Make sure all plots use the same yLims
-%     yLimMax = max(yLimsAll(:));
-%     for iGroup = 1:length(unique(trialGroups(trialGroups~=0)))
-%         ylim(ax{iGroup}, [yLimsAll(iGroup, 1), yLimMax]);
-%     end
     suptitle(figTitle);
+end
+
+% Add shading during stimulus presentations
+[nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+yL = ylim();
+for iStim = 1:size(stimShading{idx}, 1)
+    stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
+    stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+    plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}))
 end
 
 if saveFig
@@ -407,8 +386,8 @@ if saveFig
     end
 end%if
 
-clear s saveFig fileNameSuffix actionLabel trialGroups figTitle plotNames stimShadingColors odorOnset odorOffset odorTimes odorFrames laserOnset laserOffsetlaserTimes
-clear laserFrames stimShading f annotArrSum ax yL stimStart stimLength rectPos yLimsAll yLimMax saveDir fileName overwrite dlgAns
+clear s saveFig fileNameSuffix actionLabel trialGroups figTitle plotNames odorOnset odorOffset odorTimes odorFrames laserOnset laserOffsetlaserTimes
+clear laserFrames f annotArrSum ax yL stimStart stimLength rectPos yLimsAll yLimMax saveDir fileName overwrite dlgAns
 catch foldME; rethrow(foldME); end
 catch foldME; rethrow(foldME); end
     %% PLOT 2-D SUMMARY OF FICTRAC DATA
@@ -424,16 +403,16 @@ cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
 % % % 
-% ALL TRIALS
-trialGroups = [];
-fileNameSuffix = ['_AllTrials'];
-figTitleSuffix = '';
+% % ALL TRIALS
+% trialGroups = [];
+% fileNameSuffix = ['_AllTrials'];
+% figTitleSuffix = '';
 
 % % 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups .* goodTrials; 
-% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-% figTitleSuffix = make_plotTitleSuffix(stimNames);
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* goodTrials; 
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+figTitleSuffix = make_plotTitleSuffix(stimNames);
 
 try
 
@@ -477,10 +456,16 @@ ax.Title.FontSize = fontSize;
 % Plot stim times
 colorbar
 hold on
-stimOnsetFrame = stimOnsetTimes(1) * FRAME_RATE;
-stimOffsetFrame = (stimOnsetTimes(1) + stimDurs(1)) * FRAME_RATE;
-plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
-plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+
+% Plot stim times
+hold on
+[nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+for iStim = 1:nStimEpochs
+    stimOnsetFrame = stimShading{idx}(iStim, 1) * FRAME_RATE;
+    stimOffsetFrame = stimShading{idx}(iStim, 2) * FRAME_RATE;
+    plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+    plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+end
     
 catch foldME; rethrow(foldME); end
 catch foldME; rethrow(foldME); end
@@ -500,13 +485,13 @@ figTitle = [expDate, '  —  Trial-Averaged FicTrac data'];
 trialGroups = goodTrials';
 smWin = 11;
 
-% % 
+% 
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = [fileNameSuffix, 'AllTrials'];
 % groupNames = {'All trials'};
 
-
+% 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
@@ -515,7 +500,7 @@ smWin = 11;
 % 
 % GROUP BY EARLY/LATE
 groupNames = [];
-groupBounds = [1, 20, 80];
+groupBounds = [1, 30, 60];
 trialGroups = zeros(1, nTrials);
 for iBound = 1:numel(groupBounds)-1
    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
@@ -545,18 +530,17 @@ fileNameSuffix = [fileNameSuffix, 'EarlyVsLateTrials'];
 try
     
 % Extract relevant data
-shadeFrames = [];
-if ~isempty(analysisMetadata.stimOnsetTimes)
-    shadeTimes = [analysisMetadata.stimOnsetTimes(1), analysisMetadata.stimOnsetTimes(1) + analysisMetadata.stimDurs(1)];
-    shadeFrames = round(shadeTimes * FRAME_RATE);
-end
+% shadeFrames = [];
+% if ~isempty(analysisMetadata.stimOnsetTimes)
+%     shadeTimes = [analysisMetadata.stimOnsetTimes(1), analysisMetadata.stimOnsetTimes(1) + analysisMetadata.stimDurs(1)];
+%     shadeFrames = round(shadeTimes * FRAME_RATE);
+% end
 xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
 xTickLabels = [0:1/trialDuration:1] * trialDuration;
 mmSpeedData = ftData.moveSpeed * FRAME_RATE * 4.5;  % --> [frame, trial] (mm/sec)
 dHD = abs(rad2deg(ftData.yawSpeed * FRAME_RATE));        % --> [frame, trial] (deg/sec)
 fwSpeed = ftData.fwSpeed * FRAME_RATE * 4.5;        % --> [frame, trial  (mm/sec)
 nFrames = size(mmSpeedData, 1);
-stimShadingColors = {'red', 'green'};
 
 % Create figure
 f = figure(3); clf; hold on
@@ -572,7 +556,7 @@ axYawSpeed = subaxis(3,1,3, 'S', 0, 'M', M, 'PB', 0.06, 'PL', 0.06); hold on
 
 % Plot data
 nGroups = length(unique(trialGroups(trialGroups ~= 0)));
-cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan')];
+cm = [rgb('blue'); rgb('green'); rgb('red'); rgb('magenta'); rgb('cyan')];
 for iGroup = 1:nGroups
     
     % Calculate mean values for current group
@@ -627,7 +611,13 @@ axVel.FontSize = 14;
 legend(axVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axVel.XLim = [9 nFrames-5]; % to improve plot appearance
 if ~isempty(shadeFrames)
-    plot_stim_shading(shadeFrames, 'Axes', axVel);
+    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:size(stimShading{idx}, 1)
+        stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
+        stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+        plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
+            axVel);
+    end
 end
 
 axFWSpeed.XTick = xTickFR;
@@ -637,7 +627,13 @@ axFWSpeed.FontSize = 14;
 legend(axFWSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axFWSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
 if ~isempty(shadeFrames)
-    plot_stim_shading(shadeFrames, 'Axes', axFWSpeed);
+    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:size(stimShading{idx}, 1)
+        stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
+        stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+        plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
+            axFWSpeed);
+    end
 end
 
 axYawSpeed.XTick = xTickFR;
@@ -647,8 +643,15 @@ axYawSpeed.FontSize = 14;
 legend(axYawSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axYawSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
 if ~isempty(shadeFrames)
-    plot_stim_shading(shadeFrames, 'Axes', axYawSpeed);
+    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:size(stimShading{idx}, 1)
+        stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
+        stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+        plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
+            axYawSpeed);
+    end
 end
+
 suptitle(regexprep([figTitle, '  —  ', fileNameSuffix], '_', '\\_'));
 if saveFig
     % Create analysis directory if necessary
@@ -688,9 +691,7 @@ catch foldME; rethrow(foldME); end
     %% PLOT OVERLAID 2D MOVEMENT DATA AND CALC PRE/POST SINUOSITY
 try
 
-% stimNames = {'Ethanol\_neat', 'CO2\_4%', '200Hz tone', 'No Stim'};
-
-startTime = 10;
+startTime = 11;
 plotLen = 1;
 sinWin = 3;
 limScalar = 0.8;
@@ -955,18 +956,18 @@ catch foldME; rethrow(foldME); end
 %%%=================================================================================================
 try
     % Show summary again
-    odorEventName = 'OdorA';
+    odorEventName = 'OdorB';
     eventInd = cellfun(@strcmp, primaryEventNames, repmat({odorEventName}, 1, numel(primaryEventNames)));
     currSummary = allCondSummaries{eventInd};
     currCondNames = allCondNames{eventInd};
     disp(currSummary)
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 2];
-    makeVid = 0;
+    currConds = [2 3];
+    makeVid = 1;
     sigma = [0.6];   
     rangeType = 'Max';
-    rangeScalar = 0.7;
+    rangeScalar = 0.4;
     saveDir = [];
     fileName = [odorEventName, '_Response_Heatmaps'];
 
@@ -992,8 +993,8 @@ try
 
     smoothingSigma = [0.6]; 
     rangeType = 'max';
-    rangeScalar = 0.8;
-    makeVid = 0;
+    rangeScalar = 0.3;
+    makeVid = 1;
     saveDir = [];
     fileName = ['All_frame_dFF_', behaviorNames{actionNum}, '_Heatmaps'];
     titleStr = {['dF/F - ', behaviorNames{actionNum}, ' vs. Quiescence']};
@@ -1022,10 +1023,10 @@ try
     currConds = [3 6];
     sigma = [0.6]; 
     rangeType = 'Max';
-    rangeScalar = 0.5;
-    makeVid = 0;
+    rangeScalar = 0.7;
+    makeVid = 1;
     saveDir = [];
-    fileName = 'Locomotion_Onset_Heatmaps';
+    fileName = 'Locomotion_Response_Heatmaps';
 
     plotTitles = [];
     for iCond = currConds
@@ -1087,13 +1088,13 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 
 useDff = 0;
 % % 
-trialGroups = [];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
-% 
-% trialGroups = stimTrialGroups; 
-% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% trialGroups = [];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
+% % 
+trialGroups = stimTrialGroups; 
+plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 
 %---------------------------------------------------------------------------------------------------
 
@@ -1116,9 +1117,6 @@ for iROI = 1:nROIs-1
     if exist('ROIDataBaseSub', 'var')
         flData = ROIDataBaseSub;
     end
-%     if ~isempty(trialGroups)
-%         trialGroups(:, ~goodTrials) = [];
-%     end
     
     % Create figure
     f = figure(iROI); clf
@@ -1142,6 +1140,17 @@ for iROI = 1:nROIs-1
         'saveDir', saveDir, ...
         'colormap', cm, ...
         'fileName', fileName);
+    
+    % Plot stim times
+    hold on
+    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:nStimEpochs
+        stimOnsetFrame = stimShading{idx}(iStim, 1) * volumeRate;
+        stimOffsetFrame = stimShading{idx}(iStim, 2) * volumeRate;
+        plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+        plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+    end
+    
 end%iROI
 catch foldME; rethrow(foldME); end
     %% PLOT SAME 2D HEATMAPS WITH BASELINE (last ROI) SUBTRACTED
@@ -1151,13 +1160,13 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 
 useDff = 0;
 
-trialGroups = [];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
+% trialGroups = [];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
 % 
-% trialGroups = [s.OdorA + 2 * s.OdorB]; 
-% plotTitleSuffix = ['  —  ', stimNames{1}, ' (top) vs. ', stimNames{2}, ' (bottom)']; %
-% fileNameSuffix = ['_OdorAvsOdorB'];
+trialGroups = stimTrialGroups; 
+plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 
 %---------------------------------------------------------------------------------------------------
 
@@ -1181,10 +1190,6 @@ for iROI = 1:(nROIs - 1)
     
     flData = flData - repmat(baselineData, 1, 1, size(flData, 3));
     
-%     if ~isempty(trialGroups)
-%         trialGroups(:, ~goodTrials) = [];
-%     end
-    
     % Create figure
     f = figure(iROI); clf
     f.Color = [1 1 1];
@@ -1203,10 +1208,21 @@ for iROI = 1:(nROIs - 1)
     plot_2D_summary(analysisMetadata, flData(:,:,iROI)', ...
         'plotAxes', ax, ...
         'trialGroups', trialGroups, ...
-        'titleStr', [regexprep(expDate, '_', '\\_'), '  -  ROI ', num2str(iROI), '   baseline-subtracted fluorescence (AU)', plotTitleSuffix], ...
+        'titleStr', [regexprep(expDate, '_', '\\_'), '  -  ROI ', num2str(iROI), '   baseline-sub fluorescence (AU)', plotTitleSuffix], ...
         'saveDir', saveDir, ...
         'colormap', cm, ...
         'fileName', fileName);
+    
+    % Plot stim times
+    hold on
+    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:nStimEpochs
+        stimOnsetFrame = stimShading{idx}(iStim, 1) * volumeRate;
+        stimOffsetFrame = stimShading{idx}(iStim, 2) * volumeRate;
+        plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+        plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+    end
+    
 end%iROI
     
 catch foldME; rethrow(foldME); end
@@ -1266,7 +1282,7 @@ saveDir = 0;
 saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 
 
-ROIlist = 1:size(currDffData{1}, 3);
+ROIlist = 1:size(currDffData{1}, 3)-1;
 % ROIlist = [1 2 3];
 
 ax = []; yLims = [];
@@ -1341,21 +1357,17 @@ try
     plotTitle = regexprep([expDate, make_plotTitleSuffix(stimNames)], '(?<!\\)_', '\\_');    
     fileNamePrefix = 'Whole_Trial_Responses_';
     s = analysisMetadata.stimSepTrials;
-    eventShading = [10 13];
-    eventShadeColor = [0 0 0];
     filterVecs = [];
     for iStim = 1:numel(stimGroupNames)
         filterVecs = [filterVecs; s.(stimGroupNames{iStim})];
     end
     filterVecs = logical(filterVecs .* repmat(goodTrials, size(filterVecs, 1), 1));
     
-    filterVecs(:, 60:end) = 0;
-    
     singleTrials = 1;
     singleTrialAlpha = 0.5;
     stdDevShading = 1;
     
-    ROIlist = 1:size(ROIDffAvg, 3);
+    ROIlist = 1:size(ROIDffAvg, 3)-1;
 %     ROIlist = [1 2 3];
     
     yL = [];
@@ -1384,8 +1396,13 @@ try
 %             currDffAvg = ROIDataAvg(:, filterVecs(iPlot, :), iROI); % --> [volume, trial]
             subaxis(nRows, 2, 1, iPlot+1, 2,1)  %( (iPlot*3 + 1):(iPlot*3 + 3) ))                                                     
             ax(iPlot) = gca;
-            plot_ROI_data(ax(iPlot), currDffAvg, 'EventShading', eventShading, ...
-                                                 'EventShadeColor', eventShadeColor, ...
+            if numel(stimShading) >= nPlots
+                shadeArg = stimShading{iPlot};
+            else
+                shadeArg = stimShading{1};
+            end
+            plot_ROI_data(ax(iPlot), currDffAvg, 'EventShading', shadeArg, ...
+                                                 'EventShadeColor', rgbStimShadeColors, ...
                                                  'SingleTrials', singleTrials, ...
                                                  'SingleTrialAlpha', singleTrialAlpha, ...
                                                  'StdDevShading', stdDevShading, ...
@@ -1427,7 +1444,7 @@ try
 
     % GROUP BY EARLY/LATE
     groupNames = [];
-    groupBounds = [1, 30 80 127 184];
+    groupBounds = [1, 30, 60];
     trialGroups = zeros(1, nTrials);
     for iBound = 1:numel(groupBounds)-1
         trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
@@ -1444,7 +1461,7 @@ try
     outlierSD = 5;
     legendStr = groupNames;
 
-    ROIlist = 1:size(ROIDffAvg, 3);
+    ROIlist = 1:size(ROIDffAvg, 3)-1;
 %     ROIlist = [1 2 3];
 
     for iROI = ROIlist       
@@ -1468,7 +1485,8 @@ try
         currDffAvg = ROIDffAvg(:,logical(s .* goodTrials), iROI); % --> [volume, trial]
         subaxis(2, 3, [4:6])
         ax = gca;
-        plot_ROI_data(ax, currDffAvg, 'EventShading', eventShading, ...
+        [~, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+        plot_ROI_data(ax, currDffAvg, 'EventShading', stimShading{idx}, ...
                                       'TrialGroups', trialGroups,   ...
                                       'SingleTrials', singleTrials, ...
                                       'SingleTrialAlpha', singleTrialAlpha, ...
@@ -1507,7 +1525,7 @@ try
     singleTrialAlpha = 0.4;
     stdDevShading = 0;
     
-    ROIlist = 1:size(ROIDffAvg, 3);
+    ROIlist = 1:size(ROIDffAvg, 3)-1;
 %     ROIlist = [1 2 3];
     
     for iROI = ROIlist       
@@ -1536,13 +1554,18 @@ try
             currDffAvg = ROIDffAvg(:, trialFilterVecs(iPlot, :), iROI); % --> [volume, trial]
             annotData = annotationTypes{5}.volAnnotArr;
             currAnnotArr = annotData(trialFilterVecs(iPlot, :), :);
-
+            
             subaxis(nRows, 3, ( (iPlot*3 + 1):(iPlot*3 + 3) ))
-            ax(iPlot) = gca; 
-                        
+            ax(iPlot) = gca;
+            if numel(stimShading) >= nPlots
+                shadeArg = stimShading{iPlot};
+            else
+                shadeArg = stimShading{1};
+            end
             plot_ROI_data(ax(iPlot), currDffAvg, 'AnnotArray', currAnnotArr', ... 
                                                  'AnnotValues', annotValues', ...
-                                                 'EventShading', eventShading, ...
+                                                 'EventShading', shadeArg, ...
+                                                 'EventShadeColor', rgbStimShadeColors, ...
                                                  'SingleTrials', singleTrials, ...
                                                  'SingleTrialAlpha', singleTrialAlpha, ...
                                                  'StdDevShading', stdDevShading, ...
@@ -1598,12 +1621,12 @@ catch foldME; rethrow(foldME); end
 %% %================================================================================================
 s = stimSepTrials;
 
-currStim = s.OdorA + s.OdorB;
+currStim = logical(stimTrialGroups);
 smWin = 3;
 nBins = 50;
-thresh = 0.5;
-nROIs = 1%size(ROIDataAvg, 3);
-currTrial = 38;
+thresh = 0.2;
+nROIs = size(ROIDataAvg, 3)-1;
+currTrial = 7;
 
 try
     
@@ -2085,7 +2108,7 @@ catch foldME; rethrow(foldME); end
     %% PCA
 try
 % Pull out data for one plane
-planeNum = 1;
+planeNum = 11;
 planeData = pcaData(:,:,:,planeNum);
 
 figure(2); clf;

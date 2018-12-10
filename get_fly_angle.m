@@ -22,7 +22,15 @@ if fileName == 0
     thetaRad = [];
     return
 end
-img = imread(fullfile(pathName, fileName));
+
+% Read image (or extract first frame if image is a video)
+if regexp(fileName, '.*(.avi|.mp4|.mov)')
+    myVid = VideoReader(fullfile(pathName, fileName));
+    firstFrame = readFrame(myVid);
+    img = uint8(firstFrame(:,:,1));
+else
+    img = uint8(imread(fullfile(pathName, fileName)));
+end
 
 % Create figure and plot image
 f = figure(1); clf

@@ -96,7 +96,7 @@ colormap(plotAxes, cm)
 
 % Format axes
 ax = gca();
-ax.FontSize = 14;
+ax.FontSize = 12;
 ax.YTick = 0:10:sum(infoStruct.goodTrials);
 ax.XTick = [0:5:infoStruct.trialDuration] * sampRate;
 ax.XTickLabel = 0:5:infoStruct.trialDuration;
