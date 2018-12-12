@@ -138,7 +138,7 @@ try
 saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 s = stimSepTrials;
 
-stimNames = {'EtOH\_neat', 'EtOH\_e-3'};
+stimNames = {'EtOH\_neat', 'EtOH\_e-2'};
 stimTrialGroups = [s.OdorA + 2 * s.OdorB];
 stimGroupNames = {'OdorA', 'OdorB'};
 stimShading = {[8 11]};%{[4 5], [4 5; 6 7]};
@@ -237,7 +237,8 @@ if saveFig
 %     for iPlot = 1:nPlots
 %         fileName = [regexprep(plotNames{iPlot}, ' ', '')];
 %     end
-    fileName = ['2D_Behavior_Annotation_Summary ', fileNameSuffix, '_', expDate];
+    fileName = ['2D_Behavior_Annotation_Summary ', fileNameSuffix, '_', ...
+                regexprep(expDate, {'_', 'exp'}, {'', '_'})];
     
     % Warn user and offer to cancel save if this will overwrite existing files
     overwrite = 1;
@@ -273,20 +274,20 @@ saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 actionNum = [3]; % locomotionLabel = 3; noActionLabel = 0; isoMovementLabel = 1;
 actionName = actionNames{actionNum};
 figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial (red = stim period)'], '_', '\\_');
-% % 
-% % ALL TRIALS
-% trialGroups = [goodTrials];
-% fileNameSuffix = ['_AllTrials_', actionName];
-% groupNames = {'All trials'};
+
+% ALL TRIALS
+trialGroups = [goodTrials];
+fileNameSuffix = ['_AllTrials_', actionName];
+groupNames = {'All trials'};
 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
 % fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
 % groupNames = stimNames;
-
+% % % % 
 % % GROUP BY EARLY/LATE
 % groupNames = [];
-% groupBounds = [1, 30 60];
+% groupBounds = [1, 30, 60];
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
@@ -309,7 +310,7 @@ try
 
 % Create array of annotation data
 f = figure(2); clf; hold on
-f.Position = [100 100 1600 500];
+f.Position = [-1600 300 1600 500];
 f.Color = [1 1 1];
 
 if isempty(trialGroups)
@@ -363,7 +364,8 @@ if saveFig
     end
     
     % Create filename
-    fileName = regexprep(['1D_Behavior_Annotation_Summary', fileNameSuffix, '_', expDate], '_', '\_');
+    fileName = regexprep(['1D_Behavior_Annotation_Summary', fileNameSuffix, '_', ...
+                        regexprep(expDate, {'_', 'exp'}, {'', '_'})], '_', '\_');
     
     % Warn user and offer to cancel save if this will overwrite existing files
     overwrite = 1;
@@ -397,22 +399,22 @@ s = stimSepTrials;
 fontSize = 12;
 
 ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed'
-sdCap = 1.5;
+sdCap = 2;
 smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
 % % % 
-% % ALL TRIALS
-% trialGroups = [];
-% fileNameSuffix = ['_AllTrials'];
-% figTitleSuffix = '';
+% ALL TRIALS
+trialGroups = [];
+fileNameSuffix = ['_AllTrials'];
+figTitleSuffix = '';
 
-% % 
-% GROUP BY STIM TYPE
-trialGroups = stimTrialGroups .* goodTrials; 
-fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-figTitleSuffix = make_plotTitleSuffix(stimNames);
+% % % % 
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups .* goodTrials; 
+% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% figTitleSuffix = make_plotTitleSuffix(stimNames);
 
 try
 
@@ -427,8 +429,8 @@ else
     figTitle = [figTitle, ' (mm/sec)'];
 end
 
-% Cap values at 3 SD above mean
-capVal = mean(plotData(:)) + (sdCap * std(plotData(:)));
+% Cap values at n SD above mean
+capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
 plotData(plotData > capVal) = capVal;
 
 % Smooth data
@@ -442,7 +444,8 @@ end
 
 % Plot data
 titleStr = [figTitle, figTitleSuffix];
-fileName = ['2D_FicTrac_', ftVarName '_Summary', fileNameSuffix, '_', expDate];
+fileName = ['2D_FicTrac_', ftVarName '_Summary', fileNameSuffix, '_', ...
+            regexprep(expDate, {'_', 'exp'}, {'', '_'})];
 [~, ax, ~] = plot_2D_summary(analysisMetadata, smPlotData, ...
                 'trialGroups', trialGroups, ...
                 'titleStr', titleStr, ...
@@ -484,39 +487,39 @@ end
 figTitle = [expDate, '  —  Trial-Averaged FicTrac data'];
 trialGroups = goodTrials';
 smWin = 11;
-
 % 
-% % ALL TRIALS
-% trialGroups = [goodTrials];
-% fileNameSuffix = [fileNameSuffix, 'AllTrials'];
-% groupNames = {'All trials'};
+% % 
+% ALL TRIALS
+trialGroups = [goodTrials];
+fileNameSuffix = [fileNameSuffix, 'AllTrials'];
+groupNames = {'All trials'};
 
-% 
+% % % % % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
 % groupNames = stimNames;
 % % % % 
-% 
-% GROUP BY EARLY/LATE
-groupNames = [];
-groupBounds = [1, 30, 60];
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
-   groupNames{iBound} = ['Trials ', num2str(groupBounds(iBound)), '-', num2str(groupBounds(iBound + 1))];
-end
-trialGroups(groupBounds(end):end) = numel(groupBounds);
-trialGroups = trialGroups .* goodTrials;
-groupNames{end + 1} = ['Trials ', num2str(groupBounds(end)), '-', num2str(nTrials)];
-fileNameSuffix = [fileNameSuffix, 'EarlyVsLateTrials'];
-
-
-% % GROUP BY EARLY/LATE FOR A SINGLE STIM TYPE
-% targetStim = s.OdorA;
-% stimName = 'OdorA';
+% % % % 
+% % GROUP BY EARLY/LATE
 % groupNames = [];
-% groupBounds = [1, 30, 70];
+% groupBounds = [1, 30, 60];
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+%    groupNames{iBound} = ['Trials ', num2str(groupBounds(iBound)), '-', num2str(groupBounds(iBound + 1))];
+% end
+% trialGroups(groupBounds(end):end) = numel(groupBounds);
+% trialGroups = trialGroups .* goodTrials;
+% groupNames{end + 1} = ['Trials ', num2str(groupBounds(end)), '-', num2str(nTrials)];
+% fileNameSuffix = [fileNameSuffix, 'EarlyVsLateTrials'];
+
+% 
+% % GROUP BY EARLY/LATE FOR A SINGLE STIM TYPE
+% targetStim = s.OdorB;
+% stimName = 'OdorB';
+% groupNames = [];
+% groupBounds = [1, 30, 60];
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
@@ -610,7 +613,7 @@ axVel.YLabel.String = 'XY Speed (mm/sec)';
 axVel.FontSize = 14;
 legend(axVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axVel.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(shadeFrames)
+if ~isempty(stimShading)
     [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
     for iStim = 1:size(stimShading{idx}, 1)
         stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
@@ -626,7 +629,7 @@ axFWSpeed.YLabel.String = 'FW Vel (mm/sec)';
 axFWSpeed.FontSize = 14;
 legend(axFWSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axFWSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(shadeFrames)
+if ~isempty(stimShading)
     [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
     for iStim = 1:size(stimShading{idx}, 1)
         stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
@@ -642,7 +645,7 @@ axYawSpeed.YLabel.String = 'Yaw Speed (deg/sec)';
 axYawSpeed.FontSize = 14;
 legend(axYawSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axYawSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(shadeFrames)
+if ~isempty(stimShading)
     [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
     for iStim = 1:size(stimShading{idx}, 1)
         stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
@@ -661,7 +664,8 @@ if saveFig
     end
     
     % Create filename
-    fileName = regexprep(['1D_FicTrac_Summary_', fileNameSuffix, '_', expDate], '_', '\_');
+    fileName = regexprep(['1D_FicTrac_Summary_', fileNameSuffix, '_', ...
+                            regexprep(expDate, {'_', 'exp'}, {'', '_'})], '_', '\_');
     
     % Warn user and offer to cancel save if this will overwrite existing files
     overwrite = 1;
@@ -691,7 +695,7 @@ catch foldME; rethrow(foldME); end
     %% PLOT OVERLAID 2D MOVEMENT DATA AND CALC PRE/POST SINUOSITY
 try
 
-startTime = 11;
+startTime = 14;
 plotLen = 1;
 sinWin = 3;
 limScalar = 0.8;
@@ -993,7 +997,7 @@ try
 
     smoothingSigma = [0.6]; 
     rangeType = 'max';
-    rangeScalar = 0.3;
+    rangeScalar = 0.8;
     makeVid = 1;
     saveDir = [];
     fileName = ['All_frame_dFF_', behaviorNames{actionNum}, '_Heatmaps'];
@@ -1023,7 +1027,7 @@ try
     currConds = [3 6];
     sigma = [0.6]; 
     rangeType = 'Max';
-    rangeScalar = 0.7;
+    rangeScalar = 0.8;
     makeVid = 1;
     saveDir = [];
     fileName = 'Locomotion_Response_Heatmaps';
@@ -1088,13 +1092,13 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 
 useDff = 0;
 % % 
-% trialGroups = [];
-% plotTitleSuffix = '';
-% fileNameSuffix = '_AllTrials';
-% % 
-trialGroups = stimTrialGroups; 
-plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+trialGroups = [];
+plotTitleSuffix = '';
+fileNameSuffix = '_AllTrials';
+% 
+% trialGroups = stimTrialGroups; 
+% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 
 %---------------------------------------------------------------------------------------------------
 
@@ -1159,11 +1163,11 @@ s = stimSepTrials;
 saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 
 useDff = 0;
-
+% % 
 % trialGroups = [];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_AllTrials';
-% 
+% % 
 trialGroups = stimTrialGroups; 
 plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 fileNameSuffix = make_fileNameSuffix(stimGroupNames);
@@ -1439,7 +1443,6 @@ try
     plotTitle = regexprep([expDate, ' - All stims - early vs late trials'], '_', '\\_');
     fileNamePrefix = 'EarlyVsLateTrials_';
     
-%     s = analysisMetadata.stimSepTrials.OdorA + analysisMetadata.stimSepTrials.OdorB + analysisMetadata.stimSepTrials.OdorABPair;
     s = goodTrials;
 
     % GROUP BY EARLY/LATE
@@ -1455,7 +1458,7 @@ try
 
     trialGroups = trialGroups(logical(s .* goodTrials));
 
-    singleTrials = 1;
+    singleTrials = 0;
     singleTrialAlpha = 0.3;
     stdDevShading = 1;
     outlierSD = 5;
@@ -1624,9 +1627,9 @@ s = stimSepTrials;
 currStim = logical(stimTrialGroups);
 smWin = 3;
 nBins = 50;
-thresh = 0.2;
+thresh = 0.3;
 nROIs = size(ROIDataAvg, 3)-1;
-currTrial = 7;
+currTrial = 82;
 
 try
     
@@ -2108,7 +2111,7 @@ catch foldME; rethrow(foldME); end
     %% PCA
 try
 % Pull out data for one plane
-planeNum = 11;
+planeNum = 12;
 planeData = pcaData(:,:,:,planeNum);
 
 figure(2); clf;

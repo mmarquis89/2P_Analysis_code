@@ -114,7 +114,7 @@ try
     write_to_log(['numel(tidList) = ', num2str(numel(tidList))], mfilename);
     
     write_to_log('Raw trial vids identified...', mfilename)
-
+% 
 %     %---------------------------------------------------------------------------------------------------
 % 
 % %     

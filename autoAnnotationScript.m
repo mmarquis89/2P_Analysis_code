@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2018_12_03_exp_1';
+expDate = '2018_11_20_exp_1';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
@@ -10,7 +10,7 @@ trialDuration = 20;
 behaviorLabels = {'Quiescence', 'Locomotion', 'IsolatedMovement'};
 
 imgDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)'];
-vidDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+vidDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 imgDir = vidDir;
 
 % Get frame count info
@@ -70,18 +70,22 @@ annotParams = struct('expDate', expDate, 'flowThresh', flowThresh, 'moveThresh',
                             'minIsoMoveLen', minIsoMoveLen, 'minLocEpochLen', minLocEpochLen, ...
                             'minQuiescenceLen', minQuiescenceLen);
                         
+if ~isdir(imgDir)
+    mkdir(imgDir)
+end
+                        
 save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams', 'ftData', 'flowArr', 'goodTrials', 'behaviorLabels', 'frameInfo')
 
 %%
-t = 23;
+t = 19;
 
-flowThresh = 0.05;
-moveThresh = 0.05;
+flowThresh = 0.06;
+moveThresh = 0.04;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 2;
+moveSmReps = 4;
 flowSmReps = 3;
 
 minIsoMoveLen = 6;

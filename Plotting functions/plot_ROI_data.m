@@ -277,7 +277,7 @@ for iGroup = 1:nGroups
                 else
                     currColor = cm(iGroup, :);
                 end
-                plt = plot(ax, volTimes, smooth(currData, smoothWin), 'color', currColor, 'LineWidth', 0.5);
+                plt = plot(ax, volTimes, smooth(currData, smoothWin), 'color', currColor, 'LineWidth', 1);
                 plt.Color(4) = singleTrialAlpha;
                 
             end%if

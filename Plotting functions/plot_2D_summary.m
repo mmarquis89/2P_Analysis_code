@@ -50,7 +50,7 @@ addParameter(p, 'saveDir', 0);
 addParameter(p, 'fileName', 'Untitled');
 addParameter(p, 'xAxLabel', 'Time (sec)');
 addParameter(p, 'colormap', parula(numel(unique(dataArr))));
-addParameter(p, 'sampRate', infoStruct.volumeRate);
+addParameter(p, 'sampRate', []);
 parse(p, varargin{:});
 plotAxes = p.Results.plotAxes;
 figPos = p.Results.figPos;
@@ -61,6 +61,9 @@ fileName = p.Results.fileName;
 xAxLabel = p.Results.xAxLabel;
 cm = p.Results.colormap;
 sampRate = p.Results.sampRate;
+if isempty(sampRate)
+   sampRate = infoStruct.volumeRate; 
+end
 
 % Create or select figure and axes depending on whether an axes handle was provided
 if isempty(plotAxes)

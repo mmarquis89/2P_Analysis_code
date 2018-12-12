@@ -8,8 +8,8 @@ addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 % Load data
 [analysisMetadata, wholeSession] = load_imaging_data(parentDir, sessionDataFile, 'LoadSessionData', 1);
 
-behaviorNames = {'Locomotion', 'Grooming', 'IsoMove', 'AnyMove'};
-behaviorNums = {2, 3, 4, [2 3 4]};
+behaviorNames = {'Locomotion','IsoMove', 'AnyMove'};
+behaviorNums = {3, 1, [1 3]};
 baselineLabel = 0;
 
 for iType = 1:numel(behaviorNames)
@@ -22,7 +22,7 @@ for iType = 1:numel(behaviorNames)
         if analysisMetadata.goodTrials(iTrial)
             
             % Pull out action numbers for each volume
-            currActions = analysisMetadata.trialAnnotations{iTrial}.actionNums;
+            currActions = analysisMetadata.trialAnnotations(iTrial, :);
             volActions = currActions(analysisMetadata.volFrames);
             
             % Identify volume actions

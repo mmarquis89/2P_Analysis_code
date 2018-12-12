@@ -1,6 +1,7 @@
 function [annotationTypes, annotationTypeSummary] = process_annotation_types(analysisMetadata)
 
 try
+    
 % Copy variables for convenience
 nVolumes = analysisMetadata.nVolumes;
 if ~isempty(analysisMetadata.nFrames)
@@ -9,6 +10,8 @@ else
     nFrames = nVolumes;
 end
 nTrials = analysisMetadata.nTrials;
+write_to_log(num2str(nTrials), mfilename);
+write_to_log(num2str(size(analysisMetadata.goodTrials)));
 goodTrials = analysisMetadata.goodTrials(1:nTrials);
 
 %   annotArr: (row = trial, col = frame, Z-dim = event type)
@@ -20,27 +23,13 @@ annotationTypes = [];
 % Closed loop odor stim
 % ----------------------------------------------------------------------------------------------
 if contains(analysisMetadata.stimTypes, 'ClosedLoop')
-    ftAcqRate = 4000;
-    downSampleFactor = ftAcqRate / analysisMetadata.FRAME_RATE;
-    ftStimData = squeeze(analysisMetadata.daqFtData(:,4,:))'; % Copy of the stim command signal
-    stimAnnotArrCL = round(ftStimData(:, 1:downSampleFactor:end));
+    write_to_log(num2str(size(analysisMetadata.daqFtData)), mfilename);
+    stimAnnotArrCL = round(squeeze(analysisMetadata.daqFtData(5,:,:))'); % --> [trial, sample] Copy of the stim command signal
+    write_to_log(num2str(size(stimAnnotArrCL)), mfilename);
     odorAnnotationsCL = annotationType(analysisMetadata, stimAnnotArrCL, 'ClosedLoopStim');
     odorAnnotationsCL = get_event_vols(odorAnnotationsCL, '05', '50');
     annotationTypes{end + 1} = odorAnnotationsCL;
 end
-
-% % ----------------------------------------------------------------------------------------------
-% % Closed loop control stim
-% % ----------------------------------------------------------------------------------------------
-% if contains(analysisMetadata.stimTypes, 'ClosedLoopControl')
-%     ftAcqRate = 4000;
-%     downSampleFactor = ftAcqRate/analysisMetadata.FRAME_RATE;
-%     ftStimData = squeeze(analysisMetadata.daqFtData(:,4,:))';
-%     stimAnnotArrCL = round(ftStimData(:, 1:downSampleFactor:end));
-%     odorAnnotationsCL = annotationType(analysisMetadata, stimAnnotArrCL, 'ClosedLoopStim');
-%     odorAnnotationsCL = get_event_vols(odorAnnotationsCL, '05', '50');
-%     annotationTypes{end + 1} = odorAnnotationsCL;
-% end
 
 % ----------------------------------------------------------------------------------------------
 % Open loop stimuli
@@ -53,7 +42,12 @@ annotArr = zeros(nTrials, nFrames, nStims);
 for iStim = 1:nStims
     for iTrial = 1:nTrials
         onsetFrame = round(analysisMetadata.stimOnsetTimes(iTrial)) * analysisMetadata.FRAME_RATE;
-        offsetFrame = (round(analysisMetadata.stimOnsetTimes(iTrial)) + round(analysisMetadata.stimDurs(iTrial))) * analysisMetadata.FRAME_RATE;
+        if contains(analysisMetadata.stimTypes{iStim}, 'Pair')
+            % Extend event window to cover second stimulus
+            offsetFrame = (round(analysisMetadata.stimOnsetTimes(iTrial)) + round(3 * analysisMetadata.stimDurs(iTrial))) * analysisMetadata.FRAME_RATE;
+        else
+            offsetFrame = (round(analysisMetadata.stimOnsetTimes(iTrial)) + round(analysisMetadata.stimDurs(iTrial))) * analysisMetadata.FRAME_RATE;
+        end
         if analysisMetadata.stimSepTrials.(stimTypes{iStim})(iTrial)
             annotArr(iTrial, onsetFrame:offsetFrame, iStim) = 4; % --> [trial, frame]
         end
@@ -74,13 +68,6 @@ end
 % ----------------------------------------------------------------------------------------------
 
 % Add behavior annotations
-behaviorAnnotArr = zeros(nTrials, nFrames);
-if ~isempty(analysisMetadata.trialAnnotations)
-    annotTrials = 1:nTrials;
-    for iTrial = annotTrials(goodTrials) % Skip any trials with dropped frames
-        behaviorAnnotArr(iTrial, :) = analysisMetadata.trialAnnotations{iTrial}.actionNums;           %--> [trial, frame]
-    end
-end
 behaviorAnnotArr = analysisMetadata.trialAnnotations; % --> [trial, frame]
 behaviorAnnotArr(~goodTrials, :) = 0;
 

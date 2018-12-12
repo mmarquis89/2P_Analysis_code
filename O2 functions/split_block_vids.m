@@ -1,26 +1,4 @@
 function split_block_vids(vidDataDir, blockVidName, varargin)
-%===================================================================================================
-% SEPARATE BEHAVIOR BLOCK VIDEO INTO INDIVIDUAL TRIALS
-%
-% Uses a flash of light in the lower-left corner of the first frame of each trial to divide behavior
-% video for an entire block into individual trials. The size of the ROI that is inspected can be
-% changed to a different size, specified in pixels. Also does a check to make sure the entire frame
-% isn't white since that is an occasional failure mode with Point Grey cameras.
-%
-% INPUTS:
-%       vidDataDir      = parent directory for this experiment's behavior video
-%
-%       blockVidName    = the name (minus the .avi extension) of the behavior video to be split
-%
-% OPTIONAL NAME-VALUE PAIR INPUTS:
-%
-%       'roiDims' = (default: [100 50]) the size of the rectangle in the lower-left corner to watch
-%
-%       'ClosedLoop' = (default: 0) boolean specifying whether the block is only a single trial
-%
-%       'FRAME_RATE' = (default: 25) the frame rate that the behavior video was acquired at
-%
-%===================================================================================================
 try
     
     addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
@@ -39,32 +17,18 @@ try
     closedLoop = p.Results.ClosedLoop;
     FRAME_RATE = p.Results.FRAME_RATE;
     
-    % Remove file extension if it was included in the block name
-    if contains(blockVidName, '.avi')
-        blockVidName = blockVidName(1:end - 4);
-    end
-    
     write_to_log('Starting extraction', mfilename)
-    write_to_log(num2str(closedLoop), mfilename);
+    
     if ~closedLoop
-        
+    
         % Extract corner luminance from each frame
-        write_to_log(fullfile(vidDataDir, [blockVidName, '.avi']), mfilename)
         rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
-        write_to_log('Video reader opened', mfilename);
-        currFrame = []; cornerLum = []; frameSD = [];frameCount = 0; frameMed = [];
-        tic
-        while hasFrame(rawVid)
-            frameCount = frameCount + 1;
-            if ~mod(frameCount, 100)
-               write_to_log(['Reading frame ', num2str(frameCount)], mfilename);
-               disp(['Reading frame ', num2str(frameCount)]);
-            end
+        currFrame = []; cornerLum = []; frameSD = [];
+        while hasframe(rawVid)
             currFrame =  readFrame(rawVid);
             currROI = currFrame(end-roiDims(1):end, 1:roiDims(2));
             frameSD(end + 1) = std(double(currFrame(:))); % To watch out for artifact white frames
             cornerLum(end + 1) = mean(currROI(:));
-            frameMed(end + 1) = median(currFrame(:));
         end
          
         write_to_log(['Luminance extracted in ', num2str(toc), ' sec'], mfilename)
@@ -79,16 +43,14 @@ try
             [~, firstFrameLocs] = findpeaks(cornerLum, 'MinPeakHeight', peakThresh, ...
                 'MinPeakDistance', MIN_DIST);
         catch ME
-            write_to_log(getReport(ME), mfilename);
+            write_to_log(ME.message, mfilename);
         end
         write_to_log(['First frames detected'], mfilename)
         
          % Eliminate any frames with major changes to median frame luminance (FlyCap2 artifacts)
          badInds = [];
-         meanFrameMed = mean(frameMed);
-         baseSubMed = abs(frameMed - meanFrameMed);
          for iLoc = 1:numel(firstFrameLocs)
-             if (firstFrameLocs(iLoc) <= numel(frameMed)) && (baseSubMed(firstFrameLocs(iLoc)) > 50)              
+             if (firstFrameLocs(iLoc) <= numel(frameSD)) && (frameSD(firstFrameLocs(iLoc)) < 15)
                  badInds = [badInds, iLoc];
              end
          end
@@ -125,33 +87,31 @@ try
     rawVid = VideoReader(fullfile(vidDataDir, [blockVidName, '.avi']));
     
     
+    
     % ---------------- Write individual trial videos -----------------------------------------------
     trialCount = 1; frameCount = 0;
     
     % Create video writer for first trial
-    trialVidName = [blockVidName, '_tid_', pad(num2str(trialCount-1), 3, 'left', '0')];
+    trialVidName = fullfile(vidDataDir, [blockVidName, '_tid_', ...
+                    pad(num2str(trialCount-1), 3, 'left', '0')]);
     trialVid = VideoWriter(fullfile(vidDataDir, trialVidName), 'Motion JPEG AVI');
     trialVid.FrameRate = FRAME_RATE;
     open(trialVid);
-    
-    write_to_log(num2str(newFrameCounts), mfilename);
     
     while hasFrame(rawVid)
         currFrame = uint8(readFrame(rawVid));
         frameCount = frameCount + 1;
         
-        if frameCount > newFrameCounts(trialCount)
+        if frameCount >= newFrameCounts(trialCount)
             
             % Move onto the next trial
-            close(trialVid);
             write_to_log(['Wrote video for trial #', num2str(trialCount), ' of ', ...
                         num2str(numel(newFrameCounts))], mfilename);
             trialCount = trialCount + 1;
-            if trialCount > numel(newFrameCounts)
-               break 
-            end
-            frameCount = 1;
-            trialVidName = [blockVidName, '_tid_', pad(num2str(trialCount-1), 3, 'left', '0')];
+            frameCount = 0;
+            trialVidName = fullfile(vidDataDir, [blockVidName, '_tid_', ...
+                            pad(num2str(trialCount-1), 3, 'left', '0')]);
+            close(trialVid)
             trialVid = VideoWriter(fullfile(vidDataDir, trialVidName), 'Motion JPEG AVI');
             trialVid.FrameRate = FRAME_RATE;
             open(trialVid);

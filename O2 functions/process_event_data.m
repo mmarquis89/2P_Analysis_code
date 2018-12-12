@@ -34,9 +34,9 @@ volumeRate = analysisMetadata.volumeRate;
 %%
 % Show preview of behavior annotation data
 behavAnnot = annotationTypes{end}.frameAnnotArr;
-behavAnnot(end + 1, 1:11) = 1:11; % To keep colors consistent
+behavAnnot(end + 1, 1:10) = 1:10; % To keep colors consistent
 figure(1); clf; imagesc(behavAnnot);
-cMap = [rgb('Indigo'); rgb('Gold');rgb('DarkRed');rgb('Cyan');rgb('Yellow');rgb('Green');rgb('Red');rgb('blue');rgb('Gold');rgb('black')];
+cMap = [rgb('Indigo'); rgb('orange');rgb('DarkRed');rgb('Cyan');rgb('Yellow');rgb('Green');rgb('Red');rgb('blue');rgb('Gold');rgb('black')];
 colormap(cMap);
 yl = ylim(); ylim(yl - [0 1]) % To cut off the extra row that's just there for colormapping
 
@@ -46,12 +46,12 @@ disp(annotationTypeSummary)
 %%
 
 % Choose active alignment events
-activeEventTypes = [4];
+activeEventTypes = [3 ];
 alignEventSummary = annotationTypeSummary(activeEventTypes, 2);
 disp(alignEventSummary)
 
 % Choose active filter events
-activeFilterTypes = [2 3];
+activeFilterTypes = [1 2];
 filterEventSummary = annotationTypeSummary(activeFilterTypes, 2);
 disp(filterEventSummary)
 
@@ -86,12 +86,17 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 % analysisWindows(end+1,:) = [ 2  3 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
-% 
+
+% % Odor AB Pair
+% analysisWindows(end+1,:) = [ 2  4 ];
+% overshoots(end+1)        = 1;
+% filterMatches{end+1} = [];
+% % 
 % % Odor B
 % analysisWindows(end+1,:) = [ 2  3 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
-% % % 
+% % % % 
 % 
 % % Sound
 % analysisWindows(end+1,:) = [ 2  3 ];
@@ -101,13 +106,13 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 % % All behavior
 % analysisWindows(end+1,:) = [ 1  2 ];
 % overshoots(end+1)        = 0;
-% filterMatches{end+1} = [];
-% 
+% % filterMatches{end+1} = [];
+
 % Locomotion
 analysisWindows(end+1,:) = [ 2  3 ];
 overshoots(end+1)        = 0;
 filterMatches{end+1} = [];
-% % 
+% % % 
 % % Isolated Movement
 % analysisWindows(end+1,:) = [ 2  2 ];
 % overshoots(end+1)        = 0;
@@ -132,7 +137,7 @@ allFilts = []; allFiltNames = []; filtWindows = [];
 % filtWindows(end+1,:)     = [  0  0  ];
 % allFilts{end+1} = [withStim; noStim]; %
 % allFiltNames{end+1} = {'WithStim', 'NoStim'}; %
-
+% 
 % % Odor
 % withOdor =  [ 0  1  0 ];
 % noOdor =    [-1 -1  0 ];
@@ -140,7 +145,7 @@ allFilts = []; allFiltNames = []; filtWindows = [];
 % filtWindows(end+1,:)     = [  0  0  ];
 % allFilts{end+1} = [withOdor; noOdor]; %
 % allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
-% 
+
 % Odor A
 withOdorA =  [ 0  1  0 ];
 noOdorA =    [-1 -1  0 ];
@@ -149,6 +154,14 @@ filtWindows(end+1,:)     = [  0  0  ];
 allFilts{end+1} = [withOdorA; noOdorA]; %
 allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
 % 
+% % Odor AB Pair
+% withOdorABPair =  [ 0  1  0 ];
+% noOdorABPair =    [-1 -1  0 ];
+% anyOdorABPair =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  0  0  ];
+% allFilts{end+1} = [withOdorABPair; noOdorABPair]; %
+% allFiltNames{end+1} = {'WithOdorABPair', 'NoOdorABPair'}; %
+
 % Odor B
 withOdorB =  [ 0  1  0 ];
 noOdorB =    [-1 -1  0 ];
@@ -156,7 +169,7 @@ anyOdorB =   [ 0  0  0 ];
 filtWindows(end+1,:)     = [  0  0  ];
 allFilts{end+1} = [withOdorB; noOdorB]; %
 allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
-% % % % 
+
 % % Sound
 % withSound =  [ 0  1  0 ];
 % noSound =    [-1 -1  0 ];
@@ -172,7 +185,7 @@ allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 % filtWindows(end+1,:)     = [  0  0  ];
 % allFilts{end+1} = [withNoStim; noNoStim]; %
 % allFiltNames{end+1} = {'WithNoStim', 'NoNoStim'}; %
-% 
+
 % % Locomotion
 % startLoc = [-1  1  0 ];
 % endLoc =   [ 1  0 -1 ];
@@ -208,7 +221,7 @@ allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 % allFilts{end+1} = [noGroom; withGroom]; %endMove; anyMove;
 % allFiltNames{end+1} = {'NoGroom', 'withGroom'}; %'EndMove', , 'AnyMove'
 % 
-% % 
+% % % 
 % % All behavior
 % startMove = [-1  1  0 ];
 % endMove =   [ 1  0 -1 ];

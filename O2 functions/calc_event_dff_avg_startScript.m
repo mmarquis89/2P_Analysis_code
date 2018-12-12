@@ -4,7 +4,7 @@ function calc_event_dff_avg_startScript(imgSaveDir, fileStr, sessionDataFile)
 % resource requests based on the data structure size
 
 % Initialize cluster communication
-configCluster;
+% configCluster;
 c = parcluster; 
 
 % Check array size
