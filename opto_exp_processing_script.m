@@ -98,6 +98,7 @@ stimShadingColors = {'red', 'green'};
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
 % groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 groupBounds = [1, 40, 100];
+
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
 

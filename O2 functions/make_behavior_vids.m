@@ -29,74 +29,74 @@ try
             error('ERROR: behavior video will be sorted incorrectly if there are 10 or more blocks')
     end
     
-% %     % Remake block vids so that they can be read correctly by Matlab
-% %     memGB = 2;
-% %     timeLimitMin = 30;
-% %     queueName = 'short';
-% %     jobName = 'remake_block_vids';
-% %     remakeJobArr = [];
-% %     for iBlock = 1:nBlocks
-% %         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-% %         inputArgs = {vidDataDir, blockVids(iBlock).name, sid, iBlock-1}
-% %         remakeJobArr{end + 1} = c.batch(@remake_block_vid, 0, inputArgs);
-% %     end
-% %     remakeJobArr = wait_for_jobs(remakeJobArr);
+    % Remake block vids so that they can be read correctly by Matlab
+    memGB = 2;
+    timeLimitMin = 30;
+    queueName = 'short';
+    jobName = 'remake_block_vids';
+    remakeJobArr = [];
+    for iBlock = 1:nBlocks
+        c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
+        inputArgs = {vidDataDir, blockVids(iBlock).name, sid, iBlock-1}
+        remakeJobArr{end + 1} = c.batch(@remake_block_vid, 0, inputArgs);
+    end
+    remakeJobArr = wait_for_jobs(remakeJobArr);
 %     
     % Identify new block vids
     blockVids = dir(fullfile(blockDataDir, ['block_vid_sid_', num2str(sid), '_bid_*.avi']));
     blockVids = blockVids(~contains({blockVids.name}, 'tid')); % In case there are already single trial vids
-%         
-%     % Separate block videos into invididual trials
-%     write_to_log('Splitting block videos into individual trials...', mfilename)
-%     memGB = 4;
-%     timeLimitMin = 60;
-%     queueName = 'short';
-%     jobName = 'split_block_vids'
-%     splitJobArr = [];
-%     for iBlock = 1:nBlocks
-%         
-%         currBid = regexp(blockVids(iBlock).name, '(?<=bid_).*(?=.avi)', 'match');
-%         write_to_log(['Block ID = ', currBid{:}], mfilename);
-%         
-%         % Check whether this block has already been separated into trials
-%         if isempty(dir(fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', currBid{:}, ...
-%                 '*tid*'])))
-%             
-%             write_to_log([fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', currBid{:}, ...
-%                 '*tid*']), ' does not exist...splitting frames now'])
-%             
-%             % Check whether block is closed-loop (and therefore all one trial)
-%             mdFileStr = ['metadata*sid_', num2str(sid), '_bid_', currBid{:}, '.mat'];
-%             mdFileName = dir(fullfile(vidDataDir, mdFileStr));
-%             write_to_log(['mdFileName: ', mdFileName.name], mfilename);
-%             mData = load(fullfile(vidDataDir, mdFileName.name));
-%             stimType = mData.metaData.stimTypes{1};
-%             write_to_log(['Stim type: ', stimType], mfilename);
-%             
-%             % Start job
-%             c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-%             if regexp(stimType, 'Closed_Loop')
-%                 inputArgs = {vidDataDir, blockVids(iBlock).name, ...
-%                     'closedLoop', 1}
-%             else
-%                 inputArgs = {vidDataDir, blockVids(iBlock).name}
-%             end
-%             splitJobArr{end + 1} = c.batch(@split_block_vids, 0, inputArgs);
-%         else
-%             write_to_log(['Skipping block ', currBid{:}, ...
-%                 ' because single-trial videos ...already exist'], mfilename);
-%         end%if
-%     end%for
-%     splitJobArr = wait_for_jobs(splitJobArr);
-%     
-%     %
-%     %   ------------------------------------------------------------------------------------------------
-%     
-%     
-%         % Update vid files to reflect any changes from imaging data cleanup, then move to output dir
-%         vid_dir_cleanup(vidDataDir, sid);
-%     
-%     
+        
+    % Separate block videos into invididual trials
+    write_to_log('Splitting block videos into individual trials...', mfilename)
+    memGB = 4;
+    timeLimitMin = 60;
+    queueName = 'short';
+    jobName = 'split_block_vids'
+    splitJobArr = [];
+    for iBlock = 1:nBlocks
+        
+        currBid = regexp(blockVids(iBlock).name, '(?<=bid_).*(?=.avi)', 'match');
+        write_to_log(['Block ID = ', currBid{:}], mfilename);
+        
+        % Check whether this block has already been separated into trials
+        if isempty(dir(fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', currBid{:}, ...
+                '*tid*'])))
+            
+            write_to_log([fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', currBid{:}, ...
+                '*tid*']), ' does not exist...splitting frames now'])
+            
+            % Check whether block is closed-loop (and therefore all one trial)
+            mdFileStr = ['metadata*sid_', num2str(sid), '_bid_', currBid{:}, '.mat'];
+            mdFileName = dir(fullfile(vidDataDir, mdFileStr));
+            write_to_log(['mdFileName: ', mdFileName.name], mfilename);
+            mData = load(fullfile(vidDataDir, mdFileName.name));
+            stimType = mData.metaData.stimTypes{1};
+            write_to_log(['Stim type: ', stimType], mfilename);
+            
+            % Start job
+            c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
+            if regexp(stimType, 'Closed_Loop')
+                inputArgs = {vidDataDir, blockVids(iBlock).name, ...
+                    'closedLoop', 1}
+            else
+                inputArgs = {vidDataDir, blockVids(iBlock).name}
+            end
+            splitJobArr{end + 1} = c.batch(@split_block_vids, 0, inputArgs);
+        else
+            write_to_log(['Skipping block ', currBid{:}, ...
+                ' because single-trial videos ...already exist'], mfilename);
+        end%if
+    end%for
+    splitJobArr = wait_for_jobs(splitJobArr);
+    
+    %
+    %   ------------------------------------------------------------------------------------------------
+    
+    
+        % Update vid files to reflect any changes from imaging data cleanup, then move to output dir
+        vid_dir_cleanup(vidDataDir, sid);
+    
+    
     %-----------------------------------------------------------------------------------------------
 
     % Get list of the raw video data directories and trial IDs
@@ -114,21 +114,21 @@ try
     write_to_log(['numel(tidList) = ', num2str(numel(tidList))], mfilename);
     
     write_to_log('Raw trial vids identified...', mfilename)
-% 
-%     %---------------------------------------------------------------------------------------------------
-% 
-% %     
-%     % Rename videos and copy them to the output directory
-%     for iTrial = 1:numel(trialVidNames)
-%        disp(iTrial)
-%        trialStr = ['sid_', num2str(sid), '_tid_', pad(num2str(tidList(iTrial)), 3, 'left', '0'), ...
-%                     '.avi']; 
-%        sourceFileName = fullfile(vidDataDir, trialVidNames{iTrial});
-%        destFileName = fullfile(vidSaveDir, trialStr);
-%        copyfile(sourceFileName, destFileName);
-%     end
+
+    %---------------------------------------------------------------------------------------------------
+
 %     
-% %  %     %---------------------------------------------------------------------------------------------------
+    % Rename videos and copy them to the output directory
+    for iTrial = 1:numel(trialVidNames)
+       disp(iTrial)
+       trialStr = ['sid_', num2str(sid), '_tid_', pad(num2str(tidList(iTrial)), 3, 'left', '0'), ...
+                    '.avi']; 
+       sourceFileName = fullfile(vidDataDir, trialVidNames{iTrial});
+       destFileName = fullfile(vidSaveDir, trialStr);
+       copyfile(sourceFileName, destFileName);
+    end
+    
+%  %     %---------------------------------------------------------------------------------------------------
 
 
     % Count number of frames in the individual trial videos

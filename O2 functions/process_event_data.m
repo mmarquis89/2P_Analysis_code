@@ -46,12 +46,12 @@ disp(annotationTypeSummary)
 %%
 
 % Choose active alignment events
-activeEventTypes = [3 ];
+activeEventTypes = [1 2];
 alignEventSummary = annotationTypeSummary(activeEventTypes, 2);
 disp(alignEventSummary)
 
 % Choose active filter events
-activeFilterTypes = [1 2];
+activeFilterTypes = [3];
 filterEventSummary = annotationTypeSummary(activeFilterTypes, 2);
 disp(filterEventSummary)
 
@@ -82,20 +82,20 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
 
-% % Odor A
-% analysisWindows(end+1,:) = [ 2  3 ];
-% overshoots(end+1)        = 1;
-% filterMatches{end+1} = [];
+% Odor A
+analysisWindows(end+1,:) = [ 2  3 ];
+overshoots(end+1)        = 1;
+filterMatches{end+1} = [];
 
 % % Odor AB Pair
 % analysisWindows(end+1,:) = [ 2  4 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
 % % 
-% % Odor B
-% analysisWindows(end+1,:) = [ 2  3 ];
-% overshoots(end+1)        = 1;
-% filterMatches{end+1} = [];
+% Odor B
+analysisWindows(end+1,:) = [ 2  3 ];
+overshoots(end+1)        = 1;
+filterMatches{end+1} = [];
 % % % % 
 % 
 % % Sound
@@ -108,10 +108,10 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 % overshoots(end+1)        = 0;
 % % filterMatches{end+1} = [];
 
-% Locomotion
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 0;
-filterMatches{end+1} = [];
+% % Locomotion
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 0;
+% filterMatches{end+1} = [];
 % % % 
 % % Isolated Movement
 % analysisWindows(end+1,:) = [ 2  2 ];
@@ -146,13 +146,13 @@ allFilts = []; allFiltNames = []; filtWindows = [];
 % allFilts{end+1} = [withOdor; noOdor]; %
 % allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
 
-% Odor A
-withOdorA =  [ 0  1  0 ];
-noOdorA =    [-1 -1  0 ];
-anyOdorA =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [  0  0  ];
-allFilts{end+1} = [withOdorA; noOdorA]; %
-allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
+% % Odor A
+% withOdorA =  [ 0  1  0 ];
+% noOdorA =    [-1 -1  0 ];
+% anyOdorA =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  0  0  ];
+% allFilts{end+1} = [withOdorA; noOdorA]; %
+% allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
 % 
 % % Odor AB Pair
 % withOdorABPair =  [ 0  1  0 ];
@@ -162,13 +162,13 @@ allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
 % allFilts{end+1} = [withOdorABPair; noOdorABPair]; %
 % allFiltNames{end+1} = {'WithOdorABPair', 'NoOdorABPair'}; %
 
-% Odor B
-withOdorB =  [ 0  1  0 ];
-noOdorB =    [-1 -1  0 ];
-anyOdorB =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [  0  0  ];
-allFilts{end+1} = [withOdorB; noOdorB]; %
-allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
+% % Odor B
+% withOdorB =  [ 0  1  0 ];
+% noOdorB =    [-1 -1  0 ];
+% anyOdorB =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  0  0  ];
+% allFilts{end+1} = [withOdorB; noOdorB]; %
+% allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 
 % % Sound
 % withSound =  [ 0  1  0 ];
@@ -186,16 +186,16 @@ allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 % allFilts{end+1} = [withNoStim; noNoStim]; %
 % allFiltNames{end+1} = {'WithNoStim', 'NoNoStim'}; %
 
-% % Locomotion
-% startLoc = [-1  1  0 ];
-% endLoc =   [ 1  0 -1 ];
-% contLoc =  [ 1  1  0 ];
-% noLoc =    [-1 -1 -1 ];
-% anyLoc =   [ 0  0  0 ];
-% withLoc =  [ 0  1  0 ];
-% filtWindows(end+1,:)     = [ 0  0 ];
-% allFilts{end+1} = [noLoc; startLoc; contLoc]; %endMove; anyMove;startLoc; 
-% allFiltNames{end+1} = { 'NoLoc', 'startLoc', 'contLoc'}; %'EndMove', 'AnyMove','StartLoc',
+% Locomotion
+startLoc = [-1  1  0 ];
+endLoc =   [ 1  0 -1 ];
+contLoc =  [ 1  1  0 ];
+noLoc =    [-1 -1 -1 ];
+anyLoc =   [ 0  0  0 ];
+withLoc =  [ 0  1  0 ];
+filtWindows(end+1,:)     = [ 0  0 ];
+allFilts{end+1} = [noLoc; startLoc; contLoc]; %endMove; anyMove;startLoc; 
+allFiltNames{end+1} = { 'NoLoc', 'startLoc', 'contLoc'}; %'EndMove', 'AnyMove','StartLoc',
 
 % % Isolated movement
 % startIsoMove = [-1  1  0 ];
