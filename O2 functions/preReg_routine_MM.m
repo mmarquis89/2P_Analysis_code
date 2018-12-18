@@ -37,7 +37,8 @@ try
         sessionNums(iFile) = str2double(fileNames{iFile}(sidLocs{iFile}+4));
     end
     
-    disp('Processing...')
+    disp(['Processing', num2str(numel(fileNames)), ' files...'])
+    write_to_log(['Processing', num2str(numel(fileNames)), ' files...'], mfilename)
     
     % Make session folder for new files if necessary
     if ~isdir(outputDir)
@@ -52,7 +53,7 @@ try
     disp(nTrials)
     for iFile = 1:nTrials
         
-%         write_to_log(['Processing trial #', num2str(iFile)], mfilename);
+        write_to_log(['Processing trial #', num2str(iFile)], mfilename);
         
         % Extract scanimage data from the first trial
         if iFile == 1
@@ -62,7 +63,7 @@ try
             fclose(tifMetadata.fid);
         end
         
-%         write_to_log('Tiff data extracted', mfilename);
+        write_to_log('Tiff data extracted', mfilename);
         
         % Load the .tif file
         rawFile = read_tif(fullfile(parentDir, currFiles{iFile}));
@@ -70,7 +71,7 @@ try
         chanData = zeros(size(rawFile)); chanData = chanData(:,:,1:end-nFlybackFrames,:,:);
         nChannels = size(chanData, 5);
         
-%         write_to_log(['Raw tiff data loaded...dims = ', num2str(size(chanData))], mfilename);
+        write_to_log(['Raw tiff data loaded...dims = ', num2str(size(chanData))], mfilename);
         
         for iChannel = 1:nChannels
             
@@ -86,9 +87,9 @@ try
             
             % Discard flyback frames
             workingFile(:,:,(end-(nFlybackFrames-1)):end,:) = [];       % --> [y, x, plane, volume]
-%             write_to_log('Flyback frames trimmed');
-%             write_to_log(num2str(size(workingFile)));
-%             write_to_log(num2str(size(chanData)));
+            write_to_log('Flyback frames trimmed', mfilename);
+            write_to_log(num2str(size(workingFile)), mfilename);
+            write_to_log(num2str(size(chanData)), mfilename);
             chanData(:,:,:,:,iChannel) = workingFile(:,:,:,:,1);    % --> [y, x, plane, volume, channel]
         end
         
@@ -96,7 +97,7 @@ try
         if nChannels == 1
             chanData_1 = squeeze(chanData);
         else
-            chanData_1 = squeeze(chanData(:,:,:,:,1));t
+            chanData_1 = squeeze(chanData(:,:,:,:,1));
             chanData_2 = squeeze(chanData(:,:,:,:,2));
         end
         
@@ -115,6 +116,9 @@ try
         fName = currFiles{iFile};
 
         % Save data to session array(s)
+        write_to_log(['iFile = ', num2str(iFile), ', size(wholeSession) = ', ...
+                    num2str(size(wholeSession)), ', size(chanData_1) = ', ...
+                    num2str(size(chanData_1))], mfilename);
         wholeSession(:,:,:,:,iFile) = chanData_1(:,:,:,:,1);
         if nChannels > 1
             wholeSession2(:,:,:,:,iFile) = chanData_2(:,:,:,:,2);

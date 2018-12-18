@@ -50,9 +50,9 @@ inputArgs = {vidDataDir, vidSaveDir, sid}
 disp(inputArgs)
 c.batch(@make_behavior_vids, 0, inputArgs);
 
-% 
-% 
-% 
+
+
+% % 
 % 
 % % Make average fluorescence vids
 % memGB = 50;

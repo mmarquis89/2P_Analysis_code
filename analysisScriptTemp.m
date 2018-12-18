@@ -138,22 +138,22 @@ try
 saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 s = stimSepTrials;
 
-stimNames = {'EtOH\_neat', 'EtOH\_e-2'};
-stimTrialGroups = [s.OdorA + 2 * s.OdorB];
-stimGroupNames = {'OdorA', 'OdorB'};
-stimShading = {[8 11]};%{[4 5], [4 5; 6 7]};
+stimNames = {'EtOH\_neat'};%{'EtOH\_neat', 'EtOH\_e-2'};
+stimTrialGroups = [s.ClosedLoop];%[s.OdorA + 2 * s.OdorB];
+stimGroupNames = {'OdorA'};%{'OdorA', 'OdorB'};
+stimShading = {[4 7]};%{[4 5], [4 5; 6 7]};
 stimShadingColors = {'red', 'green'};
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
 
-% trialGroups = [];
-% plotTitleSuffix = '';
-% fileNameSuffix = '_AllTrials';
-% plotAnnotTypes = [2]; % 1 = stims, 2 = behavior
+trialGroups = [];
+plotTitleSuffix = '';
+fileNameSuffix = '_AllTrials';
+plotAnnotTypes = [2]; % 1 = stims, 2 = behavior
 
-trialGroups = stimTrialGroups; 
-plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-plotAnnotTypes = [2]; % 1 = odor stims, 2 = behavior
+% trialGroups = stimTrialGroups; 
+% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% plotAnnotTypes = [2]; % 1 = odor stims, 2 = behavior
 
 try
 
@@ -478,7 +478,7 @@ try
 s = stimSepTrials; 
 saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 
-includeQuiescence = 1;
+includeQuiescence = 0;
 if ~includeQuiescence
     fileNameSuffix = 'NoQuiescence_';
 else
@@ -1028,7 +1028,7 @@ try
     sigma = [0.6]; 
     rangeType = 'Max';
     rangeScalar = 0.8;
-    makeVid = 1;
+    makeVid = 0;
     saveDir = [];
     fileName = 'Locomotion_Response_Heatmaps';
 

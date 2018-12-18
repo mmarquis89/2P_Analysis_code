@@ -58,7 +58,7 @@ if isempty(parentDir)
 end
 
 % Load FicTrac data from each trial into a single array
-dataFiles = dir(fullfile(parentDir, '*tid*.dat'));
+dataFiles = dir(fullfile(parentDir, ['sid_', num2str(sid), '*tid*.dat']));
 allData = []; droppedFrames = []; csvData = []; resets = []; badFtTrials = [];
 for iTrial = 1:numel(dataFiles)
     

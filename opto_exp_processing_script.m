@@ -1,7 +1,7 @@
 
 %% LOAD DATA
 
-expDate = '2018_12_03_exp_4';
+expDate = '2018_12_16_exp_1';
 sid = 0;
 
 parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate);
@@ -90,36 +90,36 @@ catch foldME; rethrow(foldME); end
 
 %% SET UP PLOTTING VARIABLES
 
-stimNames = {'EtOH\_neat', 'Benzaldehyde\_e-1'}; % 'CO2\_2e-2'
+stimNames = {'EtOH\_neat', 'CO2\_2e-2'}; % 'Benzaldehyde\_e-1'
 stimTrialGroups = [s.OdorA + 2 * s.OdorB];
 stimGroupNames = {'OdorA', 'OdorB'};
-stimShading = {[8 11]};
+stimShading = {[8 11]};%{[4 6;10 13]};
 stimShadingColors = {'red', 'green'};
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
-% groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
-groupBounds = [1, 40, 100];
+groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
+% groupBounds = [1, 40, 100];
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
 
-trialGroups = [];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
-% 
+% trialGroups = [];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
+% % % 
 % trialGroups = stimTrialGroups; 
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 
-% % GROUP BY ALTERNATING BLOCKS
-% groupNames = {'Odor only', 'Odor + photostim'};
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-% end
-% trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-% trialGroups = trialGroups + 1;
-% plotTitleSuffix = make_plotTitleSuffix(groupNames);
-% fileNameSuffix = '_PhotostimVsOdorOnly';
+% GROUP BY ALTERNATING BLOCKS
+groupNames = {'Odor only', 'Odor + photostim'};
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+end
+trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+trialGroups = trialGroups + 1;
+plotTitleSuffix = make_plotTitleSuffix(groupNames);
+fileNameSuffix = '_PhotostimVsOdorOnly';
 
 try
     
@@ -176,7 +176,7 @@ cm = [];
 % trialGroups = stimTrialGroups .* goodTrials;
 % fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
 % groupNames = stimNames;
-% % % % 
+% % 
 % 
 % % GROUP BY SINGLE BLOCKS
 % groupNames = [];
@@ -190,15 +190,15 @@ cm = [];
 % fileNameSuffix = '_SingleBlocks';
 % cm = repmat([rgb('blue'); rgb('red')], 4, 1);
 
-% GROUP BY ALTERNATING BLOCKS
-groupNames = {'Odor only', 'Odor + photostim'};
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-end
-trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-trialGroups = trialGroups + 1;
-fileNameSuffix = '_PhotostimVsOdorOnly';
+    % GROUP BY ALTERNATING BLOCKS
+    groupNames = {'Odor only', 'Odor + photostim'};
+    trialGroups = zeros(1, nTrials);
+    for iBound = 1:numel(groupBounds)-1
+       trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+    end
+    trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+    trialGroups = trialGroups + 1;
+    fileNameSuffix = '_PhotostimVsOdorOnly';
 
 % trialGroups(1:40) = 0;
 % trialGroups(120:end) = 0;
@@ -274,17 +274,17 @@ smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-
+% 
 % % ALL TRIALS
 % trialGroups = [];
 % fileNameSuffix = ['_AllTrials'];
 % plotTitleSuffix = '';
 
 % % % % % % % % 
-% GROUP BY STIM TYPE
-trialGroups = stimTrialGroups .* goodTrials; 
-fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-plotTitleSuffix = make_plotTitleSuffix(stimNames);
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups .* goodTrials; 
+% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% plotTitleSuffix = make_plotTitleSuffix(stimNames);
 
 % % GROUP BY ALTERNATING BLOCKS
 % groupNames = {'Odor only', 'Odor + photostim'};
@@ -297,7 +297,7 @@ plotTitleSuffix = make_plotTitleSuffix(stimNames);
 % plotTitleSuffix = make_plotTitleSuffix(groupNames);
 % fileNameSuffix = '_PhotostimVsOdorOnly';
 
-trialGroups(110:end) = 0;
+% trialGroups(110:end) = 0;
 try
 
 % Extract FicTrac data
@@ -375,7 +375,7 @@ trialGroups = goodTrials';
 smWin = 11;
 cm = [];
 % 
-
+% 
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = [fileNameSuffix, 'AllTrials'];
@@ -400,18 +400,18 @@ cm = [];
 % fileNameSuffix = [fileNameSuffix, 'SingleBlocks'];
 % cm = repmat([rgb('blue'); rgb('red')], 4, 1);
 %  
+% % % 
+% % GROUP BY ALTERNATING BLOCKS
+% groupNames = {'Odor only', 'Odor + photostim'};
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+% end
+% trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+% trialGroups = trialGroups + 1;
+% fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
 % % 
-% GROUP BY ALTERNATING BLOCKS
-groupNames = {'Odor only', 'Odor + photostim'};
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-end
-trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-trialGroups = trialGroups + 1;
-fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
-
-trialGroups(110:end) = 0;
+% trialGroups(110:end) = 0;
 try
     
 xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);

@@ -74,7 +74,7 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_10_09_exp_1';
+expDateTemp = '2018_10_18_exp_2';
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 sidTemp = 0;
 
@@ -88,10 +88,14 @@ archiveName = ['TrialData_sid_', num2str(sidTemp)];
 filterString = ['*sid_', num2str(sidTemp), '_b*'];
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
 
-%%% Archive raw video frames
+%%% Archive raw videos
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
-archiveName = ['sid_', num2str(sidTemp), '_RawFrames'];
+archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
 system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
 
-clear parentDir archiveName filterString
+%%% Archive block vid frames
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+archiveName = ['sid_', num2str(sidTemp), '_blockVids'];
+system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
+
 % -------------------------------------------------------------------------------------------------

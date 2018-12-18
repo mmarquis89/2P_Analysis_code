@@ -37,7 +37,7 @@ roiData = []; xi = []; yi = [];
 [roiData, ~, ~] = roipoly;
 
 % Save ROI data
-saveDir = uigetdir(parentDir, 'Select a save directory');
+saveDir = uigetdir(imgDir, 'Select a save directory');
 if saveDir == 0
     % Throw error if user canceled without choosing a directory
     disp('ERROR: you must select a save directory or provide one as an argument');
