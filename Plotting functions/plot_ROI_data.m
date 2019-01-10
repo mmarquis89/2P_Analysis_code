@@ -61,7 +61,7 @@ function plot_ROI_data(ax, ROIDffAvg, varargin)
 %                            segments. By default, all segments will be plotted, but passing a restricted
 %                            list will only plot segments when their annotation value is a member of this 
 %                            list.
-%       'Colormap'         = (default: parula(numel(unique(annotArr))) )
+%       'Colormap'         = (default: jet(numel(unique(annotArr))) )
 %
 %=========================================================================================================
 

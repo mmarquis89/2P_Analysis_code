@@ -1,7 +1,7 @@
 
 %% LOAD DATA
 
-expDate = '2018_12_16_exp_1';
+expDate = '2018_12_17_exp_3';
 sid = 0;
 
 parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate);
@@ -90,36 +90,46 @@ catch foldME; rethrow(foldME); end
 
 %% SET UP PLOTTING VARIABLES
 
-stimNames = {'EtOH\_neat', 'CO2\_2e-2'}; % 'Benzaldehyde\_e-1'
-stimTrialGroups = [s.OdorA + 2 * s.OdorB];
-stimGroupNames = {'OdorA', 'OdorB'};
-stimShading = {[8 11]};%{[4 6;10 13]};
-stimShadingColors = {'red', 'green'};
+stimNames = {'EtOH\_neat', 'CO2\_2e-2'}; %{'EtOH\_neat'}; %  'Benzaldehyde\_e-1'
+stimTrialGroups = [s.OdorA + 2 * s.OdorB]; %s.OdorA; % 
+stimGroupNames = {'OdorA', 'OdorB'}; % {'OdorA'}; % 
+stimShading = {[8 11]};%{[4 6;10 13]};%{[7 10 ; 10 13]};%  
+stimShadingColors = {'red', 'green'}; % {'red', 'green'}; % 
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
 groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
-% groupBounds = [1, 40, 100];
+% groupBounds = [1, 80];
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
-
+% 
 % trialGroups = [];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_AllTrials';
-% % % 
+% % % % % % % 
+% 
 % trialGroups = stimTrialGroups; 
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 
-% GROUP BY ALTERNATING BLOCKS
-groupNames = {'Odor only', 'Odor + photostim'};
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-end
-trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-trialGroups = trialGroups + 1;
-plotTitleSuffix = make_plotTitleSuffix(groupNames);
-fileNameSuffix = '_PhotostimVsOdorOnly';
+% % GROUP BY BLOCK TYPE
+% groupNames = {'Odor only', 'Odor + photostim'};
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+% end
+% trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+% trialGroups = trialGroups + 1;
+% plotTitleSuffix = make_plotTitleSuffix(groupNames);
+% fileNameSuffix = '_PhotostimVsOdorOnly';
+
+% % GROUP BY ALTERNATING BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end):end) = iBound + 1;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated';
 
 try
     
@@ -176,8 +186,8 @@ cm = [];
 % trialGroups = stimTrialGroups .* goodTrials;
 % fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
 % groupNames = stimNames;
-% % 
 % 
+% % 
 % % GROUP BY SINGLE BLOCKS
 % groupNames = [];
 % trialGroups = zeros(1, nTrials);
@@ -190,18 +200,16 @@ cm = [];
 % fileNameSuffix = '_SingleBlocks';
 % cm = repmat([rgb('blue'); rgb('red')], 4, 1);
 
-    % GROUP BY ALTERNATING BLOCKS
-    groupNames = {'Odor only', 'Odor + photostim'};
-    trialGroups = zeros(1, nTrials);
-    for iBound = 1:numel(groupBounds)-1
-       trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-    end
-    trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-    trialGroups = trialGroups + 1;
-    fileNameSuffix = '_PhotostimVsOdorOnly';
+% % GROUP BY BLOCK TYPE
+% groupNames = {'Odor only', 'Odor + photostim'};
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+% end
+% trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+% trialGroups = trialGroups + 1;
+% fileNameSuffix = '_PhotostimVsOdorOnly';
 
-% trialGroups(1:40) = 0;
-% trialGroups(120:end) = 0;
 
 try
 f = figure(2); clf; hold on
@@ -269,24 +277,24 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 fontSize = 12;
 
 ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed'
-sdCap = 1;
+sdCap = 4;
 smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-% 
+
 % % ALL TRIALS
 % trialGroups = [];
 % fileNameSuffix = ['_AllTrials'];
 % plotTitleSuffix = '';
 
-% % % % % % % % 
+% % % % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 % plotTitleSuffix = make_plotTitleSuffix(stimNames);
 
-% % GROUP BY ALTERNATING BLOCKS
+% % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
@@ -296,6 +304,16 @@ figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 % trialGroups = (trialGroups + 1) .* goodTrials;
 % plotTitleSuffix = make_plotTitleSuffix(groupNames);
 % fileNameSuffix = '_PhotostimVsOdorOnly';
+
+% % GROUP BY BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%     trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end):end) = iBound + 1;
+% trialGroups = trialGroups .* goodTrials;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated';
 
 % trialGroups(110:end) = 0;
 try
@@ -375,33 +393,33 @@ trialGroups = goodTrials';
 smWin = 11;
 cm = [];
 % 
-% 
+% % 
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = [fileNameSuffix, 'AllTrials'];
 % groupNames = {'All trials'};
 
-
+% 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
 % groupNames = stimNames;
-
-
-% % GROUP BY SINGLE BLOCKS
-% groupNames = [];
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
-%    groupNames{iBound} = ['Trials ', num2str(groupBounds(iBound)), '-', num2str(groupBounds(iBound + 1))];
-% end
-% trialGroups(groupBounds(end):end) = numel(groupBounds);
-% groupNames = {'Odor only', 'Odor + photostim'};
-% fileNameSuffix = [fileNameSuffix, 'SingleBlocks'];
-% cm = repmat([rgb('blue'); rgb('red')], 4, 1);
-%  
+% % 
 % % % 
-% % GROUP BY ALTERNATING BLOCKS
+% GROUP BY SINGLE BLOCKS
+groupNames = [];
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+   groupNames{iBound} = ['Trials ', num2str(groupBounds(iBound)), '-', num2str(groupBounds(iBound + 1))];
+end
+trialGroups(groupBounds(end):end) = numel(groupBounds);
+groupNames = {'Odor only', 'Odor + photostim'};
+fileNameSuffix = [fileNameSuffix, 'SingleBlocks'];
+cm = repmat([rgb('blue'); rgb('red')], 4, 1);
+ 
+% % % % 
+% % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
@@ -411,7 +429,8 @@ cm = [];
 % trialGroups = trialGroups + 1;
 % fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
 % % 
-% trialGroups(110:end) = 0;
+% 
+
 try
     
 xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
@@ -549,11 +568,167 @@ catch foldME; rethrow(foldME); end
 
 
 
+%% PLOT OVERLAID 2D MOVEMENT DATA
+
+startTime = 15;
+plotLen = 1;
+limScalar = .4;
+alpha = 0.4;
+showMean = 1;
+
+s = stimSepTrials;
+shadeFrames = {round(stimShading{:} * FRAME_RATE)};
+xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
+xTickLabels = [0:1/trialDuration:1] * trialDuration;
+surfPlot = 0;
+mmXY = ftData.intXY * 4.5; % --> [frame, var, trial] (mm)
+HD = ftData.intHD;    % --> [frame, trial]
+nFrames = size(mmXY, 1);
+startFrame = startTime * FRAME_RATE;
+endFrame = (startTime + plotLen) * FRAME_RATE;
+trialGroups = ones(size(mmXY, 3), 1) .* goodTrials';
+cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan')];
+
+
+% % PLOT ALL TRIALS COLORED BY TIME
+% surfPlot = 1;
+% cm = jet(endFrame - startFrame + 1);
+
+% % 
+% % GROUP BY STIM TYPE
+% trialGroups =  [s.OdorA + 2 * s.OdorB] .* goodTrials;
+% fileNameSuffix = '_OdorAvsOdorBvsNoStim'; 
+% groupNames = stimNames;
+
+% % % % 
+% GROUP BY BLOCK TYPE
+groupNames = {'Odor only', 'Odor + photostim'};
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+end
+trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+trialGroups = trialGroups + 1;
+fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
+
+% % GROUP BY ALTERNATING BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end):end) = iBound + 1;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated';
+% cm = jet(numel(unique(trialGroups)));
 
 
 
+%%% OVERLAY 2D MOVEMENT DATA
 
+% Create and format figure
+f = figure(13); clf; hold on; 
+f.Color = [1 1 1];
+f.Position = [-1035 50 1000 800];
+ax = gca();
+ax.FontSize = 20;
+title(regexprep([expDate, ' -  Time Window: ', num2str(startTime), '-', num2str(startTime + plotLen), ' sec'], '_', '\\_'))
 
+% Process movement data
+maxPos = 0;
+plotX = []; plotY = [];
+mmXY = ftData.intXY * 4.5;
+nGroups = numel(unique(trialGroups(trialGroups > 0)));
+for iTrial = 1:size(mmXY, 3)%[16 80 28]
+    
+    currXY = mmXY(:, :, iTrial);
+    smoothX = smooth(currXY(:, 1), 7);
+    smoothY = smooth(currXY(:, 2), 7);
+    
+    % Rotate so fly is facing upwards at starting point
+    smoothHD = mod(smooth(unwrap(HD(:, iTrial)), 11), (2*pi));
+    theta = -smoothHD(startFrame) + pi/2;
+    R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
+    smoothXYRot = R * [smoothX'; smoothY'];
+    xData = smoothXYRot(1, startFrame:endFrame);
+    yData = smoothXYRot(2, startFrame:endFrame);
+    
+    % Center fly at (0,0)
+    xData = xData - xData(1);
+    yData = yData - yData(1);
+    
+    plotX(:, iTrial) = xData; % --> [frame, trial]
+    plotY(:,iTrial) = yData;  % --> [frame, trial]
+
+    % For setting axis limits later
+    for iSec = 1:(trialDuration - plotLen - 1) 
+        currStart = FRAME_RATE * iSec;
+        currEnd = currStart + (FRAME_RATE * plotLen);
+        currPosData = currXY(currStart:currEnd, :);
+        currPosData(:,1) = currPosData(:,1) - currPosData(1,1);
+        currPosData(:,2) = currPosData(:,2) - currPosData(1,2);
+        maxPos = max([maxPos; currPosData(:)]);
+    end    
+end%iTrial
+
+% Plot traces
+if surfPlot
+    for iTrial = 1:nTrials
+        if goodTrials(iTrial) 
+            % Plot a color gradient for each line
+            currX = plotX(:,iTrial);
+            currY = plotY(:,iTrial);
+            cData = permute(repmat(cm, 1, 1, 2), [1 3 2]);
+            surface('XData', [currX currX], ...
+                'YData', [currY currY], ...
+                'ZData', zeros(numel(currX), 2), ...
+                'CData', cData, ...
+                'FaceColor', 'none', 'EdgeColor', 'interp', 'marker', 'none');
+        end%if
+    end%iTrial
+else
+    % Plot colored by trial groups
+    legendPlots = [0 0 0 0]; legendObj = [];
+    for iGroup = 1:nGroups
+        for iTrial = 1:nTrials
+            if trialGroups(iTrial) == iGroup
+                
+                plt = plot(plotX(:,iTrial), plotY(:,iTrial), 'color', [cm(iGroup, :), alpha], 'linewidth', 1);
+                
+                % Save one plot line from each group to use in legend
+                if ~legendPlots(trialGroups(iTrial))
+                    legendObj(trialGroups(iTrial)) = plt;
+                    legendPlots(trialGroups(iTrial)) = 1;
+                end
+            end%if
+        end%iTrial
+        
+        if showMean
+            for iGroup = 1:nGroups
+                % Calculate mean ending vector in the current group
+                endX = plotX(end, trialGroups == iGroup)';
+                endY = plotY(end, trialGroups == iGroup)';
+                [endThetas, endRhos] = cart2pol(endX, endY);
+                mu = circ_mean(endThetas, endRhos);
+                [meanX, meanY] = pol2cart(mu, mean(endRhos));
+                plot([0 meanX], [0 meanY], 'color', cm(iGroup, :), 'linewidth', 3)
+                altX = mean(endX);
+                altY = mean(endY);
+                plot([0 altX], [0 altY], 'color', cm(iGroup, :), 'linewidth', 3)
+            end%iGroup
+        end
+    end%iGroup
+    legend(legendObj, groupNames, 'FontSize', 14, 'Location', 'best');
+end%if
+
+% Set axis limits
+lims = 1.05 * maxPos * limScalar;
+axis equal
+xlabel('2D movement (mm)');
+ylabel('2D movement (mm)');
+xlim([-lims lims])
+ylim([-lims lims])
+tightfig;
+ax.FontSize = 14;
 
 
 

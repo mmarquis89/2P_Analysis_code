@@ -17,6 +17,9 @@ tid = 1;
 
 [dataFile, parentDir, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
 
+
+SAMP_RATE = 40;
+
 try
     if dataFile == 0
         % Skip loading if user clicked "Cancel"
@@ -107,16 +110,49 @@ try
         end
         volTimes = (1:nVolumes)' ./ volumeRate;
         frameTimes = (1:nFrames)' ./ FRAME_RATE;
-        
+        nSamps = size(analysisMetadata.daqFtData, 2);
+        sampTimes = (1:nSamps)' ./ SAMP_RATE;
+        volSamps = [];
+        for iVol = 1:nVolumes
+            [~, volSamps(iVol)] = min(abs(sampTimes - volTimes(iVol)));
+        end
         % Create directory for saving analysis files if necessary
         if ~isdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'])
             mkdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'])
         end
         
+        parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
+        metaDataFileName = 'ROI_metadata.mat';
+        dffDataFileName = 'ROI_Data_Avg.mat';
+        
+        % Load metadata
+        load(fullfile(parentDir, metaDataFileName)); % --> ROImetadata(.mask, .xi, .yi, .plane, .color, .refImg)
+        analysisMetadata.ROImetadata = ROImetadata;
+        analysisMetadata.nROIs = numel(ROImetadata); nROIs = analysisMetadata.nROIs;
+        
+        % Load imaging and dF/F data
+        load(fullfile(parentDir, dffDataFileName)); % --> 'ROIDataAvg', 'ROIDffAvg', 'ROIDataBaseSub' ([volume, trial, ROI])
+        disp('ROI data loaded')
+        
+        % Plot ROIs
+        plot_ROIs(ROImetadata);
+        
+        % Plot mean value in each ROI for each trial
+        volAvgROIData = squeeze(mean(ROIDataAvg, 1)); % --> [trial, ROI]
+        figure(nROIs + 1);clf;hold on
+        legendStr = [];
+        for iROI = 1:nROIs
+            currROIData = volAvgROIData(:, iROI);
+            zeroedData = currROIData - min(currROIData(:));
+            legendStr{iROI} = num2str(iROI);
+            plot(zeroedData);
+        end
+        legend(legendStr);
+        
+        
     end%if
+    
 catch foldME; rethrow(foldME); end
-
-FRAME_RATE = 40;
 
 % Initial processing steps
 daqFtData = analysisMetadata.daqFtData; % --> [var, frame, block]
@@ -135,9 +171,9 @@ odorOn(1) = 0;
 odorOn(end) = 0;
 
 % Calculate speed data
-xSpeed = smooth([0, diff(xData)], 1) * FRAME_RATE;
-ySpeed = smooth([0, diff(yData)], 1) * FRAME_RATE;
-yawSpeed = rad2deg(smooth([0, diff(yawData)], 1) * FRAME_RATE);
+xSpeed = smooth([0, diff(xData)], 1) * SAMP_RATE;
+ySpeed = smooth([0, diff(yData)], 1) * SAMP_RATE;
+yawSpeed = rad2deg(smooth([0, diff(yawData)], 1) * SAMP_RATE);
 
 % Remove erroneously high speeds due to unwrapping
 xSpeed(abs(xSpeed) > (2 * std(xSpeed))) = nan;
@@ -160,19 +196,20 @@ odorOffsets(offsetInds) = 1;
 % Make event list of odor presentation
 odorEventList = create_event_list(odorOnsets, odorOffsets);
 eventDurs = odorEventList(:,2) - odorEventList(:,1);
-eventDursSec = eventDurs / FRAME_RATE;
+eventDursSec = eventDurs / SAMP_RATE;
+ieiList = odorEventList(2:end, 1) - odorEventList(1:end - 1, 2);
+ieiList = [odorEventList(1,1); ieiList];
 
 
+%% 
 
-%%
-
-% Plot X
+% Plot X (forward)
 f = figure(1); clf; 
 subaxis(3,1,1); hold on; 
 plot(smXSpeed, '-.');
 ax = gca();
-ax.XTick = 1:FRAME_RATE:numel(odorOn);
-ax.XTickLabel = (1:1:ceil((numel(odorOn) / FRAME_RATE)));
+ax.XTick = 1:SAMP_RATE:numel(odorOn);
+ax.XTickLabel = (1:1:ceil((numel(odorOn) / SAMP_RATE)));
 
 % Shade around odor stims
 for iEvent = 1:size(odorEventList, 1)
@@ -183,12 +220,12 @@ for iEvent = 1:size(odorEventList, 1)
     fill(xData, yData, rgb('red'), 'facealpha', 0.2, 'edgealpha', 0)
 end
 
-% Plot X
+% Plot Y (lateral)
 subaxis(3,1,2); hold on; 
 plot(smYSpeed, '-.');
 ax = gca();
-ax.XTick = 1:FRAME_RATE:numel(odorOn);
-ax.XTickLabel = (1:1:ceil((numel(odorOn) / FRAME_RATE)));
+ax.XTick = 1:SAMP_RATE:numel(odorOn);
+ax.XTickLabel = (1:1:ceil((numel(odorOn) / SAMP_RATE)));
 
 % Shade around odor stims
 for iEvent = 1:size(odorEventList, 1)
@@ -203,8 +240,8 @@ end
 subaxis(3,1,3); hold on; 
 plot(smYawSpeed, '-.');
 ax = gca();
-ax.XTick = 1:FRAME_RATE:numel(odorOn);
-ax.XTickLabel = (1:1:ceil((numel(odorOn) / FRAME_RATE)));
+ax.XTick = 1:SAMP_RATE:numel(odorOn);
+ax.XTickLabel = (1:1:ceil((numel(odorOn) / SAMP_RATE)));
 
 % Shade around odor stims
 for iEvent = 1:size(odorEventList, 1)
@@ -216,40 +253,48 @@ for iEvent = 1:size(odorEventList, 1)
 end
 
 
+%% PLOT GCAMP RESPONSE TO EACH EVENT
 
-
-
-
-
-
-
-
-
-
-fwSmooth = smooth(ftVidData.fwSpeed(:,tid), 3);
-fwNorm = fwSmooth / max(fwSmooth);
-plot(fwNorm)
-
-ax = gca();
-ax.XTick = 1:FRAME_RATE:numel(odorOn);
-ax.XTickLabel = (1:1:ceil((numel(odorOn) / FRAME_RATE)));
-
-% Shade around odor stims
-uwYaw = unwrap(radYaw);
+% Get ROI data for each event
+baselineDur = 1; respDur = 3;
+currTrialROI = squeeze(ROIDataAvg(:,tid, :)); % --> [volume, ROI]
+eventFlData = [];
 for iEvent = 1:size(odorEventList, 1)
-    startSamp = odorEventList(iEvent, 1);
-    endSamp = odorEventList(iEvent, 2);
-    xData = [startSamp, startSamp, endSamp, endSamp];
-    yData = [0 1 1 0];
-    fill(xData, yData, rgb('red'), 'facealpha', 0.5, 'edgealpha', 0)
+    if iei(iEvent) > baselineDur * SAMP_RATE && eventDurs(iEvent) > respDur * SAMP_RATE
+        [~, startVol] = min(abs(volSamps - odorEventList(iEvent, 1)));
+        [~, endVol] = min(abs(volSamps - odorEventList(iEvent, 2)));
+        eventFlData{iEvent} = currTrialROI(floor(startVol-(baselineDur * volumeRate)):floor(startVol + (respDur * volumeRate)), :);
+    end
 end
 
-% % Plot yaw around every event
-% for iEvent = 1:size(odorEventList, 1)
-% %    figure(iEvent); clf; hold on;
-%    
-%    
-%     
-% end
+odorEventFlArr = [];
+for iEvent = 1:numel(eventFlData)
+   if ~isempty(eventFlData{iEvent})
+      odorEventFlArr = cat(3, odorEventFlArr, eventFlData{iEvent}); % --> [vol, ROI, event]
+   end
+end
+odorEventFlArr = permute(odorEventFlArr, [1 3 2]); % --> [vol, event, ROI]
+for iROI = 1:size(odorEventFlArr, 3)
+    
+    f = figure(iROI); clf;
+    plot_ROI_data(gca, odorEventFlArr(:,:,iROI))
+    
+    
+end
 
+%% PLOT FICTRAC RESPONSE AROUND EACH EVENT
+
+% Get FicTrac data for each event
+baselineDur = 1; respDur = 3;
+eventFtData = [];
+for iEvent = 1:size(odorEventList, 1)
+    if iei(iEvent) > baselineDur * SAMP_RATE && eventDurs(iEvent) > respDur * SAMP_RATE
+        startSamp = odorEventList(iEvent, 1) - (baselineDur * SAMP_RATE);
+        endSamp = odorEventList(iEvent, 1) + (respDur * SAMP_RATE);
+        eventFtData(:, iEvent, 1) = smXSpeed(startSamp:endSamp);
+        eventFtData(:, iEvent, 2) = smYawSpeed(startSamp:endSamp); % --> [samp, event, var]
+    end
+end
+
+figure(1);clf
 

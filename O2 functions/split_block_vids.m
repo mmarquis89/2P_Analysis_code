@@ -34,6 +34,9 @@ try
             currROI = currFrame(end-roiDims(1):end, 1:roiDims(2));
             frameSD(end + 1) = std(double(currFrame(:))); % To watch out for artifact white frames
             cornerLum(end + 1) = mean(currROI(:));
+            if ~mod(numel(frameSD), 100)
+               disp(num2str(numel(frameSD))); 
+            end
         end
         
         write_to_log(['Luminance extracted in ', num2str(toc), ' sec'], mfilename)
@@ -112,6 +115,7 @@ try
             % Move onto the next trial
             writeVideo(trialVid, currFrame);
             close(trialVid);
+            disp(num2str(trialCount));
             write_to_log(['Wrote video for trial #', num2str(trialCount), ' of ', ...
                 num2str(numel(newFrameCounts))], mfilename);
             if hasFrame(rawVid)

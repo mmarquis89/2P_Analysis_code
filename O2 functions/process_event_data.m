@@ -46,12 +46,12 @@ disp(annotationTypeSummary)
 %%
 
 % Choose active alignment events
-activeEventTypes = [1 2];
+activeEventTypes = [1];
 alignEventSummary = annotationTypeSummary(activeEventTypes, 2);
 disp(alignEventSummary)
 
 % Choose active filter events
-activeFilterTypes = [3];
+activeFilterTypes = [2];
 filterEventSummary = annotationTypeSummary(activeFilterTypes, 2);
 disp(filterEventSummary)
 
@@ -72,30 +72,30 @@ saveFileName = [saveFileName, '.mat'];
 analysisWindows = []; overshoots = []; filterMatches = [];
 
 
-% % Closed Loop stim
-% analysisWindows(end+1,:) = [ 1  2 ];
-% overshoots(end+1)        = 1;
-% filterMatches{end+1} = [];
+% Closed Loop stim
+analysisWindows(end+1,:) = [ 1  2 ];
+overshoots(end+1)        = 1;
+filterMatches{end+1} = [];
 % 
 % % No Stim
 % analysisWindows(end+1,:) = [ 2  3 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
 
-% Odor A
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 1;
-filterMatches{end+1} = [];
+% % Odor A
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 1;
+% filterMatches{end+1} = [];
 
 % % Odor AB Pair
 % analysisWindows(end+1,:) = [ 2  4 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
 % % 
-% Odor B
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 1;
-filterMatches{end+1} = [];
+% % Odor B
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 1;
+% filterMatches{end+1} = [];
 % % % % 
 % 
 % % Sound

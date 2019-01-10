@@ -138,22 +138,22 @@ try
 saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 s = stimSepTrials;
 
-stimNames = {'EtOH\_neat'};%{'EtOH\_neat', 'EtOH\_e-2'};
-stimTrialGroups = [s.ClosedLoop];%[s.OdorA + 2 * s.OdorB];
-stimGroupNames = {'OdorA'};%{'OdorA', 'OdorB'};
-stimShading = {[4 7]};%{[4 5], [4 5; 6 7]};
+stimNames = {'EtOH\_neat', 'Benzaldehyde\_e-1'}; % {'EtOH\_e-2'};%
+stimTrialGroups = [s.OdorA + 2 * s.OdorB]; % [s.OdorA];%
+stimGroupNames = {'OdorA', 'OdorB'}; %{'OdorA'};%
+stimShading = {[8 11]};%{[4 5], [4 5; 6 7]};
 stimShadingColors = {'red', 'green'};
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
 
-trialGroups = [];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
-plotAnnotTypes = [2]; % 1 = stims, 2 = behavior
+% trialGroups = [];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
+% plotAnnotTypes = [2]; % 1 = stims, 2 = behavior
 
-% trialGroups = stimTrialGroups; 
-% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-% plotAnnotTypes = [2]; % 1 = odor stims, 2 = behavior
+trialGroups = stimTrialGroups; 
+plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+plotAnnotTypes = [2]; % 1 = odor stims, 2 = behavior
 
 try
 
@@ -404,13 +404,13 @@ smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-% % % 
-% ALL TRIALS
-trialGroups = [];
-fileNameSuffix = ['_AllTrials'];
-figTitleSuffix = '';
-
 % % % % 
+% % ALL TRIALS
+% trialGroups = [];
+% fileNameSuffix = ['_AllTrials'];
+% figTitleSuffix = '';
+
+% % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
@@ -478,7 +478,7 @@ try
 s = stimSepTrials; 
 saveFig = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
 
-includeQuiescence = 0;
+includeQuiescence = 1;
 if ~includeQuiescence
     fileNameSuffix = 'NoQuiescence_';
 else
@@ -489,17 +489,17 @@ trialGroups = goodTrials';
 smWin = 11;
 % 
 % % 
-% ALL TRIALS
-trialGroups = [goodTrials];
-fileNameSuffix = [fileNameSuffix, 'AllTrials'];
-groupNames = {'All trials'};
+% % ALL TRIALS
+% trialGroups = [goodTrials];
+% fileNameSuffix = [fileNameSuffix, 'AllTrials'];
+% groupNames = {'All trials'};
 
-% % % % % % 
+% % % % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
 % groupNames = stimNames;
-% % % % 
+% % % 
 % % % % 
 % % GROUP BY EARLY/LATE
 % groupNames = [];
@@ -516,8 +516,8 @@ groupNames = {'All trials'};
 
 % 
 % % GROUP BY EARLY/LATE FOR A SINGLE STIM TYPE
-% targetStim = s.OdorB;
-% stimName = 'OdorB';
+% targetStim = s.OdorA;
+% stimName = 'OdorA';
 % groupNames = [];
 % groupBounds = [1, 30, 60];
 % trialGroups = zeros(1, nTrials);
@@ -695,7 +695,7 @@ catch foldME; rethrow(foldME); end
     %% PLOT OVERLAID 2D MOVEMENT DATA AND CALC PRE/POST SINUOSITY
 try
 
-startTime = 14;
+startTime = 17;
 plotLen = 1;
 sinWin = 3;
 limScalar = 0.8;
@@ -967,7 +967,7 @@ try
     disp(currSummary)
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [2 3];
+    currConds = [2 5];
     makeVid = 1;
     sigma = [0.6];   
     rangeType = 'Max';
@@ -1027,8 +1027,8 @@ try
     currConds = [3 6];
     sigma = [0.6]; 
     rangeType = 'Max';
-    rangeScalar = 0.8;
-    makeVid = 0;
+    rangeScalar = 0.6;
+    makeVid = 1;
     saveDir = [];
     fileName = 'Locomotion_Response_Heatmaps';
 
@@ -1118,9 +1118,9 @@ for iROI = 1:nROIs-1
     else
         flData = ROIDataAvg;
     end
-    if exist('ROIDataBaseSub', 'var')
-        flData = ROIDataBaseSub;
-    end
+%     if exist('ROIDataBaseSub', 'var')
+%         flData = ROIDataBaseSub;
+%     end
     
     % Create figure
     f = figure(iROI); clf
@@ -1513,10 +1513,11 @@ catch foldME; rethrow(foldME); end
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL COLOR CODED BY BEHAVIOR
 try
     saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = regexprep([expDate, ' - ', stimNames{1}, ' (top) ', stimNames{2}, ' (bottom)'], '(?<!\\)_', '\\_');
+    plotTitle = regexprep([expDate, make_plotTitleSuffix(stimNames)], '(?<!\\)_', '\\_');    
     fileNamePrefix = 'Behavior_Coded_Whole_Trial_Responses_';
     s = analysisMetadata.stimSepTrials;
     annotValues = [3 0];
+    annotTypeInd = 4;
     
     filterVecs = [];
     for iStim = 1:numel(stimGroupNames)
@@ -1555,7 +1556,7 @@ try
         yL = [];
         for iPlot = 1:nPlots
             currDffAvg = ROIDffAvg(:, trialFilterVecs(iPlot, :), iROI); % --> [volume, trial]
-            annotData = annotationTypes{5}.volAnnotArr;
+            annotData = annotationTypes{annotTypeInd}.volAnnotArr;
             currAnnotArr = annotData(trialFilterVecs(iPlot, :), :);
             
             subaxis(nRows, 3, ( (iPlot*3 + 1):(iPlot*3 + 3) ))
@@ -1628,8 +1629,8 @@ currStim = logical(stimTrialGroups);
 smWin = 3;
 nBins = 50;
 thresh = 0.3;
-nROIs = size(ROIDataAvg, 3)-1;
-currTrial = 82;
+nROIs = size(ROIDataAvg, 3)-2;
+currTrial = 24;
 
 try
     

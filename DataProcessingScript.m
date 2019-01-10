@@ -31,7 +31,7 @@ clear expDates targetPlanes fileStr dirPath
 %% ===================================================================================================
 
 expDates = {...
-    '2018_11_11_exp_3' ...
+    '2018_12_18_exp_2' ...
             }
      
  for iExp = 1:length(expDates)
@@ -74,16 +74,18 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_10_18_exp_2';
+expDateTemp = '2018_11_07_exp_1';
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
-sidTemp = 0;
+sidTemp = 1;
 
 %%% Archive raw anatomy stacks
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 archiveName = 'AnatomyStacks';
 filterString = '*Stack*';
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
 
 %%% Archive raw imaging data files
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 archiveName = ['TrialData_sid_', num2str(sidTemp)];
 filterString = ['*sid_', num2str(sidTemp), '_b*'];
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)

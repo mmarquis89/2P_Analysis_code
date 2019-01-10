@@ -25,7 +25,7 @@ end
 if ~isdir(vidSaveDir)
     mkdir(vidSaveDir)
 end
-
+% 
 % % Check for irregularities caused by gapless acquisition
 % clean_scanimage_files(imgDataDir, sid);
 % 
@@ -51,7 +51,7 @@ disp(inputArgs)
 c.batch(@make_behavior_vids, 0, inputArgs);
 
 
-
+% 
 % % 
 % 
 % % Make average fluorescence vids
