@@ -279,7 +279,6 @@ for iROI = 1:size(odorEventFlArr, 3)
     f = figure(iROI); clf;
     plot_ROI_data(gca, odorEventFlArr(:,:,iROI))
     
-    
 end
 
 %% PLOT FICTRAC RESPONSE AROUND EACH EVENT

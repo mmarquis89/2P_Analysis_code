@@ -74,9 +74,9 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_11_07_exp_1';
+expDateTemp = '2018_11_09_exp_2';
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
-sidTemp = 1;
+sidTemp = 0;
 
 %%% Archive raw anatomy stacks
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
