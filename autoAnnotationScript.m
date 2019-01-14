@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_01_07_exp_1';
+expDate = '2019_01_11_exp_1';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
@@ -77,9 +77,9 @@ end
 save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams', 'ftData', 'flowArr', 'goodTrials', 'behaviorLabels', 'frameInfo')
 
 %%
-t = 118;
+t = 60;
 flowThresh = 0.03;
-moveThresh = 0.04;
+moveThresh = 0.06;
 
 smWin = 3;
 smWinAlt = 1;
@@ -89,7 +89,7 @@ flowSmReps = 3;
 
 minIsoMoveLen = 6;
 minLocEpochLen = 6;
-minQuiescenceLen = 8;
+minQuiescenceLen = 6;
 
 % Extract variables from ftData
 moveSpeed = ftData.moveSpeed * FRAME_RATE * 4.5;      % --> [frame, trial]
