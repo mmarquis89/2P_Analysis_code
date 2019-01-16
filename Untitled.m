@@ -1,225 +1,152 @@
 
-vidDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2018_12_03_exp_1';
-sid = 0;
-blockVidName = 'fc2_save_2018-12-03-151812-0000.mp4';
-roiDims = [100 50];
+% Load behavior experiment
+
+expDates = {'2018_12_03_exp_1', ...
+            '2018_12_03_exp_2', ...
+            '2018_12_03_exp_3', ...
+            '2018_12_04_exp_2', ...
+            '2018_12_04_exp_3', ...
+            '2018_12_13_exp_1', ...
+            '2018_12_13_exp_2', ...
+            '2018_12_13_exp_3', ...
+            '2018_12_13_exp_4', ...
+            '2018_12_16_exp_1', ...
+            '2018_12_17_exp_1', ...
+            '2018_12_17_exp_2', ...
+            '2018_12_17_exp_3', ...
+            '2018_12_18_exp_1', ...
+            '2018_12_18_exp_2', ...
+            '2018_12_18_exp_3', ...
+            '2019_01_07_exp_1', ...
+            '2019_01_09_exp_1', ...
+            '2019_01_09_exp_2', ...
+            '2019_01_10_exp_1', ...
+            '2019_01_10_exp_2', ...
+            '2019_01_11_exp_1', ...
+            '2019_01_11_exp_2', ...
+    };
+sids = zeros(1, numel(expDates));
+
+
+
+
+
+
+allExpData = [];
+for iExp = 1:numel(expDates)
+    
+    expDate = expDates{iExp};
+    disp(expDate);
+    sid = sids(iExp);
+    parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate);
+    savePath = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, ['sid_', num2str(sid)]);
+    
+    annotFileName = '_Movies\autoAnnotations.mat';
+    
+    % ----------------  Load stim metadata -------------------------------------------------------------
+    infoStruct = [];
+    stimDataFiles = dir(fullfile(parentDir, ['metadata*sid_', num2str(sid), '*.mat']));
+    infoStruct.stimOnsetTimes = []; infoStruct.stimDurs = []; infoStruct.trialType = []; infoStruct.outputData = [];
+    for iFile = 1:numel(stimDataFiles)
+        
+        % Load file
+        load(fullfile(parentDir, stimDataFiles(iFile).name)); % variable "metaData" with fields 'trialDuration', 'nTrials', 'stimTypes', 'sid', 'taskFile', 'outputData'
+        
+        % Add block data
+        infoStruct.blockData(iFile).nTrials = metaData.nTrials;
+        infoStruct.blockData(iFile).stimTypes = metaData.stimTypes;
+        infoStruct.blockData(iFile).taskFile = metaData.taskFile;
+%         infoStruct.blockData(iFile).outputData = metaData.outputData;
+        
+        % Add info to overall session data
+        infoStruct.trialDuration = metaData.trialDuration;
+        infoStruct.expDate = expDate;
+        
+        % Add downsampled output data broken down into trials
+        currOutput = metaData.outputData';
+        sampPerTrial = size(currOutput, 2) / metaData.nTrials;
+        rsOutput = reshape(currOutput, size(currOutput, 1), sampPerTrial, metaData.nTrials);   % --> [channel, sample, trial]
+        disp(size(rsOutput))
+        infoStruct.outputData = cat(3, infoStruct.outputData, permute(rsOutput(:,1:100:end,:), [2 1 3]));    % --> [sample, channel, trial]
+        
+        % Add trial type info
+        for iTrial = 1:metaData.nTrials
+            currStim = metaData.stimTypes{iTrial};
+            infoStruct.stimOnsetTimes(end + 1) = str2double(regexp(currStim, '(?<=Onset_).*(?=_Dur)', 'match'));
+            infoStruct.stimDurs(end + 1) = str2double(regexp(currStim, '(?<=Dur_).*', 'match'));
+            infoStruct.trialType{end + 1} = regexp(currStim, '.*(?=_Onset)', 'match', 'once');
+            if strcmp(infoStruct.trialType{end}, 'NoOdor')
+                infoStruct.trialType{end} = 'NoStim'; % For backwards compatibility
+            end
+        end%iTrial
+    end%iFile
+    infoStruct.nTrials = size(infoStruct.outputData, 3);
+    infoStruct.stimTypes = sort(unique(infoStruct.trialType));
+    infoStruct.stimSepTrials = [];
+    for iStim = 1:length(infoStruct.stimTypes)
+        infoStruct.stimSepTrials.(infoStruct.stimTypes{iStim}) = logical(cellfun(@(x) ...
+            strcmp(x, infoStruct.stimTypes{iStim}), infoStruct.trialType));
+    end
+    
+    % ----------------  Load autoAnnotation data -------------------------------------------------------
+    annotData = load(fullfile(parentDir, annotFileName)); % variables 'trialAnnotations', 'annotParams', 'ftData', 'flowArr', 'goodTrials', 'behaviorLabels', 'frameInfo'
+    annotData.nFrames = annotData.frameInfo.nFrames;
+    annotData.frameTimes = annotData.frameInfo.frameTimes;
+    annotData.FRAME_RATE = annotData.frameInfo.FRAME_RATE;
+    infoStruct = setstructfields(infoStruct, annotData);
+    
+    
+    % ----------------  Load FicTrac data --------------------------------------------------------------
+    ftData = load_fictrac_data(infoStruct, 'sid', sid, 'ParentDir', fullfile(parentDir, '\_Movies\FicTracData'));
+    infoStruct.ftData = ftData;
+    infoStruct.goodTrials(logical(ftData.resets)) = 0;
+    
+    % ---------------- Create workspace vars -----------------------------------------------------------
+    infoStruct = orderfields(infoStruct);
+    
+    clear annotData currOutput rsOutput metaData ftData
+    allExpData{iExp} = infoStruct;
+end
+
+
+%%
+
+save(fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', 'allBehaviorData.mat'), 'expDates', 'allExpData', '-v7.3')
+
+%%
+load(fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', 'allBehaviorData.mat'), 'expDates', 'allExpData')
+%%
+
 FRAME_RATE = 25;
-roiData = select_video_ROIs('D:\Dropbox (HMS)\2P Data\Behavior Vids');
 
-
-
-
-
-blockVids = dir(fullfile(vidDir, '*-0000.mp4'));
-allFrameCount = 0;
-for iBlock = 1:numel(blockVids)
-    
-    % Read block behavior video
-    disp('Reading block vid...')
-    opticFlow = opticalFlowFarneback;
-    myVid = VideoReader(fullfile(vidDir, blockVids(iBlock).name));
-    frameCount = 0; frameSD = []; cornerLum = []; meanFlowMag = [];
-    while hasFrame(myVid)
-        
-        frameCount = frameCount + 1;
-        
-        % Read next frame
-        if ~mod(frameCount, 100)
-            disp(['Reading frame ', num2str(frameCount), ' of ', ...
-                num2str(FRAME_RATE * myVid.Duration)])
-        end
-        currFrame = readFrame(myVid);
-        currFrame = currFrame(:,:,1);
-        
-        % Calculate optic flow for each movie frame
-        currFrameFlowData = estimateFlow(opticFlow, currFrame);
-        currFlowFly = currFrameFlowData.Magnitude;
-        currFlowFly(~roiData) = nan;
-        meanFlowMag(end + 1) = (nanmean(currFlowFly(:)));
-        
-        % Extract corner luminance from each frame
-        currROI = currFrame(end-roiDims(1):end, 1:roiDims(2));
-        frameSD(end + 1) = std(double(currFrame(:))); % To watch out for artifact white frames
-        cornerLum(end + 1) = mean(currROI(:));
-        
-    end%while
-    
-    allFrameCount = allFrameCount + frameCount;
-    
-    % Detect first frames
-    disp('Detecting first frames...')
-    cornerLum = cornerLum - median(cornerLum);
-    %         peakThresh = 8 * std(cornerLum);
-    peakThresh = 0.95 * max(cornerLum);
-    MIN_DIST = 5;
-    [~, firstFrameLocs] = findpeaks(cornerLum, 'MinPeakHeight', peakThresh, ...
-        'MinPeakDistance', MIN_DIST);
-    
-    % Eliminate any completely white frames
-    badInds = [];
-    for iLoc = 1:numel(firstFrameLocs)
-        if (firstFrameLocs(iLoc) <= numel(frameSD)) && (frameSD(firstFrameLocs(iLoc)) < 15)
-            badInds = [badInds, iLoc];
-        end
-    end
-    firstFrameLocs(badInds) = [];
-    
-    firstFrameLocs(firstFrameLocs == 2) = [];
-    
-    % Calculate frame counts for each trial
-    firstFrameLocs = [1, firstFrameLocs];
-    frameCounts = diff([firstFrameLocs, length(cornerLum) + 1]);
-    targetFrames = mode(frameCounts);
-    
-    % Check whether the first frame of any trials was dropped
-    newFrameCounts = frameCounts;
-    for iTrial = 1:numel(firstFrameLocs)
-        if frameCounts(iTrial) > targetFrames
-            % Mark both trials as invalid
-            firstFrameLocs = [firstFrameLocs(1:iTrial-1), nan, nan, ...
-                firstFrameLocs(iTrial+1:end)];
-            newFrameCounts = [newFrameCounts(1:iTrial - 1), 0, 0, ...
-                newFrameCounts(iTrial+1:end)];
-        end
-    end
+allMeanSpeeds = []; medSpeeds = []; totalAvgSpeeds = [];
+for iExp = 1:numel(allExpData)
    
-end%iBlock
-
-% Separate optic flow data into individual trials
-trialFlowMag = [];
-for iFrame = 1:numel(meanFlowMag)
-   
+    currExpData = allExpData{iExp};
+    currFtData = currExpData.ftData.moveSpeed * FRAME_RATE * 4.5; % Convert to mm/sec
     
+    meanSpeed = movmean(squeeze(mean(currFtData, 1)), 3);
+    
+    allMeanSpeeds{iExp} = meanSpeed;
+    medSpeeds(iExp) = median(meanSpeed);
+    totalAvgSpeeds(iExp) = mean(meanSpeed);
 end
 
 
 
-% Calculate max flow value in this trial for later normalization
-maxFlowMag = max(meanFlowMag(2:end)); % First frame is artificially high so don't count that
 
-% Save optic flow data
-save(fullfile(vidDir, ['sid_', num2str(sid), '_tid_', pad(num2str(iTrial), 3, 'left', '0'), '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
-
-
-
-
-% ---------------- Write individual trial videos -----------------------------------------------
-trialCount = 1; frameCount = 0;
-
-% Create video writer for first trial
-trialVidName = fullfile(vidDir, ['sid_', num2str(sid), '_bid', num2str(iBlock), '_tid_', ...
-    pad(num2str(trialCount), 3, 'left', '0')]);
-trialVid = VideoWriter(fullfile(trialVidName), 'Motion JPEG AVI');
-trialVid.FrameRate = FRAME_RATE;
-open(trialVid);
-
-splitVidArr = [];
-for iFrame = 1:size(vidArr, 3)
-    
-    frameCount = frameCount + 1;
-    
-    if frameCount > newFrameCounts(trialCount)
-        
-        % Move onto the next trial
-        disp(['Wrote video for trial #', num2str(trialCount), ' of ', ...
-            num2str(numel(newFrameCounts))]);
-        trialCount = trialCount + 1;
-        frameCount = 1;
-        trialVidName = fullfile(vidDir, ['sid_', num2str(sid), '_bid', num2str(iBlock), '_tid_', ...
-            pad(num2str(trialCount), 3, 'left', '0')]);
-        close(trialVid)
-        trialVid = VideoWriter(fullfile(trialVidName), 'Motion JPEG AVI');
-        trialVid.FrameRate = FRAME_RATE;
-        open(trialVid);
-    end
-    %         if newFrameCounts(trialCount) > 0
-    %             writeVideo(trialVid, currFrame);
-    %             splitVidArr{trialCount}(:,:, frameCount) = currFrame;
-    %         end
-    
-    % Write frame to existing trial
-    currFrame = uint8(vidArr(:,:,iFrame));
-    writeVideo(trialVid, currFrame);
-    splitVidArr{trialCount}(:,:, frameCount) = currFrame;
-end
-close(trialVid)
-
-end%iBlock
-
-frameCount = allFrameCount;
-save(fullfile(vidDir, ['sid_', num2str(sid), '_AllTrials_frameCountLog.mat']), 'frameCount', '-v7.3');
-
-%% ---------------- Calculate optic flow -----------------------------------------------
-
-roiData = select_video_ROIs('D:\Dropbox (HMS)\2P Data\Behavior Vids');
-
-for iTrial = 1:numel(splitVidArr)
-    
-    disp(['Calculating flow for trial ', num2str(iTrial)])
-    
-    % Calculate optic flow for each movie frame
-    opticFlow = opticalFlowFarneback;
-    meanFlowMag = [];
-    for iFrame = 1:size(splitVidArr{iTrial}, 3)
-        currFrameFlowData = estimateFlow(opticFlow, splitVidArr{iTrial}(:,:,iFrame));
-        currFlowFly = currFrameFlowData.Magnitude;
-        currFlowFly(~roiData) = nan;
-        meanFlowMag(iFrame) = (nanmean(currFlowFly(:)));
-    end
-    
-    % Calculate max flow value in this trial for later normalization
-    maxFlowMag = max(meanFlowMag(2:end)); % First frame is artificially high so don't count that
-    
-    % Save optic flow data
-    save(fullfile(vidDir, ['sid_', num2str(sid), '_tid_', pad(num2str(iTrial), 3, 'left', '0'), '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
-    
-    
-end
-
-%% Normalize optic flow
+% figure(1); clf; hold on
+% for iExp = 1:numel(allMeanSpeeds)
+%    plot(allMeanSpeeds{iExp});
+%    
+%     
+% end
+% legend(cellfun(@regexprep, expDates, repmat({'_'}, 1, numel(expDates)), repmat({'\\_'}, 1, numel(expDates)), 'UniformOutput', false));
 
 
-% Get list of flow data files
-filterStr = ['sid_', num2str(sid), '_tid_*_optic_flow_data.mat'];
-flowDataFiles = dir(fullfile(vidDir, filterStr));
 
-% Get list of tids that have flow data
-tidList = [];
-for iFile = 1:numel(flowDataFiles)
-    currFileName = flowDataFiles(iFile).name;
-    tidList(iFile) = str2double(regexp(currFileName, '(?<=tid_).*(?=_optic)', 'match'));
-end
 
-% Load each file and extract data
-allFlowData = []; maxFlowMags = [];
-for iFile = 1:numel(flowDataFiles)
-    currData = load(fullfile(vidDir, flowDataFiles(iFile).name));
-    allFlowData{tidList(iFile)} = currData.meanFlowMag;
-    maxFlowMags(tidList(iFile)) = currData.maxFlowMag;
-end%iFile
 
-% Normalize flow data
-flyFlowNorm = [];
-for iTrial = 1:numel(flowDataFiles)
-    flyFlowNorm{tidList(iTrial)} = allFlowData{tidList(iTrial)} ./ max(maxFlowMags);
-end%iTrial
-
-% Save file containing normalized flow data for all trials
-saveFileName = ['sid_', num2str(sid), '_flow_data_norm.mat'];
-save(fullfile(vidDir, saveFileName), 'flyFlowNorm', '-v7.3');
-
-%% Get vid frame counts
-
-logFile = fopen(fullfile(vidDir, ['sid_', num2str(sid), '_frameCounts.txt']), 'w');
-vidFiles = dir(fullfile(vidDir, '*_tid*.avi'));
-
-frameCounts = [];
-for iFile = 1:numel(vidFiles)
-    disp(['Counting frames for file ', num2str(iFile)])
-    frameCounts(iFile) = count_frames(fullfile(vidDir, vidFiles(iFile).name));
-    fprintf(logFile, [num2str(frameCounts(iFile)), ',', vidFiles(iFile).name, '\n']);
-end
-fclose(logFile);
 
 
 

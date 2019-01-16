@@ -36,6 +36,7 @@ function outputData = load_fictrac_data(frameCountInfo, varargin)
 %               .yawSpeed
 %               .fwSpeed
 %               .SideSpeed
+%               .dirYawSpeed (directional yaw speed with negative values for left, positive for right)
 %               .droppedFrames --> {trial} [frameList]
 %               .resets        --> [trial]
 %               .badFtTrials   --> [trial list]

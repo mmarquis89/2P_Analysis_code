@@ -1,7 +1,7 @@
 
 %% LOAD DATA
 
-expDate = '2019_01_10_exp_2';
+expDate = '2019_01_14_exp_1';
 sid = 0;
 
 parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate);
@@ -96,18 +96,19 @@ stimGroupNames = {'OdorA', 'OdorB'}; % {'OdorA'}; %
 stimShading = {[4 6;10 13]};%{[8 11]};%{[7 10 ; 10 13]};%  
 stimShadingColors = {'red', 'green'}; % {'red', 'green'}; % 
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
-groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
+% groupBounds = [1:60:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
+groupBounds = [1, 40:60:nTrials]; groupBounds(2:end) = groupBounds(2:end) -1;
 % groupBounds = [1, 60];
-blockNames = {'0%', '2%', '4%', '6%', '10%'};
+blockNames = {'0%', '5%', '10%', '15%', '0%', '20%'};
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
-
+% 
 % trialGroups = [];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_AllTrials';
-% % % % % % % '
-% 
+% % % % '
+% % % 
 % trialGroups = stimTrialGroups; 
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
@@ -209,7 +210,7 @@ cm = [];
 % trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
 % trialGroups = trialGroups + 1;
 % fileNameSuffix = '_PhotostimVsOdorOnly';
-
+% 
 % % PLOT AND COLOR EACH BLOCK SEPARATELY
 % groupNames = blockNames;
 % trialGroups = zeros(1, nTrials);
@@ -286,13 +287,13 @@ catch foldME; rethrow(foldME); end
 saveDir = uigetdir(savePath, 'Select a save directory');
 fontSize = 12;
 
-ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed'
+ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed'%
 sdCap = 3.5;
 smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-
+% 
 % % ALL TRIALS
 % trialGroups = [];
 % fileNameSuffix = ['_AllTrials'];
@@ -324,7 +325,7 @@ figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 % trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = '';
 % fileNameSuffix = '_Blocks_Separated';
-% 
+
 
 try
 
@@ -388,7 +389,7 @@ end
 
 catch foldME; rethrow(foldME); end
 
-%% 1D FICTRAC SUMMARY
+%% 1D TRIAL-AVGERAGED FICTRAC SUMMARY
 
 saveDir = uigetdir(savePath, 'Select a save directory');
 
@@ -409,7 +410,7 @@ cm = [];
 % fileNameSuffix = [fileNameSuffix, 'AllTrials'];
 % groupNames = {'All trials'};
 
-
+% 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
@@ -440,14 +441,17 @@ cm = [];
 % fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
 % % % 
 
-% % PLOT AND COLOR EACH BLOCK SEPARATELY
-% groupNames = blockNames;
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
-% end
-% trialGroups(groupBounds(end):end) = numel(groupBounds);
-% fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+% PLOT AND COLOR EACH BLOCK SEPARATELY
+groupNames = blockNames;
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end):end) = numel(groupBounds);
+fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+% 
+% trialGroups(trialGroups == 2 | trialGroups == 5 | trialGroups == 6) = 1;
+% trialGroups(trialGroups ~=1) = trialGroups(trialGroups ~=1 ) - 1
 
 try
     
@@ -455,7 +459,8 @@ xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
 xTickLabels = [0:1/trialDuration:1] * trialDuration;
 mmSpeedData = ftData.moveSpeed * FRAME_RATE * 4.5;  % --> [frame, trial] (mm/sec)
 dHD = abs(rad2deg(ftData.yawSpeed * FRAME_RATE));        % --> [frame, trial] (deg/sec)
-fwSpeed = ftData.fwSpeed * FRAME_RATE * 4.5;        % --> [frame, trial  (mm/sec)
+fwSpeed = (rad2deg(ftData.yawSpeed * FRAME_RATE));        % --> [frame, trial] (deg/sec)%ftData.fwSpeed * FRAME_RATE * 4.5;        % --> [frame, trial  (mm/sec)
+yawVel = rad2deg(ftData.yawSpeed * FRAME_RATE);        % --> [frame, trial] (deg/sec)
 nFrames = size(mmSpeedData, 1);
 
 % Create figure
@@ -466,8 +471,8 @@ f.Color = [1 1 1];
 % Create axes
 M = 0.02;
 P = 0.00;
-axVel = subaxis(3,1,1, 'S', 0, 'M', M, 'PB', 0.05, 'PL', 0.05); hold on
-axFWSpeed = subaxis(3,1,2, 'S', 0, 'M', M, 'PB', 0.05, 'PL', 0.06); hold on
+axMoveSpeed = subaxis(3,1,1, 'S', 0, 'M', M, 'PB', 0.05, 'PL', 0.05); hold on
+axYawVel = subaxis(3,1,2, 'S', 0, 'M', M, 'PB', 0.05, 'PL', 0.06); hold on
 axYawSpeed = subaxis(3,1,3, 'S', 0, 'M', M, 'PB', 0.06, 'PL', 0.06); hold on
 
 % Plot data
@@ -480,34 +485,38 @@ for iGroup = 1:nGroups
     
     % Calculate mean values for current group
     currXYSpeed = mmSpeedData(:, trialGroups==iGroup);
-    currFWSpeed = fwSpeed(:, trialGroups == iGroup);
+%     currFWSpeed = fwSpeed(:, trialGroups == iGroup);
     currYawSpeed = dHD(:, trialGroups == iGroup);
+    currYawVel = yawVel(:, trialGroups == iGroup);
     
     if ~includeQuiescence
         currAnnotData = behaviorAnnotArr';
         currAnnotData(:, trialGroups ~= iGroup) = [];
         currXYSpeed(currAnnotData == 0) = nan;
-        currFWSpeed(currAnnotData == 0) = nan;
+%         currFWSpeed(currAnnotData == 0) = nan;
         currYawSpeed(currAnnotData == 0) = nan;
+        currYawVel(currAnnotData == 0) = nan;
     end
     
     % Omit outliers
     outlierCalc = @(x) mean(x) + 4 * std(x);
     currXYSpeed(currXYSpeed >= outlierCalc(mmSpeedData(:))) = nan;
-    currFWSpeed(currFWSpeed >= outlierCalc(fwSpeed(:))) = nan;
+%     currFWSpeed(currFWSpeed >= outlierCalc(fwSpeed(:))) = nan;
     currYawSpeed(currYawSpeed >= outlierCalc(dHD(:))) = nan;
-%     
+    currYawVel(currYawVel >= outlierCalc(yawVel(:))) = nan;
+
     meanSpeed = smooth(mean(currXYSpeed, 2, 'omitnan'), smWin);
-    meanFWSpeed = smooth(mean(currFWSpeed, 2, 'omitnan'), smWin);
+%     meanFWSpeed = smooth(mean(currFWSpeed, 2, 'omitnan'), smWin);
     meanYawSpeed = smooth(mean(currYawSpeed, 2, 'omitnan'), smWin);
-    
+    meanYawVel = smooth(mean(currYawVel, 2, 'omitnan'), smWin);
+
     % XY speed plot
-    axes(axVel)
+    axes(axMoveSpeed)
     plot(meanSpeed, 'linewidth', 2, 'color', cm(iGroup, :));
     
-    % Forward speed plot
-    axes(axFWSpeed)
-    plot(meanFWSpeed, 'linewidth', 2, 'color', cm(iGroup,:));
+    % Directional yaw velocity plot
+    axes(axYawVel)
+    plot(meanYawVel, 'linewidth', 2, 'color', cm(iGroup,:));
         
     % Yaw speed plot
     axes(axYawSpeed)
@@ -517,35 +526,35 @@ for iGroup = 1:nGroups
 end%iGroup
 
 % Format axes
-axVel.XTick = xTickFR;
-axVel.XTickLabel = xTickLabels;
-axVel.YLabel.String = 'XY Speed (mm/sec)';
-axVel.FontSize = 14;
-legend(axVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
-axVel.XLim = [9 nFrames-5]; % to improve plot appearance
+axMoveSpeed.XTick = xTickFR;
+axMoveSpeed.XTickLabel = xTickLabels;
+axMoveSpeed.YLabel.String = 'XY Speed (mm/sec)';
+axMoveSpeed.FontSize = 14;
+legend(axMoveSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
+axMoveSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
 if ~isempty(stimShading)
     [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
     for iStim = 1:size(stimShading{idx}, 1)
         stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
         stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
         plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
-            axVel);
+            axMoveSpeed);
     end
 end
 
-axFWSpeed.XTick = xTickFR;
-axFWSpeed.XTickLabel = xTickLabels;
-axFWSpeed.YLabel.String = 'FW Vel (mm/sec)';
-axFWSpeed.FontSize = 14;
-legend(axFWSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
-axFWSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
+axYawVel.XTick = xTickFR;
+axYawVel.XTickLabel = xTickLabels;
+axYawVel.YLabel.String = 'Yaw Vel (CCW = +)';
+axYawVel.FontSize = 14;
+legend(axYawVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
+axYawVel.XLim = [9 nFrames-5]; % to improve plot appearance
 if ~isempty(stimShading)
     [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
     for iStim = 1:size(stimShading{idx}, 1)
         stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
         stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
         plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
-            axFWSpeed);
+            axYawVel);
     end
 end
 
@@ -583,17 +592,138 @@ end%if
 catch foldME; rethrow(foldME); end
 
 
+%% VOLUME-AVGERAGED FICTRAC SUMMARY
+
+saveDir = uigetdir(savePath, 'Select a save directory');
+smWin = 11;
+sdCap = 3.5;
+figTitle = [expDate, '  —  Volume-Averaged FicTrac data'];
+cm = [];
+
+% % ALL TRIALS
+% trialGroups = [goodTrials];
+% fileNameSuffix = [fileNameSuffix, 'AllTrials'];
+% groupNames = {'All trials'};
+
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups .* goodTrials; 
+% fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
+% groupNames = stimNames;
+
+% % PLOT AND COLOR EACH BLOCK SEPARATELY
+% groupNames = blockNames;
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end):end) = numel(groupBounds);
+% fileNameSuffix = '_Blocks_Separated';
+
+try
+
+% Extract FicTrac data
+mmSpeedData = ftData.moveSpeed * FRAME_RATE * 4.5;  % --> [frame, trial] (mm/sec)
+dHD = abs(rad2deg(ftData.yawSpeed * FRAME_RATE));        % --> [frame, trial] (deg/sec)
+fwSpeed = ftData.fwSpeed * FRAME_RATE * 4.5;        % --> [frame, trial  (mm/sec)
+allFtData = cat(3, mmSpeedData, fwSpeed, dHD);
+nFrames = size(mmSpeedData, 1);
+
+% Cap values at n SD above mean
+for iVar = 1:size(allFtData, 3)
+    currData = allFtData(:,:,iVar);
+    capVal = mean(currData(:), 'omitnan') + (sdCap * std(currData(:), 'omitnan'));
+    currData(currData > capVal) = capVal;
+    allFtData(:,:,iVar) = currData;
+end
+
+% Smooth data
+allFtData = movmean(allFtData, 3, 2);
+
+% smXYData = movmean(mmSpeedData, smWin, 2);
+% smYawData = movmean(dHD, smWin, 2);
+% smFWData = movmean(fwSpeed, smWin, 2);
+
+% Create figure
+f = figure(4); clf; hold on
+f.Position = [-1100 50 900 930];
+f.Color = [1 1 1];
+
+% Create axes
+M = 0.02;
+P = 0.00;
+axMoveSpeed = subaxis(3,1,1, 'S', 0, 'M', M, 'PB', 0.05, 'PL', 0.05); hold on
+axFWSpeed = subaxis(3,1,2, 'S', 0, 'M', M, 'PB', 0.05, 'PL', 0.06); hold on
+axYawSpeed = subaxis(3,1,3, 'S', 0, 'M', M, 'PB', 0.06, 'PL', 0.06); hold on
+
+% Separate trialGroups
+nGroups = length(unique(trialGroups(trialGroups ~= 0)));
+if isempty(cm)
+    cm = parula(nGroups);
+    cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime')];
+end
+
+groupArr = []; groupSize = [];
+for iGroup = 1:nGroups
+    if iGroup == 1
+        groupArr = allFtData(:, trialGroups == iGroup, :);
+        groupSize(1) = size(groupArr, 2);
+    else
+        groupArr = cat(2, groupArr, allFtData(:, trialGroups == iGroup, :));
+        groupSize(end + 1) = size(groupArr, 2);
+    end
+end
+plotArr = squeeze(mean(groupArr, 1)); % --> [trial, var]
+
+% Plot data
+axes(axMoveSpeed)
+plot(plotArr(:,1), 'linewidth', 2)
+for iGroup = 1:nGroups-1
+    yL = ylim;
+    plot([groupSize(iGroup), groupSize(iGroup)], [0 yL(2)], 'LineWidth', 2, 'Color', 'r')
+end
+xlim([0, size(plotArr, 1)])
+ylim([0 yL(2)])
+
+axes(axFWSpeed)
+plot(plotArr(:,2), 'linewidth', 2)
+for iGroup = 1:nGroups-1
+    yL = ylim;
+    plot([groupSize(iGroup), groupSize(iGroup)], [0 yL(2)], 'LineWidth', 2, 'Color', 'r')
+end
+xlim([0, size(plotArr, 1)])
+ylim([0 yL(2)])
+
+axes(axYawSpeed)
+plot(plotArr(:,3), 'linewidth', 2)
+for iGroup = 1:nGroups-1
+    yL = ylim;
+    plot([groupSize(iGroup), groupSize(iGroup)], [0 yL(2)], 'LineWidth', 2, 'Color', 'r')
+end
+xlim([0, size(plotArr, 1)])
+ylim([0 yL(2)])
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 %% PLOT OVERLAID 2D MOVEMENT DATA
 
-startTime = 1;
-plotLen = 3;
-limScalar = .6;
+startTime = 6;
+plotLen = 2;
+limScalar = .3;
 alpha = 0.4;
 showMean = 1;
-saveFig = 1;
+saveFig = 0;
 
 s = stimSepTrials;
 shadeFrames = {round(stimShading{:} * FRAME_RATE)};
@@ -606,15 +736,14 @@ nFrames = size(mmXY, 1);
 startFrame = startTime * FRAME_RATE;
 endFrame = (startTime + plotLen) * FRAME_RATE;
 trialGroups = ones(size(mmXY, 3), 1) .* goodTrials';
-cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan')];
-
+cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime')];
 
 % % PLOT ALL TRIALS COLORED BY TIME
 % surfPlot = 1;
 % cm = jet(endFrame - startFrame + 1);
 % fileNameSuffix = '_chronological';
 
-% % 
+% 
 % % GROUP BY STIM TYPE
 % trialGroups =  [s.OdorA + 2 * s.OdorB] .* goodTrials;
 % fileNameSuffix = '_OdorAvsOdorBvsNoStim'; 
@@ -649,7 +778,7 @@ for iBound = 1:numel(groupBounds)-1
 end
 trialGroups(groupBounds(end):end) = numel(groupBounds);
 fileNameSuffix = '_Blocks_Separated';
-
+trialGroups(trialGroups == 2 | trialGroups == 6) = 0;
 
 %%% OVERLAY 2D MOVEMENT DATA
 
@@ -715,7 +844,7 @@ if surfPlot
     end%iTrial
 else
     % Plot colored by trial groups
-    legendPlots = [0 0 0 0]; legendObj = [];
+    legendPlots = [0 0 0 0 0 0 0 0 0 0 0 0]; legendObj = [];
     for iGroup = 1:nGroups
         for iTrial = 1:nTrials
             if trialGroups(iTrial) == iGroup
@@ -771,6 +900,7 @@ if saveFig
     end
     savefig(f, fullfile(saveDir, 'figFiles', fileName));
 end
+catch foldME; rethrow(foldME); end
 
 
 

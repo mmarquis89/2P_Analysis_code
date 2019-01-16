@@ -404,11 +404,11 @@ smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-% % % % 
-% % ALL TRIALS
-% trialGroups = [];
-% fileNameSuffix = ['_AllTrials'];
-% figTitleSuffix = '';
+% % % 
+% ALL TRIALS
+trialGroups = [];
+fileNameSuffix = ['_AllTrials'];
+figTitleSuffix = '';
 
 % % % 
 % % GROUP BY STIM TYPE

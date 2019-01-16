@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_01_11_exp_1';
+expDate = '2019_01_14_exp_2';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
@@ -75,17 +75,18 @@ if ~isdir(imgDir)
 end
                         
 save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams', 'ftData', 'flowArr', 'goodTrials', 'behaviorLabels', 'frameInfo')
+close all
 
 %%
-t = 60;
-flowThresh = 0.03;
-moveThresh = 0.06;
+t = 33;
+flowThresh = 0.04;
+moveThresh = 0.04;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 6;
-flowSmReps = 3;
+moveSmReps = 4;
+flowSmReps = 4;
 
 minIsoMoveLen = 6;
 minLocEpochLen = 6;

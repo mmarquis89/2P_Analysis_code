@@ -74,7 +74,7 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_11_09_exp_3';
+expDateTemp = '2018_11_11_exp_1';
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
 sidTemp = 0;
 
