@@ -68,7 +68,7 @@ try
         firstFrameLocs = [1, firstFrameLocs];
         frameCounts = diff([firstFrameLocs, length(cornerLum) + 1]);
         targetFrames = mode(frameCounts);
-        
+        save(fullfile(vidDataDir, [blockVidName, '_vidSplitData.mat']), 'frameSD', 'cornerLum', 'firstFrameLocs', 'frameCounts')
         write_to_log(['frameCounts calculated'], mfilename)
         
         % Check whether the first frame of any trials was dropped

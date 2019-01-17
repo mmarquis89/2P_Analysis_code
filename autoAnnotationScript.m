@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_01_14_exp_2';
+expDate = '2019_01_15_exp_3';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
@@ -78,9 +78,9 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 33;
-flowThresh = 0.04;
-moveThresh = 0.04;
+t = 12;
+flowThresh = 0.02;
+moveThresh = 0.02;
 
 smWin = 3;
 smWinAlt = 1;

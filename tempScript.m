@@ -1,15 +1,15 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019_01_11_exp_1';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019_01_15_exp_3';
 sid = 0;
 
 tifFiles = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*.tif']));
 controlMeans = []; stimMeans = []; controlDiffs = []; stimDiffs = []; stimOnFrames = []; stimOffFrames = [];
 for iFile = 1:numel(tifFiles)
-%     tifName = 'cdata_20190111_161850_sid_0_bid_4_dur_800_nTrials_40_00001.tif';
-    tifPath = fullfile(parentDir, tifName);
-    disp(num2str(iFile));
+    
     % Load data
+    tifPath = fullfile(parentDir, tifFiles(iFile).name);
     output = squeeze(read_tif(tifPath));
+    disp([num2str(iFile), ' of ', num2str(numel(tifFiles))]);
     
     % Divide in half
     nLines = size(output, 1);
@@ -26,9 +26,11 @@ for iFile = 1:numel(tifFiles)
     [~, stimOnFrame] = max(stimDiff);
     [~, stimOffFrame] = min(stimDiff);
     
-    % % Plot stuff
-    % figure(1); clf; hold on; plot(stimMean), plot(controlMean)
-    % figure(2); clf; hold on; plot(stimDiff), plot(controlDiff);
+    % Save a frame from the control and stim period for each trial
+    stimFrame{iFile} = output(:,:, stimOnFrame + 1);
+    controlFrame{iFile} = output(:,:, stimOffFrame + 1);
+    
+    % Save stim frame data
     stimOnFrames(iFile) = stimOnFrame;
     stimOffFrames(iFile) = stimOffFrame;
     stimMeans{iFile} = stimMean;

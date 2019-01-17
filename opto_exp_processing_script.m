@@ -1,7 +1,8 @@
 
 %% LOAD DATA
 
-expDate = '2019_01_14_exp_1';
+expDate = '2019_01_15_exp_3';
+% expDate = '2018_12_18_exp_3';
 sid = 0;
 
 parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate);
@@ -93,17 +94,17 @@ catch foldME; rethrow(foldME); end
 stimNames = {'EtOH\_neat', 'CO2\_2e-2'}; %{'EtOH\_neat'}; %  'Benzaldehyde\_e-1'
 stimTrialGroups = [s.OdorA + 2 * s.OdorB]; %s.OdorA; % 
 stimGroupNames = {'OdorA', 'OdorB'}; % {'OdorA'}; % 
-stimShading = {[4 6;10 13]};%{[8 11]};%{[7 10 ; 10 13]};%  
+stimShading =  {[8 11]};%{[7 10 ; 10 13]};% {[4 6;10 13]};%
 stimShadingColors = {'red', 'green'}; % {'red', 'green'}; % 
 rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
-% groupBounds = [1:60:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
-groupBounds = [1, 40:60:nTrials]; groupBounds(2:end) = groupBounds(2:end) -1;
+groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
+% groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
 % groupBounds = [1, 60];
-blockNames = {'0%', '5%', '10%', '15%', '0%', '20%'};
+blockNames = {'0%', '2%', '4%', '6%', '10%', '20%'};
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
-% 
+
 % trialGroups = [];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_AllTrials';
@@ -123,7 +124,7 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 % trialGroups = trialGroups + 1;
 % plotTitleSuffix = make_plotTitleSuffix(groupNames);
 % fileNameSuffix = '_PhotostimVsOdorOnly';
-% 
+
 % % GROUP CHRONOLOGICALLY BY BLOCKS
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
@@ -178,16 +179,16 @@ actionNum = [3]; % locomotionLabel = 3; noActionLabel = 0; isoMovementLabel = 1;
 actionName = actionNames{actionNum};
 figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial'], '_', '\\_');
 cm = [];
-% 
+
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = ['_AllTrials_', actionName];
 % groupNames = {'All trials'};
 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups .* goodTrials;
-% fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
-% groupNames = stimNames;
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* goodTrials;
+fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
+groupNames = stimNames;
 
 % % GROUP BY SINGLE BLOCKS
 % groupNames = [];
@@ -200,7 +201,7 @@ cm = [];
 % groupNames = {'Odor only', 'Odor + photostim'};
 % fileNameSuffix = '_SingleBlocks';
 % cm = repmat([rgb('blue'); rgb('red')], 8, 1);
-% 
+% % 
 % % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
 % trialGroups = zeros(1, nTrials);
@@ -210,7 +211,7 @@ cm = [];
 % trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
 % trialGroups = trialGroups + 1;
 % fileNameSuffix = '_PhotostimVsOdorOnly';
-% 
+% % 
 % % PLOT AND COLOR EACH BLOCK SEPARATELY
 % groupNames = blockNames;
 % trialGroups = zeros(1, nTrials);
@@ -293,18 +294,18 @@ smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-% 
+
 % % ALL TRIALS
 % trialGroups = [];
 % fileNameSuffix = ['_AllTrials'];
 % plotTitleSuffix = '';
-
-% % % % % % % 
+% 
+% % % % % % % % % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 % plotTitleSuffix = make_plotTitleSuffix(stimNames);
-
+% 
 % % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
 % trialGroups = zeros(1, nTrials);
@@ -410,13 +411,13 @@ cm = [];
 % fileNameSuffix = [fileNameSuffix, 'AllTrials'];
 % groupNames = {'All trials'};
 
-% 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups .* goodTrials; 
-% fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
-% groupNames = stimNames;
 
-% % 
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* goodTrials; 
+fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
+groupNames = stimNames;
+
+% % % 
 % % GROUP BY SINGLE BLOCKS
 % groupNames = [];
 % trialGroups = zeros(1, nTrials);
@@ -428,10 +429,11 @@ cm = [];
 % groupNames = {'Odor only', 'Odor + photostim'};
 % fileNameSuffix = [fileNameSuffix, 'SingleBlocks'];
 % cm = repmat([rgb('blue'); rgb('red')], 8, 1);
- 
-
+% %  
+% % 
 % % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
+% % groupNames = {'Odor only', 'Odor + photostim (10%)', 'Odor + photostim (25%)'};
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
@@ -439,19 +441,15 @@ cm = [];
 % trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
 % trialGroups = trialGroups + 1;
 % fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
-% % % 
 
-% PLOT AND COLOR EACH BLOCK SEPARATELY
-groupNames = blockNames;
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end):end) = numel(groupBounds);
-fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
-% 
-% trialGroups(trialGroups == 2 | trialGroups == 5 | trialGroups == 6) = 1;
-% trialGroups(trialGroups ~=1) = trialGroups(trialGroups ~=1 ) - 1
+% % PLOT AND COLOR EACH BLOCK SEPARATELY
+% groupNames = blockNames;
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end):end) = numel(groupBounds);
+% fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
 
 try
     
@@ -544,7 +542,7 @@ end
 
 axYawVel.XTick = xTickFR;
 axYawVel.XTickLabel = xTickLabels;
-axYawVel.YLabel.String = 'Yaw Vel (CCW = +)';
+axYawVel.YLabel.String = 'Yaw Vel (CW = +)';
 axYawVel.FontSize = 14;
 legend(axYawVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axYawVel.XLim = [9 nFrames-5]; % to improve plot appearance
@@ -600,10 +598,10 @@ sdCap = 3.5;
 figTitle = [expDate, '  —  Volume-Averaged FicTrac data'];
 cm = [];
 
-% % ALL TRIALS
-% trialGroups = [goodTrials];
-% fileNameSuffix = [fileNameSuffix, 'AllTrials'];
-% groupNames = {'All trials'};
+% ALL TRIALS
+trialGroups = [goodTrials];
+fileNameSuffix = [fileNameSuffix, 'AllTrials'];
+groupNames = {'All trials'};
 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
@@ -702,25 +700,14 @@ end
 xlim([0, size(plotArr, 1)])
 ylim([0 yL(2)])
 
-
-
-
-
-
-
-
-
-
-
-
-
+catch foldME; rethrow(foldME); end
 
 
 %% PLOT OVERLAID 2D MOVEMENT DATA
 
-startTime = 6;
-plotLen = 2;
-limScalar = .3;
+startTime = 14;
+plotLen = 1;
+limScalar = 0.5;
 alpha = 0.4;
 showMean = 1;
 saveFig = 0;
@@ -750,15 +737,15 @@ cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('g
 % groupNames = stimNames;
 
 % % % % % 
-% % GROUP BY BLOCK TYPE
-% groupNames = {'Odor only', 'Odor + photostim'};
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-% end
-% trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-% trialGroups = trialGroups + 1;
-% fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
+% GROUP BY BLOCK TYPE
+groupNames = {'Odor only', 'Odor + photostim'};
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+end
+trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+trialGroups = trialGroups + 1;
+fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
 
 % % GROUP BY ALTERNATING BLOCKS
 % trialGroups = zeros(1, nTrials);
@@ -770,16 +757,17 @@ cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('g
 % fileNameSuffix = '_Blocks_Separated';
 % cm = jet(numel(unique(trialGroups)));
 
-% PLOT AND COLOR EACH BLOCK SEPARATELY
-groupNames = blockNames;
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end):end) = numel(groupBounds);
-fileNameSuffix = '_Blocks_Separated';
-trialGroups(trialGroups == 2 | trialGroups == 6) = 0;
+% % PLOT AND COLOR EACH BLOCK SEPARATELY
+% groupNames = blockNames;
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end):end) = numel(groupBounds);
+% fileNameSuffix = '_Blocks_Separated';
 
+
+try 
 %%% OVERLAY 2D MOVEMENT DATA
 
 % Create and format figure
@@ -900,6 +888,7 @@ if saveFig
     end
     savefig(f, fullfile(saveDir, 'figFiles', fileName));
 end
+
 catch foldME; rethrow(foldME); end
 
 
