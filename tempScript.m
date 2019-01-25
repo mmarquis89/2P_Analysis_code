@@ -1,15 +1,16 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019_01_15_exp_3';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019_01_14_exp_2';
 sid = 0;
 
 tifFiles = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*.tif']));
-controlMeans = []; stimMeans = []; controlDiffs = []; stimDiffs = []; stimOnFrames = []; stimOffFrames = [];
+controlMeans = []; stimMeans = []; controlDiffs = []; stimDiffs = []; volAvgFrames = [];
 for iFile = 1:numel(tifFiles)
     
     % Load data
     tifPath = fullfile(parentDir, tifFiles(iFile).name);
     output = squeeze(read_tif(tifPath));
     disp([num2str(iFile), ' of ', num2str(numel(tifFiles))]);
+    frameCounts(iFile) = size(output, 3);
     
     % Divide in half
     nLines = size(output, 1);
@@ -22,26 +23,28 @@ for iFile = 1:numel(tifFiles)
     stimDiff = [0; diff(stimMean)];
     controlDiff = [0; diff(controlMean)];
     
-    % Find stim start and end frames
-    [~, stimOnFrame] = max(stimDiff);
-    [~, stimOffFrame] = min(stimDiff);
-    
-    % Save a frame from the control and stim period for each trial
-    stimFrame{iFile} = output(:,:, stimOnFrame + 1);
-    controlFrame{iFile} = output(:,:, stimOffFrame + 1);
+    % Get volume-averaged image
+    volAvgFrames(:,:,iFile) = mean(output, 3);
     
     % Save stim frame data
-    stimOnFrames(iFile) = stimOnFrame;
-    stimOffFrames(iFile) = stimOffFrame;
     stimMeans{iFile} = stimMean;
     controlMeans{iFile} = controlMean;
     stimDiffs{iFile} = stimDiff;
     controlDiffs{iFile} = controlDiff;
 end
 
-test = [];
-for iTrial = 1:numel(stimMeans)
-    test(:,iTrial) = stimMeans{iTrial};
-end
+
+refImg = mean(volAvgFrames, 3);
+figure; imshow(refImg, []);
+
+% 
+% stimOnFrames = []; stimOffFrames = [];
+% % Find stim start and end frames
+% [~, stimOnFrame] = max(stimDiff);
+% [~, stimOffFrame] = min(stimDiff);
+% stimOnFrames(iFile) = stimOnFrame;
+% stimOffFrames(iFile) = stimOffFrame;
+
+
 
 

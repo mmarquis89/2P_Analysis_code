@@ -260,7 +260,7 @@ baselineDur = 1; respDur = 3;
 currTrialROI = squeeze(ROIDataAvg(:,tid, :)); % --> [volume, ROI]
 eventFlData = [];
 for iEvent = 1:size(odorEventList, 1)
-    if iei(iEvent) > baselineDur * SAMP_RATE && eventDurs(iEvent) > respDur * SAMP_RATE
+    if ieiList(iEvent) > baselineDur * SAMP_RATE && eventDurs(iEvent) > respDur * SAMP_RATE
         [~, startVol] = min(abs(volSamps - odorEventList(iEvent, 1)));
         [~, endVol] = min(abs(volSamps - odorEventList(iEvent, 2)));
         eventFlData{iEvent} = currTrialROI(floor(startVol-(baselineDur * volumeRate)):floor(startVol + (respDur * volumeRate)), :);

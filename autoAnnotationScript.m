@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_01_15_exp_3';
+expDate = '2019_01_23_exp_2';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
@@ -25,9 +25,9 @@ frameInfo.FRAME_RATE = FRAME_RATE;
 nTrials = numel(goodTrials);
 
 
-% Make sure frame counts are consistent with each other
-assert(sum(frameCounts) == allTrialsFrameCount, ...
-    'Error: sum of individual frame counts is not equal to concatenated video frame count');
+% % Make sure frame counts are consistent with each other
+% assert(sum(frameCounts) == allTrialsFrameCount, ...
+%     'Error: sum of individual frame counts is not equal to concatenated video frame count');
 
 % Load FicTrac data
 ftDir = fullfile(vidDir, 'FicTracData');
@@ -78,14 +78,14 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 12;
-flowThresh = 0.02;
-moveThresh = 0.02;
+t = 220;
+flowThresh = 0.04;
+moveThresh = 0.03;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 4;
+moveSmReps = 6;
 flowSmReps = 4;
 
 minIsoMoveLen = 6;

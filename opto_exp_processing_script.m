@@ -1,7 +1,7 @@
 
 %% LOAD DATA
 
-expDate = '2019_01_15_exp_3';
+expDate = '2019_01_23_exp_1';
 % expDate = '2018_12_18_exp_3';
 sid = 0;
 
@@ -91,24 +91,24 @@ catch foldME; rethrow(foldME); end
 
 %% SET UP PLOTTING VARIABLES
 
-stimNames = {'EtOH\_neat', 'CO2\_2e-2'}; %{'EtOH\_neat'}; %  'Benzaldehyde\_e-1'
-stimTrialGroups = [s.OdorA + 2 * s.OdorB]; %s.OdorA; % 
-stimGroupNames = {'OdorA', 'OdorB'}; % {'OdorA'}; % 
-stimShading =  {[8 11]};%{[7 10 ; 10 13]};% {[4 6;10 13]};%
-stimShadingColors = {'red', 'green'}; % {'red', 'green'}; % 
-rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2})];
+stimNames = {'EtOH\_neat'}; % {'EtOH\_neat', 'CO2\_2e-2'}; % 'Benzaldehyde\_e-1'
+stimTrialGroups = s.OdorA; % [s.OdorA + 2 * s.OdorB]; %
+stimGroupNames = {'OdorA'}; % {'OdorA', 'OdorB'}; % 
+stimShading =  {[6 7; 8 11; 10 11]};% {[8 11]};%{[7 10 ; 10 13]};% {[4 6;10 13]};%
+stimShadingColors = {'red', 'green', 'blue'}; % {'red', 'green'}; % 
+rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2}); rgb(stimShadingColors{3})];
 groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 % groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
 % groupBounds = [1, 60];
-blockNames = {'0%', '2%', '4%', '6%', '10%', '20%'};
+blockNames = {'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', '20%'};
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
-
+% 
 % trialGroups = [];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_AllTrials';
-% % % % '
+% % '
 % % % 
 % trialGroups = stimTrialGroups; 
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
@@ -116,6 +116,7 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 
 % % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
+% % groupNames = {'Odor + photostim', 'Odor only'};
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
@@ -124,7 +125,7 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 % trialGroups = trialGroups + 1;
 % plotTitleSuffix = make_plotTitleSuffix(groupNames);
 % fileNameSuffix = '_PhotostimVsOdorOnly';
-
+% 
 % % GROUP CHRONOLOGICALLY BY BLOCKS
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
@@ -179,16 +180,16 @@ actionNum = [3]; % locomotionLabel = 3; noActionLabel = 0; isoMovementLabel = 1;
 actionName = actionNames{actionNum};
 figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial'], '_', '\\_');
 cm = [];
-
+% 
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = ['_AllTrials_', actionName];
 % groupNames = {'All trials'};
 
-% GROUP BY STIM TYPE
-trialGroups = stimTrialGroups .* goodTrials;
-fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
-groupNames = stimNames;
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups .* goodTrials;
+% fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
+% groupNames = stimNames;
 
 % % GROUP BY SINGLE BLOCKS
 % groupNames = [];
@@ -299,13 +300,13 @@ figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 % trialGroups = [];
 % fileNameSuffix = ['_AllTrials'];
 % plotTitleSuffix = '';
-% 
-% % % % % % % % % % 
+
+% % % % % % % % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 % plotTitleSuffix = make_plotTitleSuffix(stimNames);
-% 
+% % 
 % % GROUP BY BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
 % trialGroups = zeros(1, nTrials);
@@ -412,10 +413,10 @@ cm = [];
 % groupNames = {'All trials'};
 
 
-% GROUP BY STIM TYPE
-trialGroups = stimTrialGroups .* goodTrials; 
-fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
-groupNames = stimNames;
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups .* goodTrials; 
+% fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
+% groupNames = stimNames;
 
 % % % 
 % % GROUP BY SINGLE BLOCKS
@@ -598,24 +599,24 @@ sdCap = 3.5;
 figTitle = [expDate, '  —  Volume-Averaged FicTrac data'];
 cm = [];
 
-% ALL TRIALS
-trialGroups = [goodTrials];
-fileNameSuffix = [fileNameSuffix, 'AllTrials'];
-groupNames = {'All trials'};
+% % ALL TRIALS
+% trialGroups = [goodTrials];
+% fileNameSuffix = [fileNameSuffix, 'AllTrials'];
+% groupNames = {'All trials'};
 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, 'StimTypeComparison']; 
 % groupNames = stimNames;
 
-% % PLOT AND COLOR EACH BLOCK SEPARATELY
-% groupNames = blockNames;
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
-% end
-% trialGroups(groupBounds(end):end) = numel(groupBounds);
-% fileNameSuffix = '_Blocks_Separated';
+% PLOT AND COLOR EACH BLOCK SEPARATELY
+groupNames = blockNames;
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end):end) = numel(groupBounds);
+fileNameSuffix = '_Blocks_Separated';
 
 try
 
@@ -680,7 +681,7 @@ for iGroup = 1:nGroups-1
     plot([groupSize(iGroup), groupSize(iGroup)], [0 yL(2)], 'LineWidth', 2, 'Color', 'r')
 end
 xlim([0, size(plotArr, 1)])
-ylim([0 yL(2)])
+% ylim([0 yL(2)])
 
 axes(axFWSpeed)
 plot(plotArr(:,2), 'linewidth', 2)
@@ -689,7 +690,7 @@ for iGroup = 1:nGroups-1
     plot([groupSize(iGroup), groupSize(iGroup)], [0 yL(2)], 'LineWidth', 2, 'Color', 'r')
 end
 xlim([0, size(plotArr, 1)])
-ylim([0 yL(2)])
+% ylim([0 yL(2)])
 
 axes(axYawSpeed)
 plot(plotArr(:,3), 'linewidth', 2)
@@ -698,7 +699,7 @@ for iGroup = 1:nGroups-1
     plot([groupSize(iGroup), groupSize(iGroup)], [0 yL(2)], 'LineWidth', 2, 'Color', 'r')
 end
 xlim([0, size(plotArr, 1)])
-ylim([0 yL(2)])
+% ylim([0 yL(2)])
 
 catch foldME; rethrow(foldME); end
 
@@ -736,16 +737,16 @@ cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('g
 % fileNameSuffix = '_OdorAvsOdorBvsNoStim'; 
 % groupNames = stimNames;
 
-% % % % % 
-% GROUP BY BLOCK TYPE
-groupNames = {'Odor only', 'Odor + photostim'};
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
-end
-trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
-trialGroups = trialGroups + 1;
-fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
+% % % % % % 
+% % GROUP BY BLOCK TYPE
+% groupNames = {'Odor only', 'Odor + photostim'};
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = ~mod(iBound, 2);
+% end
+% trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
+% trialGroups = trialGroups + 1;
+% fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
 
 % % GROUP BY ALTERNATING BLOCKS
 % trialGroups = zeros(1, nTrials);
