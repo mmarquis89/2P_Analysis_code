@@ -94,27 +94,33 @@ catch foldME; rethrow(foldME); end
 stimNames = {'EtOH\_neat'}; % {'EtOH\_neat', 'CO2\_2e-2'}; % 'Benzaldehyde\_e-1'
 stimTrialGroups = s.OdorA; % [s.OdorA + 2 * s.OdorB]; %
 stimGroupNames = {'OdorA'}; % {'OdorA', 'OdorB'}; % 
-stimShading =  {[6 7; 8 11; 10 11]};% {[8 11]};%{[7 10 ; 10 13]};% {[4 6;10 13]};%
-stimShadingColors = {'red', 'green', 'blue'}; % {'red', 'green'}; % 
-rgbStimShadeColors = [rgb(stimShadingColors{1}); rgb(stimShadingColors{2}); rgb(stimShadingColors{3})];
+
+stimEpochs =  [6 7; 8 11; 10 11];% [8 11];%[7 10 ; 10 13];% [4 6;10 13];%
+stimShadingColors = {'red', 'green', 'red'};
+stimEpochNames = {'Laser', 'Odor', 'Laser'};
+
 groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 % groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
 % groupBounds = [1, 60];
-blockNames = {'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', '20%'};
+
+blockNames = {'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3'};
+blockShading = {2, [2 3], 2, [1 2], 2};
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
-% 
-% trialGroups = [];
-% plotTitleSuffix = '';
-% fileNameSuffix = '_AllTrials';
-% % '
+sepBlockStims = 0;
+
+trialGroups = [goodTrials];
+plotTitleSuffix = '';
+fileNameSuffix = '_AllTrials';
+% '
 % % % 
 % trialGroups = stimTrialGroups; 
+% trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 
-% % GROUP BY BLOCK TYPE
+% % GROUP BY ALTERNATING BLOCK TYPE
 % groupNames = {'Odor only', 'Odor + photostim'};
 % % groupNames = {'Odor + photostim', 'Odor only'};
 % trialGroups = zeros(1, nTrials);
@@ -123,17 +129,22 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 % end
 % trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
 % trialGroups = trialGroups + 1;
+% trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = make_plotTitleSuffix(groupNames);
 % fileNameSuffix = '_PhotostimVsOdorOnly';
-% 
+
 % % GROUP CHRONOLOGICALLY BY BLOCKS
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
 % end
 % trialGroups(groupBounds(end):end) = iBound + 1;
+% trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = '';
 % fileNameSuffix = '_Blocks_Separated';
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;
+% end
 
 try
     
@@ -142,24 +153,87 @@ plotName = 'Behavior Annotation';
 titleString = [regexprep(expDate, '_', '\\_'), '    ', [plotName, ' summary ', plotTitleSuffix]]; % regex to add escape characters
 annotArr = behaviorAnnotArr;
 
+% Create custom colormap
+cMap = [rgb('Indigo'); ...
+        rgb('Orange'); ...
+        rgb('Green'); ...
+        rgb('Cyan'); ...
+        rgb('Gold'); ...
+        rgb('Yellow'); ...
+        rgb('Green'); ...
+        rgb('Red'); ...
+        rgb('blue'); ...
+        rgb('Gold'); ...
+        rgb('black') ...
+        ];
+annotArr(end, end) = 11; % to keep the color mapping consistent
+
 % Create figure
 f = figure(7);clf
 f.Position = [-1050 45 1020 950];
 f.Color = [1 1 1];
 ax = gca();
+
 [~, ax, ~] = plot_behavior_summary_2D(infoStruct, annotArr, ax, titleString, trialGroups);
+
+[~, ax, f] = plot_2D_summary(infoStruct, annotArr, ...
+                'plotAxes', ax, ...
+                'trialGroups', trialGroups, ...
+                'titleStr', titleString, ...
+                'sampRate', FRAME_RATE, ...
+                'colormap', cMap ...
+                );
+
 ax.FontSize = 14;
 ax.Title.FontSize = 12;
 ax.XLabel.FontSize = 14;
 
 % Plot stim times
 hold on
-[nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
-for iStim = 1:nStimEpochs
-    stimOnsetFrame = stimShading{idx}(iStim, 1) * FRAME_RATE;
-    stimOffsetFrame = stimShading{idx}(iStim, 2) * FRAME_RATE;
-    plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
-    plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+if sepBlockStims
+    
+    % Calculate y-axis ranges for each block
+    blockStarts = [5];
+    blockEnds = [];
+    for iBlock = 1:numel(unique(trialGroups))-1
+        blockTrials = sum(trialGroups == iBlock);
+        blockStarts(iBlock + 1) = blockStarts(iBlock) + (4) + blockTrials;
+        blockEnds(iBlock) = blockStarts(iBlock) + blockTrials - 1;
+    end
+    blockEnds(end + 1) = numel(trialGroups) + (4 * numel(trialGroups));
+    blockRanges = [blockStarts - 1; blockEnds + 1]';
+    
+    % Plot stim start and end for each block
+    for iBlock = 1:numel(unique(trialGroups))
+        currBlockShading = stimEpochs(blockShading{iBlock}, :);
+        nStimEpochs = size(currBlockShading, 1);
+        epochInds = blockShading{iBlock};
+        for iStim = 1:nStimEpochs
+            stimOnsetFrame = stimEpochs(epochInds(iStim), 1) * FRAME_RATE;
+            stimOffsetFrame = stimEpochs(epochInds(iStim), 2) * FRAME_RATE;
+            if size(stimEpochs, 1) > 1
+                shadeColor = rgb(stimShadingColors{blockShading{iBlock}(iStim)});
+            else
+                shadeColor = 'k';
+            end
+            plot(ax, [stimOnsetFrame, stimOnsetFrame], blockRanges(iBlock, :), 'Color', shadeColor, 'LineWidth', 2)
+            plot(ax, [stimOffsetFrame, stimOffsetFrame], blockRanges(iBlock, :), 'Color', shadeColor, 'LineWidth', 2)
+        end
+    end
+    
+else
+    nStimEpochs = size(stimEpochs, 1);
+    for iStim = 1:nStimEpochs
+        stimOnsetFrame = stimEpochs(iStim, 1) * FRAME_RATE;
+        stimOffsetFrame = stimEpochs(iStim, 2) * FRAME_RATE;
+        if nStimEpochs > 1
+            shadeColor = rgb(stimShadingColors{iStim});
+        else
+            shadeColor = 'k';
+        end
+        plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
+        plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
+    end
 end
 
 if saveDir
@@ -180,7 +254,7 @@ actionNum = [3]; % locomotionLabel = 3; noActionLabel = 0; isoMovementLabel = 1;
 actionName = actionNames{actionNum};
 figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial'], '_', '\\_');
 cm = [];
-% 
+% % 
 % % ALL TRIALS
 % trialGroups = [goodTrials];
 % fileNameSuffix = ['_AllTrials_', actionName];
@@ -188,6 +262,7 @@ cm = [];
 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
+% trialGroups = trialGroups .* goodTrials;
 % fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
 % groupNames = stimNames;
 
@@ -199,6 +274,7 @@ cm = [];
 %    groupNames{iBound} = ['Trials ', num2str(groupBounds(iBound)), '-', num2str(groupBounds(iBound + 1))];
 % end
 % trialGroups(groupBounds(end):end) = numel(groupBounds);
+% trialGroups = trialGroups .* goodTrials;
 % groupNames = {'Odor only', 'Odor + photostim'};
 % fileNameSuffix = '_SingleBlocks';
 % cm = repmat([rgb('blue'); rgb('red')], 8, 1);
@@ -211,11 +287,13 @@ cm = [];
 % end
 % trialGroups(groupBounds(end):end) = ~mod(iBound + 1, 2);
 % trialGroups = trialGroups + 1;
+% trialGroups = trialGroups .* goodTrials;
 % fileNameSuffix = '_PhotostimVsOdorOnly';
-% % 
+% % % 
 % % PLOT AND COLOR EACH BLOCK SEPARATELY
 % groupNames = blockNames;
 % trialGroups = zeros(1, nTrials);
+% trialGroups = trialGroups .* goodTrials;
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
 % end
@@ -258,20 +336,21 @@ else
         end
     end%iGroup
     
-    legend(groupNames, 'FontSize', 14, 'Location', 'Best', 'AutoUpdate', 'off')
     ax.XLim = [20 nFrames-20]; % to improve plot appearance
     ax.YLim = [0 1];
     suptitle(figTitle);
 end
 
 % Add shading during stimulus presentations
-[nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+% [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
 yL = ylim();
-for iStim = 1:size(stimShading{idx}, 1)
-    stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
-    stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+for iStim = 1:size(stimEpochs, 1)
+    stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
+    stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
     plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}))
 end
+
+legend(cat(2, groupNames, unique(stimEpochNames)), 'FontSize', 14, 'Location', 'SE', 'AutoUpdate', 'off')
 
 if saveDir
     fileName = ['1D_Annotation_Summary', fileNameSuffix, '_', ...
@@ -296,10 +375,10 @@ cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
 
-% % ALL TRIALS
-% trialGroups = [];
-% fileNameSuffix = ['_AllTrials'];
-% plotTitleSuffix = '';
+% ALL TRIALS
+trialGroups = [];
+fileNameSuffix = ['_AllTrials'];
+plotTitleSuffix = '';
 
 % % % % % % % % % 
 % % GROUP BY STIM TYPE
@@ -328,6 +407,18 @@ figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_Blocks_Separated';
 
+% GROUP CHRONOLOGICALLY BY BLOCKS
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound):groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end):end) = iBound + 1;
+trialGroups = trialGroups .* goodTrials;
+plotTitleSuffix = '';
+fileNameSuffix = '_Blocks_Separated';
+if ~isempty(blockShading)
+    sepBlockStims = 1;
+end
 
 try
 
@@ -371,12 +462,17 @@ hold on
 
 % Plot stim times
 hold on
-[nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
+% [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
 for iStim = 1:nStimEpochs
-    stimOnsetFrame = stimShading{idx}(iStim, 1) * FRAME_RATE;
-    stimOffsetFrame = stimShading{idx}(iStim, 2) * FRAME_RATE;
-    plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
-    plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', 'k', 'LineWidth', 2)
+    stimOnsetFrame = stimEpochs(iStim, 1) * FRAME_RATE;
+    stimOffsetFrame = stimEpochs(iStim, 2) * FRAME_RATE;
+    if nStimEpochs > 1
+        shadeColor = rgb(stimShadingColors{iStim});
+    else
+        shadeColor = 'k';
+    end
+    plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
+    plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
 end
 
 if saveDir
@@ -531,11 +627,11 @@ axMoveSpeed.YLabel.String = 'XY Speed (mm/sec)';
 axMoveSpeed.FontSize = 14;
 legend(axMoveSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axMoveSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(stimShading)
-    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
-    for iStim = 1:size(stimShading{idx}, 1)
-        stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
-        stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+if ~isempty(stimEpochs)
+%     [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
+    for iStim = 1:size(stimEpochs, 1)
+        stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
+        stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
         plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
             axMoveSpeed);
     end
@@ -547,11 +643,11 @@ axYawVel.YLabel.String = 'Yaw Vel (CW = +)';
 axYawVel.FontSize = 14;
 legend(axYawVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axYawVel.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(stimShading)
-    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
-    for iStim = 1:size(stimShading{idx}, 1)
-        stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
-        stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+if ~isempty(stimEpochs)
+%     [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimShading))));
+    for iStim = 1:size(stimEpochs, 1)
+        stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
+        stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
         plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
             axYawVel);
     end
@@ -563,11 +659,11 @@ axYawSpeed.YLabel.String = 'Yaw Speed (deg/sec)';
 axYawSpeed.FontSize = 14;
 legend(axYawSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
 axYawSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(stimShading)
-    [nStimEpochs, idx] = max(cellfun(@size, stimShading, repmat({1}, 1, numel(stimShading))));
-    for iStim = 1:size(stimShading{idx}, 1)
-        stimOnset = stimShading{idx}(iStim, 1) * FRAME_RATE;
-        stimOffset = stimShading{idx}(iStim, 2) * FRAME_RATE;
+if ~isempty(stimEpochs)
+%     [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
+    for iStim = 1:size(stimEpochs, 1)
+        stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
+        stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
         plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
             axYawSpeed);
     end
@@ -714,7 +810,6 @@ showMean = 1;
 saveFig = 0;
 
 s = stimSepTrials;
-shadeFrames = {round(stimShading{:} * FRAME_RATE)};
 xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
 xTickLabels = [0:1/trialDuration:1] * trialDuration;
 surfPlot = 0;

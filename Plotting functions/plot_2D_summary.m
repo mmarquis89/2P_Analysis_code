@@ -4,7 +4,8 @@ function [plotHandle, plotAxes, plotFig] = plot_2D_summary(infoStruct, dataArr, 
 %
 % Uses imagesc() to visualize 2D data in a [trial, volume/frame] format from an entire experiment.
 % By default will plot trials in chronological order, but they can be optionally split into groups.
-% Can create new figure for the plot or plot in a specific axes object.
+% Can create new figure for the plot or plot in a specific axes object. Any trials for which 
+% trialGroups == 0 will be omitted from the plots.
 %
 % INPUTS:
 %       infoStruct    = the main imaging data structure containing metadata for the experiment.
@@ -69,7 +70,7 @@ end
 if isempty(plotAxes)
     plotFig = figure(1); clf;
     plotAxes = axes();
-    plotFig.Position = [-1050 45 1050 950];
+    plotFig.Position = figPos;
     plotFig.Color = [1 1 1];
 else
     axes(plotAxes)
@@ -79,10 +80,10 @@ end
 % Plot data
 if isempty(trialGroups)
     plotHandle = imagesc(plotAxes, dataArr);
-else
+else   
     % Separate into trial groups, adding black spacers in between
     plotArr = [];
-    spacerArr = ones(4, size(dataArr, 2)) * (min(dataArr(:)) - 1);
+    spacerArr = ones(4, size(dataArr, 2)) * (max(dataArr(:)) + 1);
     for iGroup = 1:numel(unique(trialGroups))
         if iGroup == 1
             plotArr = dataArr(trialGroups == iGroup, :);
@@ -93,7 +94,7 @@ else
     plotHandle = imagesc(plotAxes, plotArr);
     
     % Update colormap to distinguish spacer rows
-    colormap(plotAxes, [0 0 0; cm(1:end-1,:)])
+    colormap(plotAxes, [cm(1:end,:); 0 0 0])
 end
 colormap(plotAxes, cm)
 

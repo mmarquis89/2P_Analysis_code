@@ -15,11 +15,12 @@ try
         % Load analysis metadata
         disp('Loading analysis metadata...')
         load(fullfile(parentDir, 'analysisMetadata.mat')) % --> 'analysisMetadata' info struct
+        infoStruct = analysisMetadata;
         
         % Load reference images file
         disp('Loading reference images...')
 %         [refImgFile, refImgPath, ~] = uigetfile('*.mat', 'Select a reference image file', parentDir);
-%         refImgPath = parentDir; refImgFile = ['sid_', num2str(analysisMetadata.sid), '_refImages.mat'];
+%         refImgPath = parentDir; refImgFile = ['sid_', num2str(infoStruct.sid), '_refImages.mat'];
         refImgPath = parentDir; refImgFile = ['refImages_Reg.mat'];
         load(fullfile(refImgPath, refImgFile)) % --> 'refImages', 'channelNum'
         clear refImgPath refImgFile
@@ -36,58 +37,60 @@ try
         
         % Load FicTrac data
         disp('Loading FicTrac data...')
-        ftDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', analysisMetadata.expDate, '_Movies\FicTracData');
+        ftDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids\', infoStruct.expDate, '_Movies\FicTracData');
         if isdir(ftDir)
-            ftData = load_fictrac_data(analysisMetadata, 'Sid', analysisMetadata.sid, 'ParentDir', ftDir);
+            ftData = load_fictrac_data(infoStruct, 'Sid', infoStruct.sid, 'ParentDir', ftDir);
         else
-            ftData = load_fictrac_data(analysisMetadata, 'Sid', analysisMetadata.sid);
+            ftData = load_fictrac_data(infoStruct, 'Sid', infoStruct.sid);
         end
-        if ~isfield(analysisMetadata, 'ftData')
-            analysisMetadata.ftData = ftData;
+        if ~isfield(infoStruct, 'ftData')
+            infoStruct.ftData = ftData;
+            analysisMetadata = infoStruct;
             save(fullfile(parentDir, 'analysisMetadata.mat'), 'analysisMetadata', '-v7.3');
         end
         
         % Load volume-averaged raw session data
-        volAvgDataFile = fullfile(parentDir, ['sid_', num2str(analysisMetadata.sid), '_volAvgSessionData.mat']);
+        volAvgDataFile = fullfile(parentDir, ['sid_', num2str(infoStruct.sid), '_volAvgSessionData.mat']);
         if exist(volAvgDataFile)
             load(volAvgDataFile) % "volAvgSessionData"
         end
         
         % Reload analysis metadata in case .goodTrials has been updated
         load(fullfile(parentDir, 'analysisMetadata.mat')) % --> 'analysisMetadata' info struct
-        analysisMetadata.refImg = refImages;
+        infoStruct = analysisMetadata;
+        infoStruct.refImg = refImages;
         disp('All data loaded')
         
         % Omit any trials in which FicTrac reset from analysis
-        analysisMetadata.goodTrials(logical(ftData.resets)) = 0;
+        infoStruct.goodTrials(logical(ftData.resets)) = 0;
         
         % ------- Copy variables for convenience -------
         sessionSize = size(m, 'wholeSession');
-        expDate = analysisMetadata.expDate;
-        sid = analysisMetadata.sid;
-        nPlanes = analysisMetadata.nPlanes;
-        nVolumes = analysisMetadata.nVolumes;
-        refImg = analysisMetadata.refImg;
-        if ~isempty(analysisMetadata.nFrames)
-            nFrames = analysisMetadata.nFrames;
+        expDate = infoStruct.expDate;
+        sid = infoStruct.sid;
+        nPlanes = infoStruct.nPlanes;
+        nVolumes = infoStruct.nVolumes;
+        refImg = infoStruct.refImg;
+        if ~isempty(infoStruct.nFrames)
+            nFrames = infoStruct.nFrames;
         else
             nFrames = nVolumes;
         end
-        nTrials = analysisMetadata.nTrials;
-        nGoodTrials = sum(analysisMetadata.goodTrials);
-        stimTypes = analysisMetadata.stimTypes;
-        stimOnsetTimes = analysisMetadata.stimOnsetTimes;
-        stimDurs = analysisMetadata.stimDurs;
-        trialDuration = analysisMetadata.trialDuration;
-        volumeRate = analysisMetadata.volumeRate;
-        volFrames = analysisMetadata.volFrames;
-        goodTrials = analysisMetadata.goodTrials;
-        stimSepTrials = analysisMetadata.stimSepTrials;
+        nTrials = infoStruct.nTrials;
+        nGoodTrials = sum(infoStruct.goodTrials);
+        stimTypes = infoStruct.stimTypes;
+        stimOnsetTimes = infoStruct.stimOnsetTimes;
+        stimDurs = infoStruct.stimDurs;
+        trialDuration = infoStruct.trialDuration;
+        volumeRate = infoStruct.volumeRate;
+        volFrames = infoStruct.volFrames;
+        goodTrials = infoStruct.goodTrials;
+        stimSepTrials = infoStruct.stimSepTrials;
         behaviorAnnotArr = annotationTypes{contains(annotationTypeSummary.AnnotationType, 'move')}.frameAnnotArr;
         
         % Create hardcoded parameters
         FRAME_RATE = 25; % This is the frame rate for the behavior video
-        MAX_INTENSITY = analysisMetadata.MAX_INTENSITY;
+        MAX_INTENSITY = infoStruct.MAX_INTENSITY;
         if isempty(nFrames)
             nFrames = sum(trialDuration) * FRAME_RATE;
         end
@@ -125,7 +128,7 @@ catch foldME; rethrow(foldME); end
 %% Remove trials from analysis
 try
     
-goodTrials = analysisMetadata.goodTrials;
+goodTrials = infoStruct.goodTrials;
 goodTrials(omitTrials) = 0;
 
 catch foldME; rethrow(foldME); end
@@ -166,7 +169,7 @@ annotArr = [];
 for iPlot = 1:nPlots
     if plotAnnotTypes(iPlot) == 1
         
-        stimAnnotTypes = annotationTypes(contains(annotationTypeSummary.AnnotationType, analysisMetadata.stimTypes));        
+        stimAnnotTypes = annotationTypes(contains(annotationTypeSummary.AnnotationType, infoStruct.stimTypes));        
         tempAnnotArr = zeros(size(stimAnnotTypes{1}.frameAnnotArr));
         for iType = 1:numel(stimAnnotTypes)
            tempAnnotArr = tempAnnotArr + (iType * stimAnnotTypes{iType}.frameAnnotArr); 
@@ -206,7 +209,7 @@ for iPlot = 1:nPlots
             'PaddingTop', 0.03 ...
             );
     ax = gca;
-    [~, ax, ~] = plot_behavior_summary_2D(analysisMetadata, annotArr{iPlot}, ax, titleStrings{iPlot}, trialGroups);
+    [~, ax, ~] = plot_behavior_summary_2D(infoStruct, annotArr{iPlot}, ax, titleStrings{iPlot}, trialGroups);
     ax.FontSize = 14;
     ax.Title.FontSize = 12;
     ax.XLabel.FontSize = 14;
@@ -301,8 +304,8 @@ groupNames = {'All trials'};
 try
 
 % % Get odor stim times
-% odorOnset = mode(analysisMetadata.stimOnsetTimes(logical(s.OdorA + s.OdorB)));
-% odorOffset = odorOnset + mode(analysisMetadata.stimDurs(logical(s.OdorA + s.OdorB)));
+% odorOnset = mode(infoStruct.stimOnsetTimes(logical(s.OdorA + s.OdorB)));
+% odorOffset = odorOnset + mode(infoStruct.stimDurs(logical(s.OdorA + s.OdorB)));
 % odorTimes = [odorOnset, odorOffset];
 % odorFrames = floor(odorTimes * FRAME_RATE);
 % 
@@ -319,7 +322,7 @@ if isempty(trialGroups)
     annotArrSum = sum(ismember(behaviorAnnotArr, actionNum), 1) ./ nTrials;
     ax = gca();
     ax.FontSize = 14;
-    plot_behavior_summary_1D(analysisMetadata, annotArrSum(2:end-1), ax, figTitle);
+    plot_behavior_summary_1D(infoStruct, annotArrSum(2:end-1), ax, figTitle);
     
 else
     annotArrSum = [];
@@ -334,7 +337,7 @@ else
         ax.FontSize = 14;
         colormap(jet(nGroups))
         annotArrSum = sum(ismember(behaviorAnnotArr(trialGroups == iGroup, :), actionNum), 1) ./ sum(trialGroups == iGroup);
-        [plt, ~, ~] = plot_behavior_summary_1D(analysisMetadata, annotArrSum, 'PlotAxes', ax, 'LineColor', cm(iGroup, :));
+        [plt, ~, ~] = plot_behavior_summary_1D(infoStruct, annotArrSum, 'PlotAxes', ax, 'LineColor', cm(iGroup, :));
         plt.LineWidth = 2;
         if iGroup ~= length(unique(trialGroups))
             xlabel('');
@@ -419,7 +422,7 @@ figTitleSuffix = '';
 try
 
 % Extract FicTrac data
-rawData = analysisMetadata.ftData.(ftVarName);          % --> [frame, trial]
+rawData = infoStruct.ftData.(ftVarName);          % --> [frame, trial]
 rawData = rawData';                                     % --> [trial, frame]
 if strcmp(ftVarName, 'yawSpeed')
     plotData = abs(rad2deg(rawData .* FRAME_RATE));    	% --> [trial, frame] (deg/sec)
@@ -446,7 +449,7 @@ end
 titleStr = [figTitle, figTitleSuffix];
 fileName = ['2D_FicTrac_', ftVarName '_Summary', fileNameSuffix, '_', ...
             regexprep(expDate, {'_', 'exp'}, {'', '_'})];
-[~, ax, ~] = plot_2D_summary(analysisMetadata, smPlotData, ...
+[~, ax, ~] = plot_2D_summary(infoStruct, smPlotData, ...
                 'trialGroups', trialGroups, ...
                 'titleStr', titleStr, ...
                 'saveDir', saveFig, ...
@@ -534,8 +537,8 @@ try
     
 % Extract relevant data
 % shadeFrames = [];
-% if ~isempty(analysisMetadata.stimOnsetTimes)
-%     shadeTimes = [analysisMetadata.stimOnsetTimes(1), analysisMetadata.stimOnsetTimes(1) + analysisMetadata.stimDurs(1)];
+% if ~isempty(infoStruct.stimOnsetTimes)
+%     shadeTimes = [infoStruct.stimOnsetTimes(1), infoStruct.stimOnsetTimes(1) + infoStruct.stimDurs(1)];
 %     shadeFrames = round(shadeTimes * FRAME_RATE);
 % end
 xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
@@ -701,7 +704,7 @@ sinWin = 3;
 limScalar = 0.8;
 
 s = stimSepTrials;
-shadeTimes = [analysisMetadata.stimOnsetTimes(1), analysisMetadata.stimOnsetTimes(1) + analysisMetadata.stimDurs(1)];
+shadeTimes = [infoStruct.stimOnsetTimes(1), infoStruct.stimOnsetTimes(1) + infoStruct.stimDurs(1)];
 shadeFrames = round(shadeTimes * FRAME_RATE);
 xTickFR = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
 xTickLabels = [0:1/trialDuration:1] * trialDuration;
@@ -846,7 +849,7 @@ actualDistPre = []; actualDistPost = [];
 for iTrial = 1:size(mmXY, 3)
     
     % Calculate straightness before and after stim
-    stimOnsetTime = analysisMetadata.stimOnsetTimes(iTrial);
+    stimOnsetTime = infoStruct.stimOnsetTimes(iTrial);
     stimOnsetFrame = stimOnsetTime * FRAME_RATE;
     currXY = movmean(mmXY(:,:,iTrial), 3, 1);
     euc_dist = @(x1, x2, y1, y2) sqrt((x1 - x2)^2 + (y1 - y2)^2);
@@ -983,7 +986,7 @@ try
     % Plot figures
     dffCurrConds = combinedDffAvg{eventInd}(:,:,:, currConds);
     range = calc_range(dffCurrConds, rangeScalar, rangeType);
-    [~, ~] = plot_heatmaps(dffCurrConds, analysisMetadata, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir);
+    [~, ~] = plot_heatmaps(dffCurrConds, infoStruct, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir);
      
 clear odorEventName eventInd currSummary currCondNames currConds sigma rangeType rangeScalar makeVid saveDir fileName plotTitles dffCurrConds range
 catch foldME; rethrow(foldME); end  
@@ -1010,7 +1013,7 @@ try
     range = calc_range(actionDff, rangeScalar, rangeType);
 
     % Plot figures
-    [f, ~] = plot_heatmaps(actionDff, analysisMetadata, range, titleStr, smoothingSigma, 'fileName', fileName, 'makeVid', makeVid, ...
+    [f, ~] = plot_heatmaps(actionDff, infoStruct, range, titleStr, smoothingSigma, 'fileName', fileName, 'makeVid', makeVid, ...
                            'saveDir', saveDir);
 clear smoothingSigma rangeType rangeScalar makeVid saveDir fileName titleStr range   
 catch foldME; rethrow(foldME); end
@@ -1040,7 +1043,7 @@ try
     % Plot figures
     dffCurrConds = combinedDffAvg{eventInd}(:,:,:, currConds);
     range = calc_range(dffCurrConds, rangeScalar, rangeType);
-    [~, ~] = plot_heatmaps(dffCurrConds, analysisMetadata, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir); 
+    [~, ~] = plot_heatmaps(dffCurrConds, infoStruct, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir); 
 
     clear eventInd currSummary currCondNames currConds sigma rangeType rangeScalar makeVid saveDir fileName plotTitles range
 
@@ -1061,8 +1064,8 @@ dffDataFileName = 'ROI_Data_Avg.mat';
 
 % Load metadata
 load(fullfile(parentDir, metaDataFileName)); % --> ROImetadata(.mask, .xi, .yi, .plane, .color, .refImg)
-analysisMetadata.ROImetadata = ROImetadata;
-analysisMetadata.nROIs = numel(ROImetadata); nROIs = analysisMetadata.nROIs;
+infoStruct.ROImetadata = ROImetadata;
+infoStruct.nROIs = numel(ROImetadata); nROIs = infoStruct.nROIs;
 
 % Load imaging and dF/F data
 load(fullfile(parentDir, dffDataFileName)); % --> 'ROIDataAvg', 'ROIDffAvg', 'ROIDataBaseSub' ([volume, trial, ROI])
@@ -1137,7 +1140,7 @@ for iROI = 1:nROIs-1
     
     % Plot raw fluorescence heatmap
     fileName = [fileNamePrefix, 'ROI_', num2str(iROI), '_', expDate, fileNameSuffix];
-    plot_2D_summary(analysisMetadata, flData(:,:,iROI)', ...
+    plot_2D_summary(infoStruct, flData(:,:,iROI)', ...
         'plotAxes', ax, ...
         'trialGroups', trialGroups, ...
         'titleStr', [regexprep(expDate, '_', '\\_'), '  -  ROI ', num2str(iROI), '   Raw fluorescence (AU)', plotTitleSuffix], ...
@@ -1209,7 +1212,7 @@ for iROI = 1:(nROIs - 1)
     
     % Plot raw fluorescence heatmap
     fileName = [fileNamePrefix, 'ROI_', num2str(iROI), '_', expDate, fileNameSuffix];
-    plot_2D_summary(analysisMetadata, flData(:,:,iROI)', ...
+    plot_2D_summary(infoStruct, flData(:,:,iROI)', ...
         'plotAxes', ax, ...
         'trialGroups', trialGroups, ...
         'titleStr', [regexprep(expDate, '_', '\\_'), '  -  ROI ', num2str(iROI), '   baseline-sub fluorescence (AU)', plotTitleSuffix], ...
@@ -1254,7 +1257,7 @@ for iType = 1:nEventTypes
                 
         % Get ROI data for event onsets
         offsetAlign = strcmp(currCondSum.Align{iCond}, 'offset');
-        [baselineData, respData] = extract_event_volumes(eventList, combFilterVecs{iType}(goodEvents,iCond), baselineDur, respDur, analysisMetadata, ...
+        [baselineData, respData] = extract_event_volumes(eventList, combFilterVecs{iType}(goodEvents,iCond), baselineDur, respDur, infoStruct, ...
             permute(ROIDffAvg, [3 1 2]), 'offsetAlign', offsetAlign);   % --> [ROI, volume, event]
         baselineData = permute(baselineData, [2 3 1]);                  % --> [volume, event, ROI]
         respData = permute(respData, [2 3 1]);                          % --> [volume, event, ROI]
@@ -1310,7 +1313,7 @@ for iROI = ROIlist
     end
     subaxis(plotPos(1), plotPos(2), 1,'ML', 0.05, 'MR', 0.02, 'MT', 0.05, 'MB', 0.08, 'SV', 0.1, 'SH', 0.05)
     hold on
-    imshow(analysisMetadata.refImg{currPlane}, [0 MAX_INTENSITY]);
+    imshow(infoStruct.refImg{currPlane}, [0 MAX_INTENSITY]);
     plot(xData, yData, 'Color', 'g');
 %     title(['Plane #', num2str(ROImetadata{iROI}(1).plane)])
     
@@ -1360,7 +1363,7 @@ try
     saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
     plotTitle = regexprep([expDate, make_plotTitleSuffix(stimNames)], '(?<!\\)_', '\\_');    
     fileNamePrefix = 'Whole_Trial_Responses_';
-    s = analysisMetadata.stimSepTrials;
+    s = infoStruct.stimSepTrials;
     filterVecs = [];
     for iStim = 1:numel(stimGroupNames)
         filterVecs = [filterVecs; s.(stimGroupNames{iStim})];
@@ -1391,7 +1394,7 @@ try
         yData = ROImetadata{iROI}(1).yi;
         subaxis(nRows, 2, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
         hold on
-        imshow(analysisMetadata.refImg{currPlane}, [0 analysisMetadata.MAX_INTENSITY]);
+        imshow(infoStruct.refImg{currPlane}, [0 infoStruct.MAX_INTENSITY]);
         plot(xData, yData, 'Color', 'g');
 
         clear ax
@@ -1480,9 +1483,9 @@ try
         yData = ROImetadata{iROI}(1).yi;
         subaxis(2, 3, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
         hold on
-        imshow(analysisMetadata.refImg{currPlane}, [0 analysisMetadata.MAX_INTENSITY]);
+        imshow(infoStruct.refImg{currPlane}, [0 infoStruct.MAX_INTENSITY]);
         plot(xData, yData, 'Color', 'g');
-%         title(['Plane #', num2str(analysisMetadata.ROImetadata{iROI}(1).plane)])
+%         title(['Plane #', num2str(infoStruct.ROImetadata{iROI}(1).plane)])
 
         % Create plot
         currDffAvg = ROIDffAvg(:,logical(s .* goodTrials), iROI); % --> [volume, trial]
@@ -1515,7 +1518,7 @@ try
     saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
     plotTitle = regexprep([expDate, make_plotTitleSuffix(stimNames)], '(?<!\\)_', '\\_');    
     fileNamePrefix = 'Behavior_Coded_Whole_Trial_Responses_';
-    s = analysisMetadata.stimSepTrials;
+    s = infoStruct.stimSepTrials;
     annotValues = [3 0];
     annotTypeInd = 4;
     
@@ -1548,9 +1551,9 @@ try
         yData = ROImetadata{iROI}(1).yi;
         subaxis(nRows, 3, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
         hold on
-        imshow(analysisMetadata.refImg{currPlane}, [0 analysisMetadata.MAX_INTENSITY]);
+        imshow(infoStruct.refImg{currPlane}, [0 infoStruct.MAX_INTENSITY]);
         plot(xData, yData, 'Color', 'g');
-%         title(['Plane #', num2str(analysisMetadata.ROImetadata{iROI}(1).plane)])
+%         title(['Plane #', num2str(infoStruct.ROImetadata{iROI}(1).plane)])
         
         clear ax
         yL = [];
@@ -1649,7 +1652,7 @@ end
 
 goodTrialNums = 1:nTrials;
 goodTrialNums(~logical(goodTrials .* currStim)) = [];
-goodTrialTypes = analysisMetadata.trialType;
+goodTrialTypes = infoStruct.trialType;
 goodTrialTypes(~logical(goodTrials .* currStim)) = [];
 
 % Scale fluorescence data so min is zero
@@ -1753,7 +1756,7 @@ for iROI = 1:nROIs
     ax = gca(); hold on
     ax.FontSize = 20;
     title(['ROI ', num2str(iROI)])
-    imshow(refImg{ROImetadata{iROI}(1).plane}, [0 analysisMetadata.MAX_INTENSITY]);hold on
+    imshow(refImg{ROImetadata{iROI}(1).plane}, [0 infoStruct.MAX_INTENSITY]);hold on
     plot(ROImetadata{iROI}(1).xi, ROImetadata{iROI}(1).yi, 'LineWidth', 2)
     set(gca, 'FontSize', 14)
 end
@@ -1823,8 +1826,8 @@ ylabel('Trial')
 % ---------------------------------------------------------------------------------------------------
 
 shadeVols = [];
-if ~isempty(analysisMetadata.stimOnsetTimes)
-    shadeTimes = [analysisMetadata.stimOnsetTimes(1), analysisMetadata.stimOnsetTimes(1) + analysisMetadata.stimDurs(1)];
+if ~isempty(infoStruct.stimOnsetTimes)
+    shadeTimes = [infoStruct.stimOnsetTimes(1), infoStruct.stimOnsetTimes(1) + infoStruct.stimDurs(1)];
     shadeVols = round(shadeTimes * volumeRate);
 end
 xTickVol = [0:1/trialDuration:1] * (trialDuration * volumeRate);
@@ -1861,7 +1864,7 @@ for iROI = 1:nROIs
 end
 ylabel('Raw florescence (AU)');
 legend(lgdStr, 'autoupdate', 'off');
-if ~isempty(analysisMetadata.stimOnsetTimes)
+if ~isempty(infoStruct.stimOnsetTimes)
     plot_stim_shading(shadeVols, 'Axes', ax);
 else
     annotNames = annotationTypeSummary.AnnotationType;
@@ -1909,7 +1912,7 @@ for iROI = 1:nROIs
 end
 ylabel('Raw florescence (AU)');
 legend(lgdStr, 'autoupdate', 'off');
-if ~isempty(analysisMetadata.stimOnsetTimes)
+if ~isempty(infoStruct.stimOnsetTimes)
     plot_stim_shading(shadeVols, 'Axes', ax);
 else
     annotNames = annotationTypeSummary.AnnotationType;
@@ -2030,8 +2033,8 @@ for iTrial = 1:size(mmXY, 3)
     xlim([-lims lims])
     ylim([-lims lims])
     legend({'2D movement (mm)'}, 'FontSize', 11)
-    title([analysisMetadata.trialType{iTrial}, ' (', num2str(analysisMetadata.stimOnsetTimes(iTrial)), ...
-          '-', num2str(analysisMetadata.stimOnsetTimes(iTrial) + analysisMetadata.stimDurs(iTrial)), ' sec)'])
+    title([infoStruct.trialType{iTrial}, ' (', num2str(infoStruct.stimOnsetTimes(iTrial)), ...
+          '-', num2str(infoStruct.stimOnsetTimes(iTrial) + infoStruct.stimDurs(iTrial)), ' sec)'])
     x = currIntXY(iFrame, 1);
     y = currIntXY(iFrame, 2);
     
@@ -2117,7 +2120,7 @@ planeData = pcaData(:,:,:,planeNum);
 
 figure(2); clf;
 subplot(2,2,1)
-imshow(analysisMetadata.refImg{planeNum},[0 analysisMetadata.MAX_INTENSITY])
+imshow(infoStruct.refImg{planeNum},[0 infoStruct.MAX_INTENSITY])
 colormap(gca, 'gray')
 % colormap('parula')
 for iPlot = 2:4
@@ -2243,7 +2246,7 @@ dHD = rad2deg(ftData.yawSpeed(:,goodTrials) * FRAME_RATE);         % --> [frame,
 goodFl = ROIDataAvg(:,logical(goodTrials),:);          % --> [frame, trial, ROI]
 goodTrialNums = 1:nTrials;
 goodTrialNums(~goodTrials) = [];
-goodTrialTypes = analysisMetadata.trialType;
+goodTrialTypes = infoStruct.trialType;
 goodTrialTypes(~goodTrials) = [];
 
 % Scale fluorescence data so min is zero
@@ -2269,12 +2272,12 @@ for iTrial = 1:size(goodFl, 2)
     
     % Calculate shade volumes if applicable
     shadeVols = [];
-    if ~isempty(analysisMetadata.stimOnsetTimes)
-        onsetTimes = analysisMetadata.stimOnsetTimes;
+    if ~isempty(infoStruct.stimOnsetTimes)
+        onsetTimes = infoStruct.stimOnsetTimes;
         onsetTimes(~goodTrials) = [];
-        stimDurs = analysisMetadata.stimDurs;
+        stimDurs = infoStruct.stimDurs;
         stimDurs(~goodTrials) = [];
-        shadeTimes = [analysisMetadata.stimOnsetTimes(iTrial), analysisMetadata.stimOnsetTimes(iTrial) + analysisMetadata.stimDurs(iTrial)];
+        shadeTimes = [infoStruct.stimOnsetTimes(iTrial), infoStruct.stimOnsetTimes(iTrial) + infoStruct.stimDurs(iTrial)];
         shadeVols = round(shadeTimes * volumeRate);
     end
     
@@ -2351,7 +2354,7 @@ for iTrial = 1:size(goodFl, 2)
         ylabel('FW move speed (mm/sec)');
         lgdStr = {'FW move speed'};
         ylim([min(currFWSpeed), max(currFWSpeed)]);
-        if ~isempty(analysisMetadata.stimOnsetTimes)
+        if ~isempty(infoStruct.stimOnsetTimes)
             plot_stim_shading(shadeTimes, 'Axes', axFW);
         end
         yyaxis right
@@ -2379,7 +2382,7 @@ for iTrial = 1:size(goodFl, 2)
         ylabel('Yaw speed (deg/sec)');
         lgdStr = {'Yaw speed'};
         ylim([min(currYawSpeed(:)), max(currYawSpeed(:))]);
-        if ~isempty(analysisMetadata.stimOnsetTimes)
+        if ~isempty(infoStruct.stimOnsetTimes)
             plot_stim_shading(shadeTimes, 'Axes', axYaw);
         end
         plot(frameTimes(iFrame), yawSpeedSmooth(iFrame), 'd', 'markersize', 10, 'Color', 'k', 'markerfacecolor', 'k');
