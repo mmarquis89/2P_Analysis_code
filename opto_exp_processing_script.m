@@ -156,26 +156,16 @@ annotArr = behaviorAnnotArr;
 % Create custom colormap
 cMap = [rgb('Indigo'); ...
         rgb('Orange'); ...
-        rgb('Green'); ...
+        rgb('Green');
         rgb('Cyan'); ...
-        rgb('Gold'); ...
-        rgb('Yellow'); ...
-        rgb('Green'); ...
-        rgb('Red'); ...
-        rgb('blue'); ...
-        rgb('Gold'); ...
-        rgb('black') ...
         ];
-annotArr(end, end) = 11; % to keep the color mapping consistent
+annotArr(end, end) = 4; % to keep the color mapping consistent
 
 % Create figure
 f = figure(7);clf
 f.Position = [-1050 45 1020 950];
 f.Color = [1 1 1];
 ax = gca();
-
-[~, ax, ~] = plot_behavior_summary_2D(infoStruct, annotArr, ax, titleString, trialGroups);
-
 [~, ax, f] = plot_2D_summary(infoStruct, annotArr, ...
                 'plotAxes', ax, ...
                 'trialGroups', trialGroups, ...
@@ -193,11 +183,11 @@ hold on
 if sepBlockStims
     
     % Calculate y-axis ranges for each block
-    blockStarts = [5];
+    blockStarts = 1;
     blockEnds = [];
     for iBlock = 1:numel(unique(trialGroups))-1
         blockTrials = sum(trialGroups == iBlock);
-        blockStarts(iBlock + 1) = blockStarts(iBlock) + (4) + blockTrials;
+        blockStarts(iBlock + 1) = blockStarts(iBlock) + 4 + blockTrials;
         blockEnds(iBlock) = blockStarts(iBlock) + blockTrials - 1;
     end
     blockEnds(end + 1) = numel(trialGroups) + (4 * numel(trialGroups));
@@ -375,10 +365,10 @@ cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
 
-% ALL TRIALS
-trialGroups = [];
-fileNameSuffix = ['_AllTrials'];
-plotTitleSuffix = '';
+% % ALL TRIALS
+% trialGroups = [];
+% fileNameSuffix = ['_AllTrials'];
+% plotTitleSuffix = '';
 
 % % % % % % % % % 
 % % GROUP BY STIM TYPE
@@ -406,7 +396,7 @@ plotTitleSuffix = '';
 % trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = '';
 % fileNameSuffix = '_Blocks_Separated';
-
+% 
 % GROUP CHRONOLOGICALLY BY BLOCKS
 trialGroups = zeros(1, nTrials);
 for iBound = 1:numel(groupBounds)-1
@@ -442,9 +432,9 @@ smPlotData = movmean(plotData, smWin, 2);
 
 % Create colormap
 cm = cmName(numel(unique(smPlotData)));
-if ~isempty(trialGroups)
-    cm = [0 0 0; cm(2:end, :)];
-end
+% if ~isempty(trialGroups)
+%     cm = [cm(2:end, :); 0 0 0];
+% end
 
 % Plot data
 titleStr = [figTitle, plotTitleSuffix];

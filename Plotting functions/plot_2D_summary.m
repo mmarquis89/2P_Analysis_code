@@ -80,6 +80,7 @@ end
 % Plot data
 if isempty(trialGroups)
     plotHandle = imagesc(plotAxes, dataArr);
+    colormap(plotAxes, cm)
 else   
     % Separate into trial groups, adding black spacers in between
     plotArr = [];
@@ -96,7 +97,7 @@ else
     % Update colormap to distinguish spacer rows
     colormap(plotAxes, [cm(1:end,:); 0 0 0])
 end
-colormap(plotAxes, cm)
+
 
 % Format axes
 ax = gca();
