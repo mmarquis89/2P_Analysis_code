@@ -81,14 +81,15 @@ end
 if isempty(trialGroups)
     plotHandle = imagesc(plotAxes, dataArr);
     colormap(plotAxes, cm)
-else   
+else
     % Separate into trial groups, adding black spacers in between
-    plotArr = [];
+    plotArr = []; spacerInds = [];
     spacerArr = ones(4, size(dataArr, 2)) * (max(dataArr(:)) + 1);
-    for iGroup = 1:numel(unique(trialGroups))
+    for iGroup = 1:numel(unique(trialGroups(trialGroups > 0)))
         if iGroup == 1
             plotArr = dataArr(trialGroups == iGroup, :);
         else
+            spacerInds = [spacerInds, (size(plotArr, 1)+1):(size(plotArr, 1)+size(spacerArr, 1))];
             plotArr = [plotArr; spacerArr; dataArr(trialGroups == iGroup, :)];
         end
     end
@@ -102,12 +103,24 @@ end
 % Format axes
 ax = gca();
 ax.FontSize = 12;
-ax.YTick = 0:10:sum(infoStruct.goodTrials);
+ax.YTick = 0:10:infoStruct.nTrials;
 ax.XTick = [0:5:infoStruct.trialDuration] * sampRate;
 ax.XTickLabel = 0:5:infoStruct.trialDuration;
 title(titleStr);
 xlabel(xAxLabel)
 ylabel('Trial')
+
+% Update Y ticks to account for spacers and omitted trials
+if ~isempty(trialGroups) %&& numel(unique(trialGroups(trialGroups > 0))) > 1
+    testTicks = [];
+    for iTick = 1:numel(ax.YTick)
+        testTicks(iTick) = ax.YTick(iTick) + ...
+            (sum(spacerInds(1:4:end) < ax.YTick(iTick))*4) - ...
+            sum(~trialGroups(1:ax.YTick(iTick)));
+    end
+    ax.YTick = testTicks;
+    ax.YTickLabel = 0:10:infoStruct.nTrials;%(testTicks(end) + sum(~trialGroups));
+end
 
 % Save figure
 if saveDir

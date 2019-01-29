@@ -90,14 +90,14 @@ archiveName = ['TrialData_sid_', num2str(sidTemp)];
 filterString = ['*sid_', num2str(sidTemp), '_b*'];
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
 
-%%% Archive raw videos
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
-archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
-system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
-
-%%% Archive block vid frames
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
-archiveName = ['sid_', num2str(sidTemp), '_blockVids'];
-system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
+% %%% Archive raw videos
+% parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+% archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
+% system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
+% 
+% %%% Archive block vid frames
+% parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+% archiveName = ['sid_', num2str(sidTemp), '_blockVids'];
+% system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
 
 % -------------------------------------------------------------------------------------------------

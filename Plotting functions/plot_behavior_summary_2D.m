@@ -31,8 +31,6 @@ if ~isempty(trialGroups)
     trialGroups(~goodTrials) = [];    
 end
 
-
-
 % Create or select figure and axes depending on whether an axes handle was provided
 if isempty(plotAxes)
     plotFig = figure(1); clf; 
@@ -68,8 +66,10 @@ if isempty(trialGroups)
 else
     % Separate by trial groups
     plotArr = [];
+    spacerInds = [];
     spacerArr = ones(4, size(annotationArr, 2)) * (max(annotationArr(:)) - 1);
     for iGroup = 1:length(unique(trialGroups))
+
         plotArr = [plotArr; spacerArr; annotationArr(trialGroups == iGroup,:)];
     end
     plotHandle = imagesc(plotArr);
