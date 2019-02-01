@@ -110,17 +110,17 @@ title(titleStr);
 xlabel(xAxLabel)
 ylabel('Trial')
 
-% Update Y ticks to account for spacers and omitted trials
-if ~isempty(trialGroups) %&& numel(unique(trialGroups(trialGroups > 0))) > 1
-    testTicks = [];
-    for iTick = 1:numel(ax.YTick)
-        testTicks(iTick) = ax.YTick(iTick) + ...
-            (sum(spacerInds(1:4:end) < ax.YTick(iTick))*4) - ...
-            sum(~trialGroups(1:ax.YTick(iTick)));
-    end
-    ax.YTick = testTicks;
-    ax.YTickLabel = 0:10:infoStruct.nTrials;%(testTicks(end) + sum(~trialGroups));
-end
+% % Update Y ticks to account for spacers and omitted trials
+% if ~isempty(trialGroups) %&& numel(unique(trialGroups(trialGroups > 0))) > 1
+%     testTicks = [];
+%     for iTick = 1:numel(ax.YTick)
+%         testTicks(iTick) = ax.YTick(iTick) + ...
+%             (sum(spacerInds(1:4:end) < ax.YTick(iTick))*4) - ...
+%             sum(~trialGroups(1:ax.YTick(iTick)));
+%     end
+%     ax.YTick = testTicks;
+%     ax.YTickLabel = 0:10:infoStruct.nTrials;%(testTicks(end) + sum(~trialGroups));
+% end
 
 % Save figure
 if saveDir

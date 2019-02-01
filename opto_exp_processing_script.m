@@ -1,7 +1,8 @@
 
 %% LOAD DATA
 
-expDate = '2019_01_25_exp_2';
+
+expDate = '2019_01_29_exp_1';
 % expDate = '2018_12_03_exp_3';
 sid = 0;
 
@@ -81,9 +82,6 @@ goodTrials = infoStruct.goodTrials;
 stimSepTrials = infoStruct.stimSepTrials; s = stimSepTrials;
 behaviorAnnotArr = infoStruct.trialAnnotations;
 FRAME_RATE = infoStruct.FRAME_RATE;
-% if ~isdir(fullfile(parentDir, '\_Movies\Analysis'))
-%     mkdir(fullfile(parentDir, '\_Movies\Analysis'));
-% end
 if ~isdir(savePath)
     mkdir(savePath)
 end
@@ -104,16 +102,16 @@ stimEpochNames = {'Laser', 'Odor', 'Laser'}; % {'Laser', 'Odor'};%{'Odor'}%
 groupBounds = [1, 40];
 groupBounds(1) = 0;
 
-blockNames = {'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Baseline', 'Photostim', 'OdorOnly'}%{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
-blockShading = {2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [1 2], 2}%{2, [2 3], 2, [1 2], 2, [2 3]};
+blockNames = {'Baseline', 'Photostim', 'OdorOnly'}%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
+blockShading = {2, [1 2], 2}%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
 
 %% 2D BEHAVIOR SUMMARY
 saveDir = uigetdir(savePath, 'Select a save directory');
 sepBlockStims = 0;
-% % 
-trialGroups = [goodTrials];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
+% 
+% trialGroups = [goodTrials];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
 
 % % % 
 % trialGroups = stimTrialGroups; 
@@ -147,17 +145,17 @@ fileNameSuffix = '_AllTrials';
 %     sepBlockStims = 1;
 % end
 
-% % GROUP BY ALTERNATING TRIALS
-% trialGroups = zeros(1, nTrials);
-% trialGroups(1:groupBounds(2)) = 1; % Baseline period
-% trialGroups((groupBounds(2) + 1):2:end) = 2;
-% trialGroups((groupBounds(2) + 2):2:end) = 3;
-% trialGroups = trialGroups .* goodTrials;
-% plotTitleSuffix = make_plotTitleSuffix({'Baseline', 'OdorOnly', 'Photostim'});
-% fileNameSuffix = '_Alternating_Trials';
-% if ~isempty(blockShading)
-%     sepBlockStims = 1;  
-% end
+% GROUP BY ALTERNATING TRIALS
+trialGroups = zeros(1, nTrials);
+trialGroups(1:groupBounds(2)) = 1; % Baseline period
+trialGroups((groupBounds(2) + 1):2:end) = 2;
+trialGroups((groupBounds(2) + 2):2:end) = 3;
+trialGroups = trialGroups .* goodTrials;
+plotTitleSuffix = make_plotTitleSuffix({'Baseline', 'OdorOnly', 'Photostim'});
+fileNameSuffix = '_Alternating_Trials';
+if ~isempty(blockShading)
+    sepBlockStims = 1;  
+end
 
 try
     
@@ -187,7 +185,6 @@ ax = gca();
                 'colormap', cMap ...
                 );
             
-            
 ax.FontSize = 14;
 ax.Title.FontSize = 12;
 ax.XLabel.FontSize = 14;
@@ -212,42 +209,21 @@ if sepBlockStims
         currBlockShading = stimEpochs(blockShading{iBlock}, :);
         nStimEpochs = size(currBlockShading, 1);
         epochInds = blockShading{iBlock};
-        for iStim = 1:nStimEpochs
-            stimOnsetFrame = stimEpochs(epochInds(iStim), 1) * FRAME_RATE;
-            stimOffsetFrame = stimEpochs(epochInds(iStim), 2) * FRAME_RATE;
-            if size(stimEpochs, 1) > 1
-                shadeColor = rgb(stimShadingColors{blockShading{iBlock}(iStim)});
-            else
-                shadeColor = 'k';
-            end
-            plot(ax, [stimOnsetFrame, stimOnsetFrame], blockRanges(iBlock, :), 'Color', shadeColor, 'LineWidth', 2)
-            plot(ax, [stimOffsetFrame, stimOffsetFrame], blockRanges(iBlock, :), 'Color', shadeColor, 'LineWidth', 2)
-        end
+        currShadeColors = stimShadingColors(blockShading{iBlock});
+        draw_stim_lines(currBlockShading, currShadeColors, ...
+                        'plotAxes', ax, 'yLims', blockRanges(iBlock, :));      
     end
     
 else
-    nStimEpochs = size(stimEpochs, 1);
-    for iStim = 1:nStimEpochs
-        stimOnsetFrame = stimEpochs(iStim, 1) * FRAME_RATE;
-        stimOffsetFrame = stimEpochs(iStim, 2) * FRAME_RATE;
-        if nStimEpochs > 1
-            shadeColor = rgb(stimShadingColors{iStim});
-        else
-            shadeColor = 'k';
-        end
-        plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
-        plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
-    end
+    % Draw one set of lines for the entire plot
+    draw_stim_lines(stimEpochs, stimShadingColors, 'plotAxes', ax);
 end
 
+% Save figure
 if saveDir
     fileName = ['2D_Annotation_Summary', fileNameSuffix, '_', ...
                 regexprep(expDate, {'_', 'exp'}, {'', '_'})];
-    export_fig(fullfile(saveDir, fileName), '-png', f);
-    if ~isdir(fullfile(saveDir, 'figFiles'))
-        mkdir(fullfile(saveDir, 'figFiles'))
-    end
-    savefig(f, fullfile(saveDir, 'figFiles', fileName));
+    save_figure(saveDir, fileName);
 end
 catch foldME; rethrow(foldME); end
 
@@ -266,7 +242,6 @@ cm = [];
 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
-% trialGroups = trialGroups .* goodTrials;
 % fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
 % groupNames = stimNames;
 
@@ -283,7 +258,7 @@ cm = [];
 % fileNameSuffix = '_SingleBlocks';
 % cm = repmat([rgb('blue'); rgb('red')], 8, 1);
 % 
-% 
+% % 
 % % GROUP BY ALTERNATING BLOCKS
 % groupNames = {'Odor only', 'Odor + photostim'};
 % trialGroups = zeros(1, nTrials);
@@ -305,7 +280,7 @@ cm = [];
 % end
 % trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
 % fileNameSuffix = '_Blocks_Separated';
-
+% 
 % % GROUP BY ALTERNATING TRIALS (WITH BASELINE)
 % trialGroups = zeros(1, nTrials);
 % trialGroups(1:groupBounds(2)) = 1; % Baseline period
@@ -358,24 +333,18 @@ else
 end
 
 % Add shading during stimulus presentations
-% [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
 yL = ylim();
 for iStim = 1:size(stimEpochs, 1)
     stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
     stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
     plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}))
 end
-
 legend(cat(2, groupNames, unique(stimEpochNames)), 'FontSize', 14, 'Location', 'SE', 'AutoUpdate', 'off')
 
 if saveDir
     fileName = ['1D_Annotation_Summary', fileNameSuffix, '_', ...
                 regexprep(expDate, {'_', 'exp'}, {'', '_'})];
-    export_fig(fullfile(saveDir, fileName), '-png', f);
-    if ~isdir(fullfile(saveDir, 'figFiles'))
-        mkdir(fullfile(saveDir, 'figFiles'))
-    end
-    savefig(f, fullfile(saveDir, 'figFiles', fileName));
+    save_figure(saveDir, fileName);
 end
 catch foldME; rethrow(foldME); end
 
@@ -385,17 +354,17 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 fontSize = 12;
 sepBlockStims = 0;
 
-ftVarName = 'yawVel'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'%
-sdCap = 2;
+ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'%
+sdCap = 3;
 smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
 
-% ALL TRIALS
-trialGroups = [goodTrials];
-fileNameSuffix = ['_AllTrials'];
-plotTitleSuffix = '';
+% % ALL TRIALS
+% trialGroups = [goodTrials];
+% fileNameSuffix = ['_AllTrials'];
+% plotTitleSuffix = '';
 
 % % % % % % % % % 
 % % GROUP BY STIM TYPE
@@ -428,17 +397,17 @@ plotTitleSuffix = '';
 %     sepBlockStims = 1;
 % end
 % 
-% % GROUP BY ALTERNATING TRIALS
-% trialGroups = zeros(1, nTrials);
-% trialGroups(1:groupBounds(2)) = 1; % Baseline period
-% trialGroups((groupBounds(2) + 1):2:end) = 2;
-% trialGroups((groupBounds(2) + 2):2:end) = 3;
-% trialGroups = trialGroups .* goodTrials;
-% plotTitleSuffix = make_plotTitleSuffix({'Baseline', 'Photostim', 'OdorOnly'});
-% fileNameSuffix = '_Alternating_Trials';
-% if ~isempty(blockShading)
-%     sepBlockStims = 1;  
-% end
+% GROUP BY ALTERNATING TRIALS
+trialGroups = zeros(1, nTrials);
+trialGroups(1:groupBounds(2)) = 1; % Baseline period
+trialGroups((groupBounds(2) + 1):2:end) = 2;
+trialGroups((groupBounds(2) + 2):2:end) = 3;
+trialGroups = trialGroups .* goodTrials;
+plotTitleSuffix = make_plotTitleSuffix({'Baseline', 'Photostim', 'OdorOnly'});
+fileNameSuffix = '_Alternating_Trials';
+if ~isempty(blockShading)
+    sepBlockStims = 1;  
+end
 
 try
     
@@ -487,24 +456,22 @@ if strcmp(ftVarName, 'yawVel')
     colormap(gca, bluewhitered)
 end
 
-% Plot stim times
 colorbar
 hold on
 
 % Plot stim times
 hold on
-
 if sepBlockStims
     
     % Calculate y-axis ranges for each block
     blockStarts = 1;
     blockEnds = [];
-    for iBlock = 1:numel(unique(trialGroups))-1
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))-1
         blockTrials = sum(trialGroups == iBlock);
         blockStarts(iBlock + 1) = blockStarts(iBlock) + 4 + blockTrials;
         blockEnds(iBlock) = blockStarts(iBlock) + blockTrials - 1;
     end
-    blockEnds(end + 1) = numel(trialGroups) + (4 * numel(trialGroups));
+    blockEnds(end + 1) = numel(trialGroups) + (4 * numel(unique(trialGroups(trialGroups > 0))));
     blockRanges = [blockStarts - 1; blockEnds + 1]';
     
     % Plot stim start and end for each block
@@ -512,42 +479,21 @@ if sepBlockStims
         currBlockShading = stimEpochs(blockShading{iBlock}, :);
         nStimEpochs = size(currBlockShading, 1);
         epochInds = blockShading{iBlock};
-        for iStim = 1:nStimEpochs
-            stimOnsetFrame = stimEpochs(epochInds(iStim), 1) * FRAME_RATE;
-            stimOffsetFrame = stimEpochs(epochInds(iStim), 2) * FRAME_RATE;
-            if size(stimEpochs, 1) > 1
-                shadeColor = rgb(stimShadingColors{blockShading{iBlock}(iStim)});
-            else
-                shadeColor = 'k';
-            end
-            plot(ax, [stimOnsetFrame, stimOnsetFrame], blockRanges(iBlock, :), 'Color', shadeColor, 'LineWidth', 2)
-            plot(ax, [stimOffsetFrame, stimOffsetFrame], blockRanges(iBlock, :), 'Color', shadeColor, 'LineWidth', 2)
-        end
+        currShadeColors = stimShadingColors(blockShading{iBlock});
+        draw_stim_lines(currBlockShading, currShadeColors, ...
+                        'plotAxes', ax, 'yLims', blockRanges(iBlock, :));      
     end
     
 else
-    nStimEpochs = size(stimEpochs, 1);
-    for iStim = 1:nStimEpochs
-        stimOnsetFrame = stimEpochs(iStim, 1) * FRAME_RATE;
-        stimOffsetFrame = stimEpochs(iStim, 2) * FRAME_RATE;
-        if nStimEpochs > 1
-            shadeColor = rgb(stimShadingColors{iStim});
-        else
-            shadeColor = 'k';
-        end
-        plot(ax, [stimOnsetFrame, stimOnsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
-        plot(ax, [stimOffsetFrame, stimOffsetFrame], ylim(), 'Color', shadeColor, 'LineWidth', 2)
-    end
+    % Draw one set of lines for the entire plot
+    draw_stim_lines(stimEpochs, stimShadingColors, 'plotAxes', ax);
 end
 
+% Save figure
 if saveDir
     fileName = ['2D_FicTrac_', ftVarName, '_Summary', fileNameSuffix, '_', ...
                 regexprep(expDate, {'_', 'exp'}, {'', '_'})];
-    export_fig(fullfile(saveDir, fileName), '-png', f);
-    if ~isdir(fullfile(saveDir, 'figFiles'))
-        mkdir(fullfile(saveDir, 'figFiles'))
-    end
-    savefig(f, fullfile(saveDir, 'figFiles', fileName));
+    save_figure(saveDir, fileName);
 end
 
 catch foldME; rethrow(foldME); end
@@ -605,27 +551,27 @@ cm = [];
 % trialGroups = trialGroups .* goodTrials;
 % fileNameSuffix = [fileNameSuffix, 'PhotoStimVsOdorOnly'];
 % 
-% PLOT AND COLOR EACH BLOCK SEPARATELY
-groupNames = blockNames;
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-trialGroups = trialGroups .* goodTrials;
-fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
-
-% % GROUP BY ALTERNATING TRIALS
-% trialGroups = zeros(1, nTrials);
-% trialGroups(1:groupBounds(2)) = 1; % Baseline period
-% trialGroups((groupBounds(2) + 1):2:end) = 2;
-% trialGroups((groupBounds(2) + 2):2:end) = 3;
-% trialGroups = trialGroups .* goodTrials;
-% fileNameSuffix = [fileNameSuffix, 'Alternating_Trials'];
+% % PLOT AND COLOR EACH BLOCK SEPARATELY
 % groupNames = blockNames;
-% if ~isempty(blockShading)
-%     sepBlockStims = 1;  
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
 % end
+% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+% trialGroups = trialGroups .* goodTrials;
+% fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+
+% GROUP BY ALTERNATING TRIALS
+trialGroups = zeros(1, nTrials);
+trialGroups(1:groupBounds(2)) = 1; % Baseline period
+trialGroups((groupBounds(2) + 1):2:end) = 2;
+trialGroups((groupBounds(2) + 2):2:end) = 3;
+trialGroups = trialGroups .* goodTrials;
+fileNameSuffix = [fileNameSuffix, 'Alternating_Trials'];
+groupNames = blockNames;
+if ~isempty(blockShading)
+    sepBlockStims = 1;  
+end
 
 try
     
@@ -659,7 +605,6 @@ for iGroup = 1:nGroups
     
     % Calculate mean values for current group
     currXYSpeed = mmSpeedData(:, trialGroups==iGroup);
-%     currFWSpeed = fwSpeed(:, trialGroups == iGroup);
     currYawSpeed = dHD(:, trialGroups == iGroup);
     currYawVel = yawVel(:, trialGroups == iGroup);
     
@@ -675,12 +620,10 @@ for iGroup = 1:nGroups
     % Omit outliers
     outlierCalc = @(x) mean(x) + 4 * std(x);
     currXYSpeed(currXYSpeed >= outlierCalc(mmSpeedData(:))) = nan;
-%     currFWSpeed(currFWSpeed >= outlierCalc(fwSpeed(:))) = nan;
     currYawSpeed(currYawSpeed >= outlierCalc(dHD(:))) = nan;
     currYawVel(currYawVel >= outlierCalc(yawVel(:))) = nan;
 
     meanSpeed = smooth(mean(currXYSpeed, 2, 'omitnan'), smWin);
-%     meanFWSpeed = smooth(mean(currFWSpeed, 2, 'omitnan'), smWin);
     meanYawSpeed = smooth(mean(currYawSpeed, 2, 'omitnan'), smWin);
     meanYawVel = smooth(mean(currYawVel, 2, 'omitnan'), smWin);
 
@@ -699,68 +642,37 @@ for iGroup = 1:nGroups
 
 end%iGroup
 
+
 % Format axes
-axMoveSpeed.XTick = xTickFR;
-axMoveSpeed.XTickLabel = xTickLabels;
-axMoveSpeed.YLabel.String = 'XY Speed (mm/sec)';
-axMoveSpeed.FontSize = 14;
-legend(axMoveSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
-axMoveSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(stimEpochs)
-%     [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
-    for iStim = 1:size(stimEpochs, 1)
-        stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
-        stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
-        plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
-            axMoveSpeed);
-    end
-end
-
-axYawVel.XTick = xTickFR;
-axYawVel.XTickLabel = xTickLabels;
-axYawVel.YLabel.String = 'Yaw Vel (CW = +)';
-axYawVel.FontSize = 14;
-legend(axYawVel, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
-axYawVel.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(stimEpochs)
-%     [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimShading))));
-    for iStim = 1:size(stimEpochs, 1)
-        stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
-        stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
-        plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
-            axYawVel);
-    end
-end
-
-axYawSpeed.XTick = xTickFR;
-axYawSpeed.XTickLabel = xTickLabels;
-axYawSpeed.YLabel.String = 'Yaw Speed (deg/sec)';
-axYawSpeed.FontSize = 14;
-legend(axYawSpeed, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
-axYawSpeed.XLim = [9 nFrames-5]; % to improve plot appearance
-if ~isempty(stimEpochs)
-%     [nStimEpochs, idx] = max(cellfun(@size, stimEpochs, repmat({1}, 1, numel(stimEpochs))));
-    for iStim = 1:size(stimEpochs, 1)
-        stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
-        stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
-        plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
-            axYawSpeed);
+allAxes = {axMoveSpeed, axYawVel, axYawSpeed};
+yAxisLabels = {'XY Speed (mm/sec)', 'Yaw Vel (CW = +)', 'Yaw Speed (deg/sec)'};
+for iAxis = 1:numel(allAxes)
+    currAxis = allAxes{iAxis};
+    currLabel = yAxisLabels{iAxis};
+    
+    currAxis.XTick = xTickFR;
+    currAxis.XTickLabel = xTickLabels;
+    currAxis.YLabel.String = currLabel;
+    currAxis.FontSize = 14;
+    legend(currAxis, groupNames, 'FontSize', 12, 'Location', 'NW', 'AutoUpdate', 'off')
+    currAxis.XLim = [9 nFrames-5]; % to improve plot appearance
+    if ~isempty(stimEpochs)
+        for iStim = 1:size(stimEpochs, 1)
+            stimOnset = stimEpochs(iStim, 1) * FRAME_RATE;
+            stimOffset = stimEpochs(iStim, 2) * FRAME_RATE;
+            plot_stim_shading([stimOnset, stimOffset], 'Color', rgb(stimShadingColors{iStim}), 'Axes', ...
+                currAxis);
+        end
     end
 end
 
 suptitle(regexprep([figTitle, '  —  ', fileNameSuffix], '_', '\\_'));
-if saveDir
 
-    % Create filename
+% Save figure
+if saveDir
     fileName = regexprep(['1D_FicTrac_Summary_', fileNameSuffix, '_', ...
                             regexprep(expDate, {'_', 'exp'}, {'', '_'})], '_', '\_');
-    
-    % Save figure files
-        export_fig(fullfile(saveDir, fileName), '-png', f);
-        if ~isdir(fullfile(saveDir, 'figFiles'))
-            mkdir(fullfile(saveDir, 'figFiles'))
-        end
-        savefig(f, fullfile(saveDir, 'figFiles', fileName));
+    save_figure(saveDir, fileName);
 end%if
 
 catch foldME; rethrow(foldME); end
@@ -881,8 +793,8 @@ catch foldME; rethrow(foldME); end
 
 %% PLOT OVERLAID 2D MOVEMENT DATA
 
-startTime = 12;
-plotLen = 1;
+startTime = 9;
+plotLen = 10;
 limScalar = 0.9;
 alpha = 0.4;
 showMean = 1;
@@ -944,17 +856,17 @@ cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('g
 % trialGroups = trialGroups .* goodTrials;
 % fileNameSuffix = '_Blocks_Separated';
 
-% % GROUP BY ALTERNATING TRIALS
-% trialGroups = zeros(1, nTrials);
-% trialGroups(1:groupBounds(2)) = 1; % Baseline period
-% trialGroups((groupBounds(2) + 1):2:end) = 2;
-% trialGroups((groupBounds(2) + 2):2:end) = 3;
-% trialGroups = trialGroups .* goodTrials;
-% fileNameSuffix = '_Alternating_Trials';
-% groupNames = blockNames;
-% if ~isempty(blockShading)
-%     sepBlockStims = 1;  
-% end
+% GROUP BY ALTERNATING TRIALS
+trialGroups = zeros(1, nTrials);
+trialGroups(1:groupBounds(2)) = 1; % Baseline period
+trialGroups((groupBounds(2) + 1):2:end) = 2;
+trialGroups((groupBounds(2) + 2):2:end) = 3;
+trialGroups = trialGroups .* goodTrials;
+fileNameSuffix = '_Alternating_Trials';
+groupNames = blockNames;
+if ~isempty(blockShading)
+    sepBlockStims = 1;  
+end
 
 try 
 %%% OVERLAY 2D MOVEMENT DATA
@@ -1067,17 +979,15 @@ ax.FontSize = 14;
 
 % Save figure if necessary
 if saveFig
-    % Create filename
-    fileName = regexprep(['Movement_Overlay_', num2str(startTime), '-', num2str(startTime + plotLen)...
-        '_sec', fileNameSuffix, '_', ...
-        regexprep(expDate, {'_', 'exp'}, {'', '_'})], '_', '\_');
-    export_fig(fullfile(saveDir, fileName), '-png', f);
-    if ~isdir(fullfile(saveDir, 'figFiles'))
-        mkdir(fullfile(saveDir, 'figFiles'))
+    saveDir = uigetdir(savePath, 'Select a save directory');
+    if saveDir
+        % Create filename
+        fileName = regexprep(['Movement_Overlay_', num2str(startTime), '-', num2str(startTime + plotLen)...
+            '_sec', fileNameSuffix, '_', ...
+            regexprep(expDate, {'_', 'exp'}, {'', '_'})], '_', '\_');
+        save_figure(saveDir, fileName);
     end
-    savefig(f, fullfile(saveDir, 'figFiles', fileName));
 end
-
 catch foldME; rethrow(foldME); end
 
 

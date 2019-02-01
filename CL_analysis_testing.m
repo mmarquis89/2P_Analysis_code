@@ -220,7 +220,7 @@ for iEvent = 1:size(odorEventList, 1)
     fill(xData, yData, rgb('red'), 'facealpha', 0.2, 'edgealpha', 0)
 end
 
-% Plot Y (lateral)
+% Plot yaw velocity (signed)
 subaxis(3,1,2); hold on; 
 plot(smYSpeed, '-.');
 ax = gca();
@@ -287,7 +287,7 @@ end
 baselineDur = 1; respDur = 3;
 eventFtData = [];
 for iEvent = 1:size(odorEventList, 1)
-    if iei(iEvent) > baselineDur * SAMP_RATE && eventDurs(iEvent) > respDur * SAMP_RATE
+    if ieiList(iEvent) > baselineDur * SAMP_RATE && eventDurs(iEvent) > respDur * SAMP_RATE
         startSamp = odorEventList(iEvent, 1) - (baselineDur * SAMP_RATE);
         endSamp = odorEventList(iEvent, 1) + (respDur * SAMP_RATE);
         eventFtData(:, iEvent, 1) = smXSpeed(startSamp:endSamp);
@@ -296,4 +296,20 @@ for iEvent = 1:size(odorEventList, 1)
 end
 
 figure(1);clf
+subplot(2, 1, 1)
+hold on;
+plot(mean(eventFtData(:, :, 1), 2));
+yL = ylim();
+plot([baselineDur * SAMP_RATE, baselineDur * SAMP_RATE], [yL(1) yL(2)], 'Color', 'r', 'linewidth', 2)
+subplot(2, 1, 2)
+hold on;
+plot(mean(eventFtData(:, :, 2), 2));
+yL = ylim();
+plot([baselineDur * SAMP_RATE, baselineDur * SAMP_RATE], [yL(1) yL(2)], 'Color', 'r', 'linewidth', 2)
+
+
+
+
+
+
 

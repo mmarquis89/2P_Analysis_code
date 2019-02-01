@@ -43,11 +43,12 @@ try
     % Identify new block vids
     blockVids = dir(fullfile(blockDataDir, ['block_vid_sid_', num2str(sid), '_bid_*.avi']));
     blockVids = blockVids(~contains({blockVids.name}, 'tid')); % In case there are already single trial vids
+    nBlocks = numel(blockVids);
     
     % Separate block videos into invididual trials
     write_to_log('Splitting block videos into individual trials...', mfilename)
     memGB = 4;
-    timeLimitMin = 60;
+    timeLimitMin = 120;
     queueName = 'short';
     jobName = 'split_block_vids'
     splitJobArr = [];
