@@ -2,7 +2,7 @@ function clean_scanimage_files(imgDataDir, sid)
 
 
 try
-    N_PLANES = 16; % NOTE HARDCODED VALUE
+    N_PLANES = 16; % NOTE HARDCODED VALUE!
     
     if ~exist(fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), 'file')
         

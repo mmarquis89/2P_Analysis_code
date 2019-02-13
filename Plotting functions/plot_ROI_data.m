@@ -1,4 +1,4 @@
-function plot_ROI_data(ax, ROIDffAvg, varargin)
+function [ax] = plot_ROI_data(ax, ROIDffAvg, varargin)
 %=========================================================================================================
 % PLOT MEAN dF/F DATA WITHIN ROI THROUGHOUT TRIAL
 %

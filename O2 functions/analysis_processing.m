@@ -14,7 +14,7 @@ sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
 % Initialize cluster communication
 % configCluster;
 c = parcluster; 
-
+% 
 % Save structure of analysis metadata + hardcoded parameters ('analysisMetadata.mat')
 [analysisMetadata, ~] = load_imaging_data(imgSaveDir, sessionDataFile);
 disp('Output:')
@@ -56,6 +56,13 @@ inputArgs = {imgSaveDir, sessionDataFile};
 behavStateDffCalcJob = c.batch(@behavioral_state_dff_calc, 0, inputArgs);
 
 % Extract ROI data
+
+% ROIfile = 'ROI_metadata_SLP_comparison.mat';
+% load(fullfile(imgSaveDir, 'analysisMetadata.mat'));
+% nTrials = analysisMetadata.nTrials; 
+% nVolumes = analysisMetadata.nVolumes; 
+% nPlanes = analysisMetadata.nPlanes;
+
 ROIfile = 'ROI_metadata.mat';
 sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
 memGB = ceil(0.001 * nTrials * nVolumes * nPlanes);

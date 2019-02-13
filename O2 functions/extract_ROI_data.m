@@ -8,8 +8,14 @@ nROIs = numel(ROImetadata);
 disp('ROIs loaded')
 
 % Load imaging data
-[analysisMetadata, wholeSession] = load_imaging_data(parentDir, sessionDataFile, ...
+if exist(fullfile(parentDir, 'analysisMetadata.mat'), 'file')
+   load(fullfile(parentDir, sessionDataFile)); % contains variable 'wholeSession' 
+   load(fullfile(parentDir, 'analysisMetadata.mat'));
+else   
+   [analysisMetadata, wholeSession] = load_imaging_data(parentDir, sessionDataFile, ...
                                                     'LoadSessionData', 1);
+end                                                
+
 nVolumes = analysisMetadata.nVolumes;
 nTrials = analysisMetadata.nTrials;
 

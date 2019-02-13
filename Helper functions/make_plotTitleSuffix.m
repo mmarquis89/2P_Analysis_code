@@ -1,8 +1,8 @@
-function plotTitleSuffix = make_plotTitleSuffix(stimNames)
-plotTitleSuffix = ['  —  ', stimNames{1}];
-for iStim = 1:numel(stimNames)
+function plotTitleSuffix = make_plotTitleSuffix(groupNames)
+plotTitleSuffix = ['  —  ', groupNames{1}];
+for iStim = 1:numel(groupNames)
     if iStim > 1
-        plotTitleSuffix = [plotTitleSuffix, ' vs. ', stimNames{iStim}];
+        plotTitleSuffix = [plotTitleSuffix, ' vs. ', groupNames{iStim}];
     end
 end
 plotTitleSuffix = [plotTitleSuffix, ' (top to bottom)'];

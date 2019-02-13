@@ -397,17 +397,17 @@ figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 %     sepBlockStims = 1;
 % end
 % 
-% GROUP BY ALTERNATING TRIALS
-trialGroups = zeros(1, nTrials);
-trialGroups(1:groupBounds(2)) = 1; % Baseline period
-trialGroups((groupBounds(2) + 1):2:end) = 2;
-trialGroups((groupBounds(2) + 2):2:end) = 3;
-trialGroups = trialGroups .* goodTrials;
-plotTitleSuffix = make_plotTitleSuffix({'Baseline', 'Photostim', 'OdorOnly'});
-fileNameSuffix = '_Alternating_Trials';
-if ~isempty(blockShading)
-    sepBlockStims = 1;  
-end
+% % GROUP BY ALTERNATING TRIALS
+% trialGroups = zeros(1, nTrials);
+% trialGroups(1:groupBounds(2)) = 1; % Baseline period
+% trialGroups((groupBounds(2) + 1):2:end) = 2;
+% trialGroups((groupBounds(2) + 2):2:end) = 3;
+% trialGroups = trialGroups .* goodTrials;
+% plotTitleSuffix = make_plotTitleSuffix({'Baseline', 'Photostim', 'OdorOnly'});
+% fileNameSuffix = '_Alternating_Trials';
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;  
+% end
 
 try
     
@@ -560,18 +560,18 @@ cm = [];
 % trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
 % trialGroups = trialGroups .* goodTrials;
 % fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
-
-% GROUP BY ALTERNATING TRIALS
-trialGroups = zeros(1, nTrials);
-trialGroups(1:groupBounds(2)) = 1; % Baseline period
-trialGroups((groupBounds(2) + 1):2:end) = 2;
-trialGroups((groupBounds(2) + 2):2:end) = 3;
-trialGroups = trialGroups .* goodTrials;
-fileNameSuffix = [fileNameSuffix, 'Alternating_Trials'];
-groupNames = blockNames;
-if ~isempty(blockShading)
-    sepBlockStims = 1;  
-end
+% 
+% % GROUP BY ALTERNATING TRIALS
+% trialGroups = zeros(1, nTrials);
+% trialGroups(1:groupBounds(2)) = 1; % Baseline period
+% trialGroups((groupBounds(2) + 1):2:end) = 2;
+% trialGroups((groupBounds(2) + 2):2:end) = 3;
+% trialGroups = trialGroups .* goodTrials;
+% fileNameSuffix = [fileNameSuffix, 'Alternating_Trials'];
+% groupNames = blockNames;
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;  
+% end
 
 try
     

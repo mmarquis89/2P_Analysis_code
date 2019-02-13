@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_01_31_exp_1';
+expDate = '2019_02_11_exp_3';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
@@ -12,6 +12,8 @@ behaviorLabels = {'Quiescence', 'Locomotion', 'IsolatedMovement'};
 imgDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)'];
 vidDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 imgDir = vidDir;
+disp('-------------------------------------')
+disp('Preparing for auto-annotation...')
 
 % Get frame count info
 frameInfo = [];
@@ -33,6 +35,7 @@ nTrials = numel(goodTrials);
 ftDir = fullfile(vidDir, 'FicTracData');
 ftData = load_fictrac_data(frameInfo, 'Sid', sid, 'ParentDir', ftDir);
 goodTrials(ftData.badFtTrials) = 0;
+disp('FicTrac data loaded...')
 
 % Load flow data
 load(fullfile(vidDir, ['sid_', num2str(sid), '_flow_data_norm.mat'])) % flyFlowNorm
@@ -45,7 +48,7 @@ for iTrial = 1:nTrials
     end
 end
 flowArr(1,:) = flowArr(2, :); % Ignore artificially high first frame of each trial
-
+disp('Flow data loaded...')
 
 % Get old-format annot data
 try
@@ -61,6 +64,8 @@ end
 catch
     annotArr = zeros(size(flowArr));
 end
+disp('Loading complete')
+disp('-------------------------------------')
 
 %% Save annotation array and annot params
 
@@ -78,19 +83,19 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 111;
-flowThresh = 0.04;
+t = 17;
+flowThresh = 0.03;
 moveThresh = 0.05;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 5;
+moveSmReps = 6;
 flowSmReps = 4;
 
 minIsoMoveLen = 6;
 minLocEpochLen = 6;
-minQuiescenceLen = 6;
+minQuiescenceLen = 4;
 
 % Extract variables from ftData
 moveSpeed = ftData.moveSpeed * FRAME_RATE * 4.5;      % --> [frame, trial]

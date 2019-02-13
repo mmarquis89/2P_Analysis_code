@@ -1,4 +1,4 @@
-function save_figure(saveDir, fileName)
+function save_figure(figHandle, saveDir, fileName)
 % Wrapper function for saving figures as both a .png and .fig file that asks to make sure the user
 % wants to overwrite a file of the same name if one exists. The .fig file is saved within a 
 % separate subdirectory (which is created if necessary) called "figFiles".
@@ -23,11 +23,11 @@ end
 
 % Save figure files
 if overwrite
-    export_fig(fullfile(saveDir, fileName), '-png', f);
+    export_fig(fullfile(saveDir, fileName), '-png', figHandle);
     if ~isdir(fullfile(saveDir, 'figFiles'))
         mkdir(fullfile(saveDir, 'figFiles'))
     end
-    savefig(f, fullfile(saveDir, 'figFiles', fileName));
+    savefig(figHandle, fullfile(saveDir, 'figFiles', fileName));
 end
 
 end
