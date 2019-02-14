@@ -67,6 +67,7 @@ for iTrial = 1:numel(dataFiles)
     tid = str2double(regexp(dataFiles(iTrial).name, '(?<=tid_).*(?=.dat)', 'match'));
     
     % Load data for current trial
+    disp(dataFiles(iTrial).name)
     currData = csvread(fullfile(parentDir, dataFiles(iTrial).name)); % --> [frame, var]
     
     % Mark trial as no good if number of FicTrac frames does not match video

@@ -2,7 +2,11 @@
 % ROInames = {'L-SLP', 'L-ANT', 'R-SLP', 'R-ANT'};
 ROInames = {'L-SLP', 'L-ANT', 'R-SLP', 'R-ANT', 'Control'};
 
-ROIDataBaseSub = ROIDataAvg(:, :, 1:4) - repmat(ROIDataAvg(:, :, 5), 1, 1, 4);
+% ROIDataBaseSub = ROIDataAvg(:, :, 1:4) - repmat(ROIDataAvg(:, :, 5), 1, 1, 4);
+
+stimVols = round(volumeRate * stimEpochs);
+% ROIDataBaseSub = ROIDataAvg(stimVols, :, 1:4) - repmat(ROIDataAvg(stimVols, :, 5), 1, 1, 4);
+ROIDataBaseSub = ROIDataAvg([1:stimVols(1), stimVols(2):end], :, 1:4) - repmat(ROIDataAvg([1:stimVols(1), stimVols(2):end], :, 5), 1, 1, 4);
 
 ROIDataRs = reshape(ROIDataBaseSub, [], 4);
 
@@ -21,7 +25,7 @@ ROIDataTrim = ROIDataRs;
 
 
 % ROIDataTrim = corrMat;
-ROIDataTrim = lagShiftedCorrMat; 
+% ROIDataTrim = lagShiftedCorrMat; 
 
 nROIs = size(ROIDataTrim, 2);
 % for i=1:nROIs

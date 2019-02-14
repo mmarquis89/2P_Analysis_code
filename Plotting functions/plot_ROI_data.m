@@ -1,4 +1,4 @@
-function [ax] = plot_ROI_data(ax, ROIDffAvg, varargin)
+function ax = plot_ROI_data(ax, ROIDffAvg, varargin)
 %=========================================================================================================
 % PLOT MEAN dF/F DATA WITHIN ROI THROUGHOUT TRIAL
 %
@@ -320,7 +320,7 @@ if ~isempty(eventShading)
         else
             shadeColor = eventShadeColor(iShade, :);
         end
-        fill(ax, [onsetTime, onsetTime, offsetTime, offsetTime], [-100, 100, 100, -100], shadeColor, 'facealpha', 0.1, 'edgealpha', 0); % Huge numbers so the bars don't get cut off if I increase the ylims later
+        plot_stim_shading([onsetTime, offsetTime], 'Axes', ax, 'Color', shadeColor);
         ylim(yL);
     end
 end
