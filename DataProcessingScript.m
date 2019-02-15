@@ -74,9 +74,9 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_11_20_exp_1';
+expDateTemp = '2018_10_07_exp_1';
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
-sidTemp = 0;
+sidTemp = 1;
 
 %%% Archive raw anatomy stacks
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
@@ -90,14 +90,29 @@ archiveName = ['TrialData_sid_', num2str(sidTemp)];
 filterString = ['*sid_', num2str(sidTemp), '_b*'];
 system7zip(parentDirTemp, archiveName, '7z', filterString, 1)
 
-% %%% Archive raw videos
-% parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
-% archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
-% system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
-% 
-% %%% Archive block vid frames
-% parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
-% archiveName = ['sid_', num2str(sidTemp), '_blockVids'];
-% system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
+%%% Archive raw videos
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
+system7zip(parentDirTemp, archiveName, '7z', ['*sid_', num2str(sidTemp), '_b*'], 1);
+
+%%% Archive block vid frames
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+archiveName = ['sid_', num2str(sidTemp), '_blockVids'];
+system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
+
+%%% Archive individual vid frames
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
+archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
+system7zip(parentDirTemp, archiveName, '7z', '20181007*', 1);
+
+%% Archive all 2017 behavior vid files
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\'];
+archiveName = ['2017_Vid_Data'];
+system7zip(parentDirTemp, archiveName, '7z', '2017', 1);
+
+
+
+
+
 
 % -------------------------------------------------------------------------------------------------
