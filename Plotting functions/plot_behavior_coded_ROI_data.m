@@ -21,7 +21,7 @@ function ax = plot_behavior_coded_ROI_data(ax, flData, behavData, varargin)
 %                            exclusion threshold.
 %
 %       'SingleTrials'     = (default: 1) a boolean specifying whether to plot all individual trials
-%                            in the background of the mean dF/F line. Should be set to zero if 
+%                            in the background of the mean dF/F line. Should be set to one if 
 %                            'EdgeColorMode' is set to 'flat'.
 %
 %       'StdDevShading'    = (default: 1) boolean specifying whether to shade 1 standard deviation
@@ -106,7 +106,8 @@ end
 if sum(outliers) > 0
     disp(['Omitting ' num2str(sum(outliers)), ' outlier trials'])
 end
-flData(:, logical(outliers)) = []; % --> [volume, trial]
+flData(:, logical(outliers)) = [];      % --> [volume, trial]
+behavData(:, logical(outliers)) = [];
 stdDev = std(flData, 0, 2);
 
 % Re-calculate average without outliers
@@ -130,13 +131,15 @@ if singleTrials
                 'Marker', 'none');
     end
 end
+
+% Add colorbar if data is continuous
 if strcmp(edgeColorMode, 'interp')
     colorbar(ax)
 end
 
 % Plot mean response line
 if singleTrials
-    plot(ax, volTimes, smooth(avgFl, smoothWin), 'LineWidth', 2', 'Color', 'k');
+    plot(ax, volTimes, smooth(avgFl, smoothWin), 'LineWidth', 2, 'Color', 'k');
 else
     avgBehavData = mean(behavData, 2);
     avgBehavData = [avgBehavData(2); avgBehavData(2:end)]; % to drop artifically low first trial
@@ -154,6 +157,17 @@ end
 
 % Set colormap
 colormap(cm)
+
+% If data is categorical, plot addtional mean lines for those volumes only
+if strcmp(edgeColorMode, 'flat')
+    behavVals = unique(behavData(~isnan(behavData)));
+    for iVal = 1:numel(behavVals)
+        currFlData = flData;
+        currFlData(behavData ~= behavVals(iVal)) = nan;
+        behavValMean = mean(currFlData, 2, 'omitnan');
+        plot(ax, volTimes, smooth(behavValMean, smoothWin), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
+    end
+end
 
 % Shade one SD above and below mean in grey
 if shadeSDs

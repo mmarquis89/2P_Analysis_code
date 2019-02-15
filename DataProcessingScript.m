@@ -106,11 +106,14 @@ archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
 system7zip(parentDirTemp, archiveName, '7z', '20181007*', 1);
 
 %% Archive all 2017 behavior vid files
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\'];
-archiveName = ['2017_Vid_Data'];
-system7zip(parentDirTemp, archiveName, '7z', '2017', 1);
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\2017'];
+allExpDirs = dir(fullfile(parentDirTemp, '2017*'));
+
+dirNames = string({allExpDirs.name});
 
 
+system7zip(parentDirTemp, dirNames{1}, '7z', dirNames{1}, 1);
+dirNames(1) = [];
 
 
 
