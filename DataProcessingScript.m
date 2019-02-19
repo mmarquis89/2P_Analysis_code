@@ -74,9 +74,9 @@ clear parentDir saveDir annotationFileName
 % To-do:        
 %        
 
-expDateTemp = '2018_10_07_exp_1';
+expDateTemp = '2018_10_30_exp_1';
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
-sidTemp = 1;
+sidTemp = 0;
 
 %%% Archive raw anatomy stacks
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDateTemp];
@@ -103,19 +103,61 @@ system7zip(parentDirTemp, archiveName, '7z', 'BlockVids', 1);
 %%% Archive individual vid frames
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDateTemp];
 archiveName = ['sid_', num2str(sidTemp), '_RawVids'];
-system7zip(parentDirTemp, archiveName, '7z', '20181007*', 1);
+system7zip(parentDirTemp, archiveName, '7z', '20181030*', 1);
 
 %% Archive all 2017 behavior vid files
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\2017'];
-allExpDirs = dir(fullfile(parentDirTemp, '2017*'));
-
-dirNames = string({allExpDirs.name});
 
 
-system7zip(parentDirTemp, dirNames{1}, '7z', dirNames{1}, 1);
-dirNames(1) = [];
+% parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\2017'];
+% allExpDirs = dir(fullfile(parentDirTemp, '2017*'));
+
+% dirNames = string({allExpDirs.name});
+
+
+% system7zip(parentDirTemp, dirNames{1}, '7z', dirNames{1}, 1);
+% dirNames(1) = [];
 
 
 
 
-% -------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+%% -------------------------------------------------------------------------------------------------
+
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2017'];
+dirName = '2017_09_06';
+expDir = fullfile(parentDirTemp, dirName);
+
+% Create folder for compiled analysis data
+if ~isdir(fullfile(parentDirTemp, 'analysis_dirs'))
+   mkdir(fullfile(parentDirTemp, 'analysis_dirs')) 
+end
+
+% Get names of any sid dirs 
+sidDirs = dir(fullfile(expDir, '*sid_*'));
+sidDirs = sidDirs([sidDirs.isdir]);
+
+for iSid = 1:numel(sidDirs)
+   
+    % Check whether the sid dir contains an analysis folder
+    analysisDir = dir(fullfile(expDir, sidDirs(iSid).name, 'a*lysis'));
+    if ~isempty(analysisDir)
+       % Copy analysis data before archiving experiment
+       copyfile(fullfile(analysisDir.folder, analysisDir.name), fullfile(parentDirTemp, 'analysis_dirs', dirName, sidDirs(iSid).name));
+    end
+end
+
+% Archive entire exp dir
+system7zip(parentDirTemp, dirName, '7z', dirName, 1);
+
+

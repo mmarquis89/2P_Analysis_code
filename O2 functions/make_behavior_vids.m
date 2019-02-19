@@ -15,17 +15,15 @@ try
     % Identify block vids
     if ~exist(fullfile(vidDataDir, ['sid_', num2str(sid)]), 'dir')
         blockDataDir = vidDataDir;
+        write_to_log('Getting raw vids from vid data directory', mfilename);
     else
-        blockDataDir = fullfile(vidDataDir, ['sid_', num2str(sid)]);
-        
+        write_to_log('Getting raw vids from sid-specific subdirectory', mfilename);
+        blockDataDir = fullfile(vidDataDir, ['sid_', num2str(sid)]); % For expts with multiple sids
     end
     blockVids = dir(fullfile(blockDataDir, 'fc2_save*.avi'));
     blockVids = blockVids(~contains({blockVids.name}, 'tid')); % In case there are already single trial vids
     nBlocks = numel(blockVids);
     write_to_log(['nBlocks = ', num2str(nBlocks)],mfilename);
-    %     if nBlocks > 9
-    %             error('ERROR: behavior video will be sorted incorrectly if there are 10 or more blocks')
-    %     end
     
     % Remake block vids so that they can be read correctly by Matlab
     memGB = 2;
@@ -41,7 +39,7 @@ try
     remakeJobArr = wait_for_jobs(remakeJobArr);
     %
     % Identify new block vids
-    blockVids = dir(fullfile(blockDataDir, ['block_vid_sid_', num2str(sid), '_bid_*.avi']));
+    blockVids = dir(fullfile(vidDataDir, ['block_vid_sid_', num2str(sid), '_bid_*.avi']));
     blockVids = blockVids(~contains({blockVids.name}, 'tid')); % In case there are already single trial vids
     nBlocks = numel(blockVids);
     
@@ -50,7 +48,7 @@ try
     memGB = 4;
     timeLimitMin = 120;
     queueName = 'short';
-    jobName = 'split_block_vids'
+    jobName = 'split_block_vids';
     splitJobArr = [];
     for iBlock = 1:nBlocks
         

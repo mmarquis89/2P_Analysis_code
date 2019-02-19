@@ -2,7 +2,7 @@ function clean_scanimage_files(imgDataDir, sid)
 
 
 try
-    N_PLANES = 16; % NOTE HARDCODED VALUE!
+%     N_PLANES = 16; % NOTE HARDCODED VALUE!
     
     if ~exist(fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), 'file')
         
@@ -13,12 +13,18 @@ try
         bidList = unique(bids);
         volCounts = []; frameCounts = [];
         for iTrial = 1:numel(trialFiles)
-            disp(trialFiles(iTrial).name)
-            currData = read_patterned_tifdata(fullfile(imgDataDir, trialFiles(iTrial).name)); % --> [y, x, allVols]
+%             write_to_log(trialFiles(iTrial).name, mfilename)
+            [currData, tifMetadata] = read_patterned_tifdata(fullfile(imgDataDir, ...
+                        trialFiles(iTrial).name)); % --> [y, x, allVols]
 %             currData = permute(currData, [2 1 3]);
             sz = size(currData);
+%             write_to_log(num2str(sz), mfilename);
+            nPlanes = frameStringKeyLookup(tifMetadata.tifinfo.Software, 'hStackManager.numSlices');
+            nFlybackFrames = frameStringKeyLookup(tifMetadata.tifinfo.Software, ...
+                        'hFastZ.numDiscardFlybackFrames');
             frameCounts(iTrial) = sz(3);
-            volCounts(iTrial) = sz(3) / N_PLANES;
+            volCounts(iTrial) = sz(3) / (nPlanes + nFlybackFrames);
+%             write_to_log(['VolCounts = ', num2str(volCounts(iTrial))], mfilename);
         end
         disp(['Saving ', fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat'])])
         
@@ -95,8 +101,8 @@ try
                     % currData = permute(read_patterned_tifdata(currFile), [2 1 3]);
                     currData = read_patterned_tifdata(currFile);
                     sz = size(currData);
-                    nVolumes = sz(3) / N_PLANES;
-                    rsData = reshape(currData, sz(1), sz(2), N_PLANES, nVolumes); % --> [y, x, plane, volume]
+                    nVolumes = sz(3) / (nPlanes + nFlybackFrames);
+                    rsData = reshape(currData, sz(1), sz(2), (nPlanes + nFlybackFrames), nVolumes); % --> [y, x, plane, volume]
                     tifData = rsData(:,:,:, 1:minVols);
                     saveName = regexprep(currFile, '.tif', '.mat');
                     save(saveName, 'tifData', '-v7.3');
@@ -104,6 +110,9 @@ try
             end
             
         end%iBlock
+    else
+        write_to_log([fullfile(imgDataDir, ['sid_', num2str(sid), '_volume_counts.mat']), ...
+                ' already exists!'], mfilename);
     end%if
 catch ME
     disp(getReport(ME))

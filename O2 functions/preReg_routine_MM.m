@@ -38,7 +38,7 @@ try
     end
     
     disp(['Processing', num2str(numel(fileNames)), ' files...'])
-    write_to_log(['Processing', num2str(numel(fileNames)), ' files...'], mfilename)
+    write_to_log(['Processing ', num2str(numel(fileNames)), ' files...'], mfilename)
     
     % Make session folder for new files if necessary
     if ~isdir(outputDir)

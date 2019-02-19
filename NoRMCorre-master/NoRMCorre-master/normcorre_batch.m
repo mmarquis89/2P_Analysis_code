@@ -1,5 +1,8 @@
 function [M_final,shifts_g,template,options,col_shift] = normcorre_batch(Y,options,template)
 
+%
+% MODIFIED TO ADD LOGGING STEPS BY MM 19-Feb-2019 (search "write_to_log" to find all altered lines)
+%
 % online motion correction through DFT subpixel registration
 % Based on the dftregistration.m function from Manuel Guizar and Jim Fienup
 %
@@ -148,6 +151,7 @@ Y_temp = single(Y_temp);
 
 if nargin < 3 || isempty(template)
     fprintf('Registering the first %i frames just to obtain a good template....',init_batch);
+    write_to_log('Registering initial frames just to obtain a good template...', mfilename);
     template_in = median(Y_temp,nd+1)+add_value;
     fftTemp = fftn(template_in);
     for t = 1:size(Y_temp,nd+1);        
@@ -162,6 +166,7 @@ if nargin < 3 || isempty(template)
     end
     template_in = template_in + add_value;
     fprintf('..done. \n')
+    write_to_log('Initial frames registred', mfilename);
 else
     template_in = single(template + add_value);
 end
@@ -253,6 +258,7 @@ end
 
 cnt_buf = 0;
 fprintf('Template initialization complete.  Now registering all the frames with new template. \n')
+write_to_log('Template initialization complete', mfilename);
 %%
 
 prevstr = [];
@@ -429,6 +435,8 @@ for it = 1:iter
         end
         
         str=[num2str(t+lY-1), ' out of ', num2str(T), ' frames registered, iteration ', num2str(it), ' out of ', num2str(iter), '..'];
+        write_to_log(str, mfilename);
+        
         refreshdisp(str, prevstr, t);
         prevstr=str; 
         % update template

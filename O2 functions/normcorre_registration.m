@@ -18,8 +18,7 @@ function normcorre_registration(parentDir, fileName, varargin)
 %===================================================================================================
 
 try
-myFile = fopen('NoRMCorreLog.txt', 'w');
-fprintf(myFile, 'NoRMCorre log opened\n');
+write_to_log('Starting NoRMCorre registration...', mfilename)
 
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 addpath('/home/mjm60/NoRMCorre-master/NoRMCorre-master') % if running on O2 cluster
@@ -30,7 +29,7 @@ addParameter(p, 'OutputDir', parentDir);
 parse(p, varargin{:});
 outputDir = p.Results.OutputDir;
 
-fprintf(myFile, 'Loading array\n');
+write_to_log('Loading array...', mfilename);
 
 % Load data
 load(fullfile(parentDir, fileName));
@@ -39,7 +38,7 @@ if exist('regProduct', 'var')
     clear regProduct
 end
 
-fprintf(myFile, 'session loaded\n');
+write_to_log('Session loaded', mfilename);
 
 % Reshape data to concatenate volumes from all trials
 wholeSessionSize = size(wholeSession);
@@ -48,7 +47,7 @@ concatSession = reshape(wholeSession, reshapeSize); % --> [y, x, plane, volume]
 sz = size(concatSession);
 clear wholeSession
 
-fprintf(myFile, 'Session reshaped\n');
+write_to_log('Session reshaped', mfilename);
 
 % Make session folder for new files if necessary
 if ~isdir(outputDir)
@@ -67,7 +66,7 @@ options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
 %                     'grid_size', [100, 100] ...
 %                     );
                 
-fprintf(myFile, 'Running registration...\n');
+write_to_log('Starting registration...', mfilename);
 
 % Rigid registration
 tic; [M, ~, ~, ~] = normcorre_batch(concatSession, options_rigid); toc

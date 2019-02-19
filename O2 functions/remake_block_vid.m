@@ -2,7 +2,14 @@ function remake_block_vid(vidDataDir, blockVidName, sid, bid)
 try
    % FlyCap mjpeg AVI files seem to have broken indexing when they exceed a certain file size, so 
    % this function uses ffmpeg to make a (renamed) copy of the file with corrected indexing.
-   sourceVid = fullfile(vidDataDir, blockVidName);
+   
+   if ~exist(fullfile(vidDataDir, ['sid_', num2str(sid)]), 'dir')
+       blockDataDir = vidDataDir;
+   else
+       blockDataDir = fullfile(vidDataDir, ['sid_', num2str(sid)]);
+   end
+   
+   sourceVid = fullfile(blockDataDir, blockVidName);
    outputVidName = ['block_vid_sid_', num2str(sid), '_bid_', pad(num2str(bid), 3, 'left', '0')];
    outputVid = fullfile(vidDataDir, [outputVidName, '.avi']);
    cmdStr = ['module load ffmpeg/3.3.3; ffmpeg -i "', sourceVid, '" -codec copy "', outputVid, '"'];
