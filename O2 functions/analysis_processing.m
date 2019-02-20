@@ -52,9 +52,15 @@ nPlanes = analysisMetadata.nPlanes;
 
 % Calculate overall behavior state dF/F
 memGB = ceil(1.8311e-08 * nPixels * nTrials * nVolumes * nPlanes);
+if memGB > 249
+    memGB = 249;
+end
 timeLimitMin = ceil(1.068e-08 * nPixels * nTrials * nVolumes * nPlanes);
+if timeLimitMin > 719
+    timeLimitMin = 719;
+end
 queueName = 'short';
-jobName = 'behavior_state_dFF_calc';
+jobName = ['behavior_state_dFF_calc_', expDate];
 c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
 inputArgs = {imgSaveDir, sessionDataFile};
 behavStateDffCalcJob = c.batch(@behavioral_state_dff_calc, 0, inputArgs);
@@ -74,8 +80,11 @@ if memGB > 249
     memGB = 249;
 end
 timeLimitMin = ceil(3.0518e-08 * nPixels * nTrials * nVolumes * nPlanes);
+if timeLimitMin > 719
+    timeLimitMin = 719;
+end
 queueName = 'short';
-jobName = 'extract_ROI_data';
+jobName = ['extract_ROI_data_', expDate];
 c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
 inputArgs = {imgSaveDir, sessionDataFile, ROIfile};
 c.batch(@extract_ROI_data, 0, inputArgs);

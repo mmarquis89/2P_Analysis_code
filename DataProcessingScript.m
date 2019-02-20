@@ -135,7 +135,7 @@ system7zip(parentDirTemp, archiveName, '7z', '20181030*', 1);
 %% -------------------------------------------------------------------------------------------------
 
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2017'];
-dirName = '2017_09_06';
+dirName = '2017_10_26_TH_Gal4_exp_2';
 expDir = fullfile(parentDirTemp, dirName);
 
 % Create folder for compiled analysis data

@@ -63,7 +63,7 @@ try
             fclose(tifMetadata.fid);
         end
         
-        write_to_log('Tiff data extracted', mfilename);
+%         write_to_log('Tiff data extracted', mfilename);
         
         % Load the .tif file
         rawFile = read_tif(fullfile(parentDir, currFiles{iFile}));
@@ -71,7 +71,7 @@ try
         chanData = zeros(size(rawFile)); chanData = chanData(:,:,1:end-nFlybackFrames,:,:);
         nChannels = size(chanData, 5);
         
-        write_to_log(['Raw tiff data loaded...dims = ', num2str(size(chanData))], mfilename);
+%         write_to_log(['Raw tiff data loaded...dims = ', num2str(size(chanData))], mfilename);
         
         for iChannel = 1:nChannels
             
@@ -87,9 +87,9 @@ try
             
             % Discard flyback frames
             workingFile(:,:,(end-(nFlybackFrames-1)):end,:) = [];       % --> [y, x, plane, volume]
-            write_to_log('Flyback frames trimmed', mfilename);
-            write_to_log(num2str(size(workingFile)), mfilename);
-            write_to_log(num2str(size(chanData)), mfilename);
+%             write_to_log('Flyback frames trimmed', mfilename);
+%             write_to_log(num2str(size(workingFile)), mfilename);
+%             write_to_log(num2str(size(chanData)), mfilename);
             chanData(:,:,:,:,iChannel) = workingFile(:,:,:,:,1);    % --> [y, x, plane, volume, channel]
         end
         
@@ -116,9 +116,9 @@ try
         fName = currFiles{iFile};
 
         % Save data to session array(s)
-        write_to_log(['iFile = ', num2str(iFile), ', size(wholeSession) = ', ...
-                    num2str(size(wholeSession)), ', size(chanData_1) = ', ...
-                    num2str(size(chanData_1))], mfilename);
+%         write_to_log(['iFile = ', num2str(iFile), ', size(wholeSession) = ', ...
+%                     num2str(size(wholeSession)), ', size(chanData_1) = ', ...
+%                     num2str(size(chanData_1))], mfilename);
         wholeSession(:,:,:,:,iFile) = chanData_1(:,:,:,:,1);
         if nChannels > 1
             wholeSession2(:,:,:,:,iFile) = chanData_2(:,:,:,:,2);

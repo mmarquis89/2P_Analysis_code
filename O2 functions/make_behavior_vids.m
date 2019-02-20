@@ -9,8 +9,11 @@ try
     c = parcluster;
     write_to_log('Cluster communication opened...', mfilename)
     
+    % Extract expDate from directory path
+    expDate = regexp(vidDataDir, '(?<=/)20.*(?=/)', 'match');
+    expDate = expDate{:};
     
-    %     ---------------------------------------------------------------------------------------------
+    %     ------------------------------------------------------------------------------------------
     
     % Identify block vids
     if ~exist(fullfile(vidDataDir, ['sid_', num2str(sid)]), 'dir')
@@ -29,7 +32,7 @@ try
     memGB = 2;
     timeLimitMin = 30;
     queueName = 'short';
-    jobName = 'remake_block_vids';
+    jobName = ['remake_block_vids_', expDate];
     remakeJobArr = [];
     for iBlock = 1:nBlocks
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
@@ -48,7 +51,7 @@ try
     memGB = 4;
     timeLimitMin = 120;
     queueName = 'short';
-    jobName = 'split_block_vids';
+    jobName = ['split_block_vids_', expDate];
     splitJobArr = [];
     for iBlock = 1:nBlocks
         
@@ -63,7 +66,8 @@ try
                 '*tid*']), ' does not exist...splitting frames now'])
             
             % Check whether block is closed-loop (and therefore all one trial)
-            mdFileStr = ['metadata*sid_', num2str(sid), '_bid_', num2str(str2double(currBid{:})), '.mat'];
+            mdFileStr = ['metadata*sid_', num2str(sid), '_bid_', ...
+                    num2str(str2double(currBid{:})), '.mat'];
             mdFileName = dir(fullfile(vidDataDir, mdFileStr));
             write_to_log(['mdFileName: ', mdFileName.name], mfilename);
             mData = load(fullfile(vidDataDir, mdFileName.name));
@@ -87,7 +91,7 @@ try
     splitJobArr = wait_for_jobs(splitJobArr);
     
     %
-    %   ------------------------------------------------------------------------------------------------
+    %   --------------------------------------------------------------------------------------------
     
     
     % Update vid files to reflect any changes from imaging data cleanup, then move to output dir
@@ -112,7 +116,7 @@ try
     
     write_to_log('Raw trial vids identified...', mfilename)
     
-    %---------------------------------------------------------------------------------------------------
+    %-----------------------------------------------------------------------------------------------
     
     %
     % Rename videos and copy them to the output directory
@@ -125,7 +129,7 @@ try
         copyfile(sourceFileName, destFileName);
     end
     
-    %  %     %---------------------------------------------------------------------------------------------------
+    %  %     %--------------------------------------------------------------------------------------
     
     
     % Count number of frames in the individual trial videos
@@ -138,49 +142,25 @@ try
     write_to_log(['Video frames counted, maxFrames = ', num2str(maxFrames), '...'], mfilename);
     
     
-    %---------------------------------------------------------------------------------------------------
+    %-----------------------------------------------------------------------------------------------
     
     %
     % Start job to concatenate processed trial behavior vids
     memGB = 8;
     timeLimitMin = 120;
     queueName = 'short';
-    jobName = 'concatRawVids'
+    jobName = ['concatRawVids_', expDate];
     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
     fileStr = ['*sid_', num2str(sid), '_tid*.avi'];
     outputFileName = ['sid_', num2str(sid), '_AllTrials'];
     inputArgs = {vidSaveDir, fileStr, 'OutputFile', outputFileName}
     concatVidJob = c.batch(@concat_vids, 0, inputArgs);
     
-    %
-    %     %---------------------------------------------------------------------------------------------------
-    %
-    %
-    %     % % Start jobs to calculate optic flow for all trials
-    %     memGB = 1;
-    %     b = 0.04;
-    %     % if maxFrames <= 2000
-    %     %     b = 0.08;
-    %     % else
-    %     %     b = 0.02;
-    %     % end
-    %     timeLimitMin = ceil(b * maxFrames);
-    %     queueName = 'short';
-    %     jobName = 'opticFlowCalc';
-    %     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-    %     roiFilePath = fullfile(vidDataDir, 'Behavior_Vid_ROI_Data.mat');
-    %     flowVidDir = fullfile(vidSaveDir, 'opticFlowVids');
-    %     flowJobArr = [];
-    %     for iTrial = 1:numel(trialVidNames)
-    %         disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(tidList(iTrial)), ' ', roiFilePath, ' ', flowVidDir])
-    %         inputArgs = {vidSaveDir, sid, tidList(iTrial), roiFilePath, 'OutputDir', flowVidDir};
-    %         flowJobArr{iTrial} = c.batch(@single_trial_optic_flow_calc, 0, inputArgs);
-    %     end
-    %
-    %     write_to_log('Optic flow calc jobs submitted...', mfilename)
-    %
-    %     % Pause execution until all jobs are done
-    %     flowJobArr = wait_for_jobs(flowJobArr);
+    
+    %-----------------------------------------------------------------------------------------------
+    
+    
+    % % Start jobs to calculate optic flow for all trial
     
     flowCheckComplete = 0;
     while ~flowCheckComplete
@@ -195,7 +175,7 @@ try
         % end
         timeLimitMin = ceil(b * maxFrames);
         queueName = 'short';
-        jobName = 'opticFlowCalc';
+        jobName = ['opticFlowCalc_', expDate];
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
         roiFilePath = fullfile(vidDataDir, 'Behavior_Vid_ROI_Data.mat');
         flowVidDir = fullfile(vidSaveDir, 'opticFlowVids');
@@ -205,16 +185,21 @@ try
         write_to_log('Checking for missing optic flow data...', mfilename);
         missingTids = [];
         for iTrial = 1:numel(trialVidNames)
-            if ~exist(fullfile(flowVidDir, ['sid_', num2str(sid), '_tid_', pad(num2str(tidList(iTrial)), 3, 'left', '0'), '_optic_flow_data.mat']), 'file')
+            if ~exist(fullfile(flowVidDir, ['sid_', num2str(sid), '_tid_', ...
+                        pad(num2str(tidList(iTrial)), 3, 'left', '0'), '_optic_flow_data.mat']), ...
+                        'file')
                 missingTids(end + 1) = tidList(iTrial);
             end
         end
         if ~isempty(missingTids)
-            write_to_log(['Missing flow data for the following trials: ', num2str(missingTids)], mfilename);           
+            write_to_log(['Missing flow data for the following trials: ', num2str(missingTids)], ... 
+                    mfilename);           
             
             for iTrial = 1:numel(missingTids)
-                disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(missingTids(iTrial)), ' ', roiFilePath, ' ', flowVidDir])
-                inputArgs = {vidSaveDir, sid, missingTids(iTrial), roiFilePath, 'OutputDir', flowVidDir};
+                disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(missingTids(iTrial)), ' ', ...
+                        roiFilePath, ' ', flowVidDir])
+                inputArgs = {vidSaveDir, sid, missingTids(iTrial), roiFilePath, 'OutputDir', ...
+                        flowVidDir};
                 flowJobArr{iTrial} = c.batch(@single_trial_optic_flow_calc, 0, inputArgs);
             end
             
@@ -230,47 +215,6 @@ try
     normalize_optic_flow(flowVidDir, sid, 'OutputDir', vidSaveDir);
     
     write_to_log('Flow data normalized...', mfilename)
-    %
-    
-    % %     %---------------------------------------------------------------------------------------------------
-    %
-    %
-    %     % Start jobs to create optic flow vids
-    %     a = 0.006;
-    %     b = 0.08;
-    %     memGB = ceil(a * maxFrames);
-    %     timeLimitMin = ceil(b * maxFrames);
-    %     queueName = 'short';
-    %     jobName = 'makeOpticFlowVid'
-    %     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-    %     frameCountFile = ['sid_', num2str(sid), '_frameCounts.txt'];
-    %     flowVidDir = fullfile(vidSaveDir, 'opticFlowVids');
-    %     flowVidJobArr = [];
-    %     for iTrial = 1:numel(trialVidNames)
-    %         inputArgs = {vidSaveDir, sid, tidList(iTrial), frameCountFile, 'OutputDir', flowVidDir};
-    %         disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(tidList(iTrial)), ' ', frameCountFile, ' ', flowVidDir])
-    %         flowVidJobArr{iTrial} = c.batch(@create_single_trial_optic_flow_vid, 0, inputArgs);
-    %     end
-    %
-    %     % Pause execution until all jobs are done
-    %     flowVidJobArr = wait_for_jobs(flowVidJobArr);
-    %
-    %     write_to_log('Flow vids created...', mfilename)
-    %
-    %
-    %     %---------------------------------------------------------------------------------------------------
-    %
-    %
-    %     % Start job to concatenate optic flow vids
-    %     memGB = 1;
-    %     timeLimitMin = 120;
-    %     queueName = 'short';
-    %     jobName = 'concatFlowVids'
-    %     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-    %     fileStr = ['*sid_', num2str(sid), '_tid*_With_Optic_Flow.avi'];
-    %     outputFileName = ['sid_', num2str(sid), '_AllTrials_With_Optic_Flow'];
-    %     inputArgs = {flowVidDir, fileStr, 'OutputFile', outputFileName};
-    %     concatFlowVidJob = c.batch(@concat_vids, 0, inputArgs);
     
 catch ME
     write_to_log(getReport(ME), mfilename);

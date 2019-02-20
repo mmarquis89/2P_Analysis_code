@@ -9,11 +9,17 @@ c = parcluster;
 
 % Check array size
 m = matfile(fullfile(imgSaveDir, sessionDataFile));
-[~, ~, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession');
+[nColumns, nLines, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession');
 
 % Calculate parameters and start job
-memGB = ceil(0.0006 * nPlanes * nVolumes * nTrials);
-timeLimitMin = ceil(0.001 * nPlanes * nVolumes * nTrials);
+memGB = ceil(1.8311e-08 * nColumns * nLines * nPlanes * nVolumes * nTrials);
+if memGB > 249
+    memGB = 249;
+end
+timeLimitMin = ceil(3.0518e-08 * nColumns * nLines * nPlanes * nVolumes * nTrials);
+if timeLimitMin > 719
+    timeLimitMin = 719;
+end
 queueName = 'short';
 jobName = 'calc_event_dff_avg';
 c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
