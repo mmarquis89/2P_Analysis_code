@@ -1,4 +1,10 @@
-function plot_ROIs(ROImetadata)
+function plot_ROIs(ROImetadata, varargin)
+
+% Parse optional arguments
+p = inputParser;
+addParameter(p, 'IntensityRange', []);
+parse(p, varargin{:});
+intensityRange = p.Results.IntensityRange;
 
 % Create a figure for each ROI and plot the ROI in each plane on a separate subplot
 for iROI = 1:numel(ROImetadata)
@@ -9,13 +15,13 @@ for iROI = 1:numel(ROImetadata)
        
       % Plot reference image 
       subaxis(nPlots(1), nPlots(2), iSubplot); 
-      imshow(ROImetadata{iROI}(iSubplot).refImg, [])
+      imshow(ROImetadata{iROI}(iSubplot).refImg, intensityRange)
 %       imagesc(ROImetadata{iROI}(iSubplot).refImg);
       % Overlay ROI
       hold on
       currData = ROImetadata{iROI}(iSubplot);
       plot(currData.xi, currData.yi, 'LineWidth', 2)
-      title(['Plane #', num2str(currData.plane)])
+      title(ROImetadata{iROI}(1).name)
       
    end
    

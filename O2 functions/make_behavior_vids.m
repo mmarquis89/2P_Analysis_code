@@ -13,7 +13,7 @@ try
     expDate = regexp(vidDataDir, '(?<=/)20.*(?=/)', 'match');
     expDate = expDate{:};
     
-    %     ------------------------------------------------------------------------------------------
+    %-----------------------------------------------------------------------------------------------
     
     % Identify block vids
     if ~exist(fullfile(vidDataDir, ['sid_', num2str(sid)]), 'dir')
@@ -32,7 +32,7 @@ try
     memGB = 2;
     timeLimitMin = 30;
     queueName = 'short';
-    jobName = ['remake_block_vids_', expDate];
+    jobName = [expDate, '_sid_', num2str(sid), '_remake_block_vids'];
     remakeJobArr = [];
     for iBlock = 1:nBlocks
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
@@ -51,7 +51,7 @@ try
     memGB = 4;
     timeLimitMin = 120;
     queueName = 'short';
-    jobName = ['split_block_vids_', expDate];
+    jobName = [expDate, '_sid_', num2str(sid), '_split_block_vids'];
     splitJobArr = [];
     for iBlock = 1:nBlocks
         
@@ -90,8 +90,8 @@ try
     end%for
     splitJobArr = wait_for_jobs(splitJobArr);
     
-    %
-    %   --------------------------------------------------------------------------------------------
+    
+    %-----------------------------------------------------------------------------------------------
     
     
     % Update vid files to reflect any changes from imaging data cleanup, then move to output dir
@@ -118,7 +118,7 @@ try
     
     %-----------------------------------------------------------------------------------------------
     
-    %
+    
     % Rename videos and copy them to the output directory
     for iTrial = 1:numel(trialVidNames)
         disp(iTrial)
@@ -129,7 +129,7 @@ try
         copyfile(sourceFileName, destFileName);
     end
     
-    %  %     %--------------------------------------------------------------------------------------
+    %-----------------------------------------------------------------------------------------------
     
     
     % Count number of frames in the individual trial videos
@@ -144,12 +144,12 @@ try
     
     %-----------------------------------------------------------------------------------------------
     
-    %
+    
     % Start job to concatenate processed trial behavior vids
     memGB = 8;
     timeLimitMin = 120;
     queueName = 'short';
-    jobName = ['concatRawVids_', expDate];
+    jobName = [expDate, '_sid_', num2str(sid), '_concatRawVids'];
     c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
     fileStr = ['*sid_', num2str(sid), '_tid*.avi'];
     outputFileName = ['sid_', num2str(sid), '_AllTrials'];
@@ -175,7 +175,7 @@ try
         % end
         timeLimitMin = ceil(b * maxFrames);
         queueName = 'short';
-        jobName = ['opticFlowCalc_', expDate];
+        jobName = [expDate, '_sid_', num2str(sid), '_opticFlowCalc'];
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
         roiFilePath = fullfile(vidDataDir, 'Behavior_Vid_ROI_Data.mat');
         flowVidDir = fullfile(vidSaveDir, 'opticFlowVids');

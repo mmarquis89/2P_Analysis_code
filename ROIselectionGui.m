@@ -102,6 +102,9 @@ pcaTab.Units = 'normalized';
                 % Calculate necessary axis dimensions
                 subplotDim1 = ceil(sqrt(nPlanes));
                 subplotDim2 = floor(sqrt(nPlanes));
+                if (subplotDim1 * subplotDim2) < nPlanes
+                   subplotDim2 = ceil(sqrt(nPlanes)); 
+                end                
                 padSize = 0.01;
                 rightMargin = 0.12;
                 axWidth = (1 - rightMargin - ((subplotDim1 + 1) * padSize)) / subplotDim1;
@@ -118,8 +121,17 @@ pcaTab.Units = 'normalized';
                     end
                 end
                 
+
                 % Order handles by z-planes, displayed from L-R, top-bottom
-                roiRefImgAxes = reshape(flipud(roiRefImgAxes)', 1, nPlanes);
+%                 roiRefImgAxes = reshape(flipud(roiRefImgAxes)', 1, nPlanes);
+                roiRefImgAxes = reshape(flipud(roiRefImgAxes)', 1, numel(roiRefImgAxes));
+                if numel(roiRefImgAxes) > nPlanes
+                    for iAx = (nPlanes + 1):numel(roiRefImgAxes)
+                        axes(roiRefImgAxes{iAx});
+                        axis off
+                    end
+                    roiRefImgAxes = roiRefImgAxes(1:nPlanes);
+                end
                 
                 % Plot reference frames for each plane
                 myImages = [];

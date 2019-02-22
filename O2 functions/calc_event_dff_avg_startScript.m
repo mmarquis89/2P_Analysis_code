@@ -5,7 +5,15 @@ function calc_event_dff_avg_startScript(imgSaveDir, fileStr, sessionDataFile)
 
 % Initialize cluster communication
 % configCluster;
-c = parcluster; 
+c = parcluster;
+
+% Extract expDate from directory path
+expDate = regexp(imgSaveDir, '(?<=/)20.*(?=/sid)', 'match');
+expDate = expDate{:};
+
+% Extract sid from directory path
+sid = regexp(sessionDataFile, '(?<=sid_).*(?=\_)', 'match');
+sid = sid{:};
 
 % Check array size
 m = matfile(fullfile(imgSaveDir, sessionDataFile));
@@ -21,7 +29,7 @@ if timeLimitMin > 719
     timeLimitMin = 719;
 end
 queueName = 'short';
-jobName = 'calc_event_dff_avg';
+jobName = [expDate, '_sid_', num2str(sid), '_calc_event_dff_avg'];
 c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
 inputArgs = {imgSaveDir, fileStr, sessionDataFile};
 c.batch(@calc_event_dff_avg, 0, inputArgs); 

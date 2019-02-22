@@ -2,8 +2,8 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_02_11_exp_3';
-sid = 0;
+expDate = '2019_02_20_exp_1';
+sid = 2;
 FRAME_RATE = 25;
 trialDuration = 20;
 
@@ -11,7 +11,7 @@ behaviorLabels = {'Quiescence', 'Locomotion', 'IsolatedMovement'};
 
 imgDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)'];
 vidDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
-imgDir = vidDir;
+% imgDir = vidDir;
 disp('-------------------------------------')
 disp('Preparing for auto-annotation...')
 
@@ -73,7 +73,7 @@ disp('-------------------------------------')
 annotParams = struct('expDate', expDate, 'flowThresh', flowThresh, 'moveThresh', moveThresh, ...
                             'smWin', smWin, 'moveSmReps', moveSmReps, 'flowSmReps', flowSmReps, ...
                             'minIsoMoveLen', minIsoMoveLen, 'minLocEpochLen', minLocEpochLen, ...
-                            'minQuiescenceLen', minQuiescenceLen);
+                            'minQuiescenceLen', minQuiescenceLen, 'sid', sid);
                         
 if ~isdir(imgDir)
     mkdir(imgDir)
@@ -83,19 +83,19 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 17;
-flowThresh = 0.03;
-moveThresh = 0.05;
+t = 1;
+flowThresh = 0.04;
+moveThresh = 0.08;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 6;
-flowSmReps = 4;
+moveSmReps = 4;
+flowSmReps = 6;
 
-minIsoMoveLen = 6;
+minIsoMoveLen = 4;
 minLocEpochLen = 6;
-minQuiescenceLen = 4;
+minQuiescenceLen = 6;
 
 % Extract variables from ftData
 moveSpeed = ftData.moveSpeed * FRAME_RATE * 4.5;      % --> [frame, trial]
