@@ -3,7 +3,7 @@
 %% ==================================================================================================
 
 expDates = {...
-    '2018_04_26_exp_1'
+    '2018_04_05_exp_1'
             }
 
 targetPlanes = [ 200 ...
@@ -134,8 +134,8 @@ system7zip(parentDirTemp, archiveName, '7z', '20181030*', 1);
 
 %% -------------------------------------------------------------------------------------------------
 
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2017'];
-dirName = '2017_11_07_exp_1';
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2018 Jan-Mar'];
+dirName = '2018_02_28_exp_3';
 expDir = fullfile(parentDirTemp, dirName);
 
 % Create folder for compiled analysis data

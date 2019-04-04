@@ -17,9 +17,6 @@ function concat_vids(vidDir, fileStr, varargin)
 %
 % OPTIONAL NAME-VALUE PAIR ARGUMENTS:
 %
-%
-%       'OutputDir'  = (default: vidDir) the directory to save the output video in.
-%
 %       'FrameRate'  = (default: 25) the frame rate that the video was acquired at in FPS
 %
 %       'OutputFile' = (default = fileStr + '_AllTrials') the desired name of the output file (minus
@@ -64,7 +61,6 @@ for iTrial = 1:length(vidNames)
     catch % Because VideoReader throws an error if you try to read an empty video
         
     end
-    
 end%iTrial
 
 close(myVidWriter)

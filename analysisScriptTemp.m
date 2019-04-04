@@ -258,21 +258,22 @@ catch foldME; rethrow(foldME); end
 %% SET UP PLOTTING PARAMETERS
 try
 stimNames = {'EtOH\_neat'}; % {'EtOH\_e-2'};%
-stimTrialGroups = [stimSepTrials.OdorA];%[s.OdorA + 2 * s.OdorB]; % 
+stimTrialGroups = [s.OdorA];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
 stimGroupNames = {'OdorA'};%{'OdorA', 'OdorB'}; %
 
-stimEpochs =  [8 11];%[4 6; 8 11];%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% [7 10 ; 10 13];%
-stimShadingColors = {'red'};%{'red', 'green', 'red'}; % {'red', 'green'};%
-stimEpochNames = {'Odor'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
+stimEpochs = reshape(1:20, 2, 10)'% [11 12]; ;%[4 6; 8 11];%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% [7 10 ; 10 13];%
+stimShadingColors = repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % {'red', 'green'};%
+stimShadingColors{6} = 'green';
+stimEpochNames = {'Stim Period'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
 
 
 %     groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 % groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
-groupBounds = [];
+groupBounds = [1 20 60 100 140];
 groupBounds(1) = 0;
 
-blockNames = {'OdorOnly'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
-blockShading = {1};%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
+blockNames = {'OdorStim', 'OdorOmission', 'OdorStim2', 'OdorOmission2', 'OdorStim3'}; %{'BaselineSingleOdor', 'Initialization', 'OdorOmit', 'SingleOdor'};%{'OdorOnly'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
+blockShading = {6, [1:5 7:10], 6, [1:5 7:10], 6};%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
 
 
 % Save plotting parameters for this experiment
@@ -296,30 +297,30 @@ try
 saveDir = uigetdir(savePath, 'Select a save directory');
 sepBlockStims = 0;
 % 
-trialGroups = [goodTrials];
-plotTitleSuffix = '';
-fileNameSuffix = '_AllTrials';
+% trialGroups = [goodTrials];
+% plotTitleSuffix = '';
+% fileNameSuffix = '_AllTrials';
 
-plotTitleSuffix = ['  —  sid\_', num2str(sid)];
+% % % % % % % % % % % % % % % % plotTitleSuffix = ['  —  sid\_', num2str(sid)];
 
-% GROUP BY STIM TYPE
+% % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups; 
 % trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-% 
-% % GROUP CHRONOLOGICALLY BY BLOCKS
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-% end
-% trialGroups(groupBounds(end)+1:end) = iBound + 1;
-% trialGroups = trialGroups .* goodTrials;
-% plotTitleSuffix = '';
-% fileNameSuffix = '_Blocks_Separated';
-% if ~isempty(blockShading)
-%     sepBlockStims = 1;
-% end
+
+% GROUP CHRONOLOGICALLY BY BLOCKS
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end)+1:end) = iBound + 1;
+trialGroups = trialGroups .* goodTrials;
+plotTitleSuffix = '';
+fileNameSuffix = '_Blocks_Separated';
+if ~isempty(blockShading)
+    sepBlockStims = 1;
+end
 
 % % GROUP BY ALTERNATING TRIALS
 % trialGroups = zeros(1, nTrials);
@@ -417,12 +418,12 @@ actionName = actionNames{actionNum};
 figTitle = regexprep([expDate, '  —  Fly ', actionName, ' throughout trial'], '_', '\\_');
 cm = [];
 
-% ALL TRIALS
-trialGroups = [goodTrials];
-fileNameSuffix = ['_AllTrials_', actionName];
-groupNames = {'All trials'};
-
-figTitle = [figTitle, ['  —  sid\_', num2str(sid)]];
+% % ALL TRIALS
+% trialGroups = [goodTrials];
+% fileNameSuffix = ['_AllTrials_', actionName];
+% groupNames = {'All trials'};
+% 
+% figTitle = [figTitle, ['  —  sid\_', num2str(sid)]];
 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
@@ -441,15 +442,27 @@ figTitle = [figTitle, ['  —  sid\_', num2str(sid)]];
 % groupNames{end + 1} = ['Trials ', num2str(groupBounds(end)), '-', num2str(nTrials)];
 % fileNameSuffix = '_EarlyVsLateTrials';
 
-% % PLOT AND COLOR EACH BLOCK SEPARATELY
-% groupNames = blockNames;
+% PLOT AND COLOR EACH BLOCK SEPARATELY
+groupNames = blockNames;
+trialGroups = zeros(1, nTrials);
+trialGroups = trialGroups .* goodTrials;
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+fileNameSuffix = '_Blocks_Separated';
+
+% % GROUP BY BLOCK TYPE 
+% groupNames = blockNames(1:2); 
 % trialGroups = zeros(1, nTrials);
 % trialGroups = trialGroups .* goodTrials;
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
 % end
-% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-% fileNameSuffix = '_Blocks_Separated';
+% trialGroups(logical(mod(trialGroups, 2))) = 1;
+% trialGroups(~logical(mod(trialGroups, 2))) = 2;
+% fileNameSuffix = '_Block_Type_Groups';
+
 % % 
 % % GROUP BY ALTERNATING TRIALS (WITH BASELINE)
 % trialGroups = zeros(1, nTrials);
@@ -507,7 +520,7 @@ else
         end
     end%iGroup
     
-    ax.XLim = [20 nFrames-20]; % to improve plot appearance
+    ax.XLim = [10 nFrames-10]; % to improve plot appearance
     ax.YLim = [0 1];
     suptitle(figTitle);
 end
@@ -533,24 +546,24 @@ catch foldME; rethrow(foldME); end
     %% PLOT 2-D SUMMARY OF FICTRAC DATA
 try
 saveDir = uigetdir(savePath, 'Select a save directory');
-fontSize = 12;
+fontSize = 18;
 sepBlockStims = 0;
 
 % ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'
-ftVarName = 'yawVel'%'moveSpeed'; %'yawSpeed'%  'fwSpeed'% 
-sdCap = 3;
+ftVarName =   'moveSpeed';%  'yawVel' %           'yawSpeed'%  'fwSpeed'% 
+sdCap = 3.5;
 smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
-% % % % % 
+% % % % 
 % ALL TRIALS
 trialGroups = [];
 fileNameSuffix = ['_AllTrials'];
 plotTitleSuffix = '';
-
-plotTitleSuffix = ['  —  sid\_', num2str(sid)];
-
+% 
+% plotTitleSuffix = ['  —  sid\_', num2str(sid)];
+% % 
 % % GROUP CHRONOLOGICALLY BY BLOCKS
 % trialGroups = zeros(1, nTrials);
 % for iBound = 1:numel(groupBounds)-1
@@ -563,7 +576,8 @@ plotTitleSuffix = ['  —  sid\_', num2str(sid)];
 % if ~isempty(blockShading)
 %     sepBlockStims = 1;
 % end
-% % 
+
+% % % 
 % % GROUP BY ALTERNATING TRIALS
 % trialGroups = zeros(1, nTrials);
 % trialGroups(1:groupBounds(2)) = 1; % Baseline period
@@ -620,7 +634,7 @@ fileName = ['2D_FicTrac_', ftVarName '_Summary', fileNameSuffix, '_', ...
                 'colormap', cm ...
                 );
 ax.Title.FontSize = fontSize;
-
+ax.FontSize = fontSize;
 % Update colormap if necessary
 if strcmp(ftVarName, 'yawVel')
     colormap(gca, bluewhitered)
@@ -685,12 +699,12 @@ smWin = 11;
 cm = [];
 % 
 % 
-% ALL TRIALS
-trialGroups = [goodTrials];
-fileNameSuffix = [fileNameSuffix, 'AllTrials'];
-groupNames = {'All trials'};
-
-figTitle = [figTitle, '  —  sid_', num2str(sid)];
+% % ALL TRIALS
+% trialGroups = [goodTrials];
+% fileNameSuffix = [fileNameSuffix, 'AllTrials'];
+% groupNames = {'All trials'};
+% 
+% figTitle = [figTitle, '  —  sid_', num2str(sid)];
 
 % % % % % 
 % % GROUP BY STIM TYPE
@@ -699,7 +713,6 @@ figTitle = [figTitle, '  —  sid_', num2str(sid)];
 % groupNames = stimNames;
 % % % 
 % % % % 
-
 
 % % GROUP BY EARLY/LATE
 % binNames = [];
@@ -714,17 +727,33 @@ figTitle = [figTitle, '  —  sid_', num2str(sid)];
 % binNames{end + 1} = ['Trials ', num2str(binBounds(end)), '-', num2str(nTrials)];
 % fileNameSuffix = [fileNameSuffix, 'EarlyVsLateTrials'];
 
-% % PLOT AND COLOR EACH BLOCK SEPARATELY
-% groupNames = blockNames;
+% PLOT AND COLOR EACH BLOCK SEPARATELY
+groupNames = blockNames;
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+trialGroups = trialGroups .* goodTrials;
+fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+
+
+% trialGroups = trialGroups - 2;
+% trialGroups(1:5) = 0;
+% groupNames = groupNames(3:4);
+
+% % 
+% % GROUP BY BLOCK TYPE 
+% groupNames = blockNames(1:2); 
 % trialGroups = zeros(1, nTrials);
+% trialGroups = trialGroups .* goodTrials;
 % for iBound = 1:numel(groupBounds)-1
 %    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
 % end
-% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-% trialGroups = trialGroups .* goodTrials;
-% fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+% trialGroups(logical(mod(trialGroups, 2))) = 1;
+% trialGroups(~logical(mod(trialGroups, 2))) = 2;
+% fileNameSuffix = [fileNameSuffix, 'Block_Type_Groups'];
 
-% 
 % % GROUP BY ALTERNATING TRIALS (WITH BASELINE)
 % trialGroups = zeros(1, nTrials);
 % trialGroups(1:groupBounds(2)) = 1; % Baseline period
@@ -854,8 +883,8 @@ catch foldME; rethrow(foldME); end
 catch foldME; rethrow(foldME); end
  %% PLOT OVERLAID 2D MOVEMENT DATA
 try
-startTime = 1;
-plotLen = 3;
+startTime = 15;
+plotLen = 1;
 limScalar = 0.8;
 alpha = 0.4;
 showMean = 1;
@@ -873,25 +902,25 @@ endFrame = (startTime + plotLen) * FRAME_RATE;
 trialGroups = ones(size(mmXY, 3), 1) .* goodTrials';
 cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime')];
 
-% PLOT ALL TRIALS COLORED BY TIME
-surfPlot = 1;
-cm = jet(endFrame - startFrame + 1);
-fileNameSuffix = '_chronological';
-% 
+% % PLOT ALL TRIALS COLORED BY TIME
+% surfPlot = 1;
+% cm = jet(endFrame - startFrame + 1);
+% fileNameSuffix = '_chronological';
+% % 
 % % GROUP BY STIM TYPE
 % trialGroups =  [s.OdorA + 2 * s.OdorB] .* goodTrials;
 % fileNameSuffix = '_OdorAvsOdorBvsNoStim'; 
 % groupNames = stimNames;
-% 
-% % PLOT AND COLOR EACH BLOCK SEPARATELY
-% groupNames = blockNames;
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-% end
-% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-% trialGroups = trialGroups .* goodTrials;
-% fileNameSuffix = '_Blocks_Separated';
+
+% PLOT AND COLOR EACH BLOCK SEPARATELY
+groupNames = blockNames;
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+trialGroups = trialGroups .* goodTrials;
+fileNameSuffix = '_Blocks_Separated';
 
 % % GROUP BY ALTERNATING TRIALS
 % trialGroups = zeros(1, nTrials);
@@ -1078,8 +1107,8 @@ try
     disp(currSummary)
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 3 4 6];
-    makeVid = 0;
+    currConds = [1 4 2 5];
+    makeVid = 1;
     sigma = [0.6];   
     rangeType = 'Max';
     rangeScalar = 0.4;
@@ -1109,7 +1138,7 @@ try
     smoothingSigma = [0.6]; 
     rangeType = 'max';
     rangeScalar = 0.5;
-    makeVid = 0;
+    makeVid = 1;
     saveDir = [];
     fileName = ['All_frame_dFF_', behaviorNames{actionNum}, '_Heatmaps_', regexprep(expDate, {'_', 'exp'}, {'', '-'})];
     titleStr = {['dF/F - ', behaviorNames{actionNum}, ' vs. Quiescence']};
@@ -1170,8 +1199,9 @@ expDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(si
 metaDataFileName = 'ROI_metadata.mat';
 dffDataFileName = 'ROI_Data_Avg.mat';
 
-% ROInames = ["L-SLP", "L-ANT", "R-SLP", "R-ANT", "Control"];
-ROInames = ["L-SLP", "R-SLP", "L-LH", "R-LH", "L-ANT", "R-ANT", "Control"];
+% ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
+% ROInames = ["L-SLP", "R-SLP", "L-LH", "R-LH", "L-ANT", "R-ANT", "Control"];
+ROInames = ["Left", "Right", "R-VLP", "Control"];
 
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
 % dffDataFileName = 'ROI_Data_Avg_SLP_comparison.mat';
@@ -1218,18 +1248,21 @@ catch foldME; rethrow(foldME); end
 try
 saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), ...
         '\Analysis'], 'Select a save directory');
-sepBlockStims = 0;
+sepBlockStims = 0; clear minMax;
 
 useDff = 1;
 subtractBaseline = 0;
-
+colorbarOn = 1;
+% minMax = [20 100; 30 100; 50 350; 50 300]; % [ROI, min-max]
 % % 
+
 trialGroups = [];
 plotTitleSuffix = 'All Trials';
 fileNameSuffix = '_AllTrials';
 
 plotTitleSuffix = ['sid\_', num2str(sid)]
 % 
+% GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups; 
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
@@ -1246,6 +1279,7 @@ plotTitleSuffix = ['sid\_', num2str(sid)]
 % if ~isempty(blockShading)
 %     sepBlockStims = 1;
 % end
+
 
 %---------------------------------------------------------------------------------------------------
 try
@@ -1291,19 +1325,35 @@ for iROI = 1:currNumROIs
     ax = axes();
     
     % Create colormap
-    cm = parula(numel(unique(flData(:,goodTrials,iROI))));
-    flData(:, ~goodTrials, iROI) = max(as_vector(flData(:,goodTrials,iROI))) + 1;
+    currFlData = flData(:,:,iROI);
+    if exist('minMax', 'var')
+        if ~isnan(minMax(iROI, 1))
+            currFlData(1,1) = minMax(iROI, 1);
+            currFlData(currFlData < minMax(iROI, 1)) = minMax(iROI, 1);
+        end
+        if ~isnan(minMax(iROI, 2))
+            currFlData(end,end) = minMax(iROI, 2);
+            currFlData(currFlData > minMax(iROI, 2)) = minMax(iROI, 2);
+        end
+    end
+    cm = parula(numel(unique(currFlData(:,goodTrials))));
+    currFlData(:, ~goodTrials) = max(as_vector(currFlData(:,goodTrials))) + 1;
     if sum(~goodTrials)
         cm = [0 0 0; cm(2:end-1, :); 1 1 1];
     end
     
-    % Plot raw fluorescence heatmap
-    plot_2D_summary(infoStruct, flData(:,:,iROI)', ...
+    % Plot fluorescence heatmap
+    plot_2D_summary(infoStruct, currFlData', ...
         'plotAxes', ax, ...
         'trialGroups', trialGroups, ...
         'titleStr', [plotTitlePrefix, ' — ', plotTitleSuffix], ...
         'colormap', cm ...
         );
+    if colorbarOn
+        colorbar;
+    end
+    
+    ax.FontSize = 18;
     
 % Plot stim times
 hold on
@@ -1384,7 +1434,7 @@ catch foldME; rethrow(foldME); end
             %% PLOT EVENT-ALIGNED dF/F WITHIN ROIs
 try
 % Show summary again
-eventName = 'locomotion';
+eventName = 'OdorA';
 fileNamePrefix = 'Locomotion_responses_';
 shadeDur = 0;
 eventInd = contains(primaryEventNames, eventName);
@@ -1397,7 +1447,8 @@ currCondNames = allCondNames{eventInd}(currConds);
 currDffData = ROIEventDff{eventInd}(currConds); % --> {cond}[volume, event, ROI]
 
 saveDir = 0;
-saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
+saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), ...
+        '\Analysis'], 'Select a save directory');
 
 
 ROIlist = 1:size(currDffData{1}, 3)-1;
@@ -1422,7 +1473,8 @@ for iROI = ROIlist
     else
         plotPos = numSubplots(nPlots);
     end
-    subaxis(plotPos(1), plotPos(2), 1,'ML', 0.05, 'MR', 0.02, 'MT', 0.05, 'MB', 0.08, 'SV', 0.1, 'SH', 0.05)
+    subaxis(plotPos(1), plotPos(2), 1,'ML', 0.05, 'MR', 0.02, 'MT', 0.05, 'MB', 0.08, 'SV', 0.1, ...
+            'SH', 0.05)
     hold on
     imshow(infoStruct.refImg{currPlane}, [0 MAX_INTENSITY]);
     plot(xData, yData, 'Color', 'g');
@@ -1447,8 +1499,10 @@ for iROI = ROIlist
         end
         ax{iPlot} = gca;
         volOffset = round(analysisWindows(eventInd, 1) * volumeRate * -1);
-        plot_ROI_data(ax{iPlot}, plotDff, 'VolumeRate', volumeRate, 'VolOffset', volOffset, 'OutlierSD', 5); 
-        title(regexprep([expDate, ' - ', currCondNames{iPlot}, ' - ', alignStr{iPlot}], '_', '\\_'))
+        plot_ROI_data(ax{iPlot}, plotDff, 'VolumeRate', volumeRate, 'VolOffset', volOffset, ...
+                'OutlierSD', 5); 
+        title(regexprep([expDate, ' — ', ROInames{iROI}, '  —  ', currCondNames{iPlot}, ' - ', ...
+                alignStr{iPlot}], '_', '\\_'))
         yLims(iPlot,:) = ylim(ax{iPlot});
     end
     
@@ -1459,7 +1513,7 @@ for iROI = ROIlist
        ylim(ax{iPlot}, [yMin yMax]); 
     end
     
-    % Save figure -------------------------------------------------------------------------------
+    % Save figure ----------------------------------------------------------------------------------
     if saveDir
         fileName = [fileNamePrefix, strrep(ROInames{iROI}, ' ', '_'), '_', expDate];
         export_fig(fullfile(saveDir, fileName), '-png', f);
@@ -1482,17 +1536,30 @@ try
     subtractBaseline = 0;
     
     smWin = 3;
-    singleTrials = 0;
+    singleTrials = 1;
     singleTrialAlpha = 0.5;
     stdDevShading = 1;
-    outlierSD = 5;
+    outlierSD = 4;
 
-    % ALL TRIALS
-    trialGroups = [goodTrials];
-    fileNameSuffix = '_AllTrials';
-    plotTitleSuffix = '  —  All Trials';
+%     % ALL TRIALS
+%     trialGroups = [goodTrials];
+%     fileNameSuffix = '_AllTrials';
+%     plotTitleSuffix = '  —  All Trials';
+%     %     trialGroups(31:end) = 0;
     
-    plotTitleSuffix = ['  —  sid\_', num2str(sid)]
+%     % GROUP CHRONOLOGICALLY BY BLOCKS
+%     trialGroups = zeros(1, nTrials);
+%     for iBound = 1:numel(groupBounds)-1
+%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+%     end
+%     trialGroups(groupBounds(end)+1:end) = iBound + 1;
+%     trialGroups = trialGroups .* goodTrials;
+%     plotTitleSuffix = '';
+%     fileNameSuffix = '_Blocks_Separated';
+%     if ~isempty(blockShading)
+%         sepBlockStims = 1;
+%     end
+    %     plotTitleSuffix = ['  —  sid\_', num2str(sid)]
 
 %     % GROUP BY STIM TYPE
 %     trialGroups = stimTrialGroups .* goodTrials;
@@ -1601,7 +1668,6 @@ end
         for iGroup = 1:nGroups
             ylim(ax(iGroup), [yMin yMax]);
         end
-
         
         % Save figure ------------------------------------------------------------------------------
         if saveDir
@@ -1619,33 +1685,63 @@ try
     cm = []; fileNameSuffix = '';
     figPos = [-1450 50 900 700]; %[ -1450 50 800 900];%
     
-    useDff = 0;
-    subtractBaseline = 1;
+    useDff = 1;
+    subtractBaseline = 0;
     
     smWin = 3;
     singleTrials = 0;
     singleTrialAlpha = 0.3;
-    stdDevShading = 1;
-    outlierSD = 4;
+    stdDevShading = 0;
+    outlierSD = 5;
 
 %     % GROUP BY STIM TYPE
 %     trialGroups = stimTrialGroups .* goodTrials;
 %     fileNameSuffix = '_StimTypeComparison';
 %     groupNames = stimNames;
 
-    % GROUP BY EARLY/LATE
-    fileNameSuffix = '_EarlyVsLateTrials';
-    plotTitleSuffix = '  —  Early vs. late trials';
-    binNames = [];
-    binBounds = [1, 20];
+    % GROUP CHRONOLOGICALLY BY BLOCKS
     trialGroups = zeros(1, nTrials);
-    for iBound = 1:numel(binBounds)-1
-        trialGroups(binBounds(iBound):binBounds(iBound + 1)) = iBound;
-        binNames{iBound} = ['Trials ', num2str(binBounds(iBound)), '-', num2str(binBounds(iBound + 1))];
+    for iBound = 1:numel(groupBounds)-1
+        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
     end
-    trialGroups(binBounds(end):end) = numel(binBounds);
+    trialGroups(groupBounds(end)+1:end) = iBound + 1;
     trialGroups = trialGroups .* goodTrials;
-    binNames{end + 1} = ['Trials ', num2str(binBounds(end)), '-', num2str(nTrials)];
+    plotTitleSuffix = '';
+    fileNameSuffix = '_Blocks_Separated';
+    if ~isempty(blockShading)
+        sepBlockStims = 1;
+    end
+    binNames = blockNames;
+    
+%         % Skip first two blocks
+%         trialGroups = trialGroups - 2;
+%         trialGroups(1:5) = 0;
+%         binNames = binNames(3:4);
+
+%     % GROUP BY BLOCK TYPE
+%     groupNames = blockNames(1:2);
+%     trialGroups = zeros(1, nTrials);
+%     trialGroups = trialGroups .* goodTrials;
+%     for iBound = 1:numel(groupBounds)-1
+%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+%     end
+%     trialGroups(logical(mod(trialGroups, 2))) = 1;
+%     trialGroups(~logical(mod(trialGroups, 2))) = 2;
+%     fileNameSuffix = '_Block_Type_Groups';
+
+%     % GROUP BY EARLY/LATE
+%     fileNameSuffix = '_EarlyVsLateTrials';
+%     plotTitleSuffix = '  —  Early vs. late trials';
+%     binNames = [];
+%     binBounds = [1, 20];
+%     trialGroups = zeros(1, nTrials);
+%     for iBound = 1:numel(binBounds)-1
+%         trialGroups(binBounds(iBound):binBounds(iBound + 1)) = iBound;
+%         binNames{iBound} = ['Trials ', num2str(binBounds(iBound)), '-', num2str(binBounds(iBound + 1))];
+%     end
+%     trialGroups(binBounds(end):end) = numel(binBounds);
+%     trialGroups = trialGroups .* goodTrials;
+%     binNames{end + 1} = ['Trials ', num2str(binBounds(end)), '-', num2str(nTrials)];
 
     % --------------------------------------------------------------------------------------------------
 try
@@ -1708,9 +1804,9 @@ try
                 '   ', ROInames{iROI}, plotTitleSuffix]);
         
         % Plot stim shading epoch(s)
-        for iEpoch = 1:size(currStimEpochs, 1)
-            plot_stim_shading(currStimEpochs(iEpoch, :), 'Axes', ax(iGroup), 'Color', ...
-                rgb(currStimShadingColors{iEpoch}));
+        for iEpoch = 1:size(stimEpochs, 1)
+            plot_stim_shading(stimEpochs(iEpoch, :), 'Axes', ax, 'Color', ...
+                rgb(stimShadingColors{iEpoch}));
         end
 
         % Save figure -------------------------------------------------------------------------------
@@ -1744,7 +1840,7 @@ smWin = 3;
 singleTrials = 1;
 singleTrialAlpha = 0.4;
 stdDevShading = 0;
-outlierSD = 5;
+outlierSD = 4;
 
 behavData = annotationTypes{annotTypeInd}.volAnnotArr';
 behavData(~ismember(behavData, annotValues)) = nan;
@@ -1754,7 +1850,7 @@ trialGroups = goodTrials+0;
 fileNameSuffix = '_AllTrials';
 plotTitleSuffix = '  —  All Trials';
 % 
-plotTitleSuffix = ['  —  sid\_', num2str(sid)]
+% plotTitleSuffix = ['  —  sid\_', num2str(sid)]
     
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
@@ -1906,17 +2002,49 @@ cm = 'parula';
 ftVar = 'moveSpeed';%'yawVel';%'yawSpeed';%   
 CLimCap = 1;
 
-% ALL TRIALS
-trialGroups = goodTrials;
-fileNameSuffix = '_AllTrials';
-plotTitleSuffix = '  —  All Trials';
+% % ALL TRIALS
+% trialGroups = goodTrials;
+% fileNameSuffix = '_AllTrials';
+% plotTitleSuffix = '  —  All Trials';
 
-plotTitleSuffix = ['  —  sid\_', num2str(sid)]
+% plotTitleSuffix = ['  —  sid\_', num2str(sid)]
 % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials;
 % fileNameSuffix = '_StimTypeComparison';
 % plotTitleSuffix = make_plotTitleSuffix(stimNames);
+
+    % GROUP CHRONOLOGICALLY BY BLOCKS
+    trialGroups = zeros(1, nTrials);
+    for iBound = 1:numel(groupBounds)-1
+        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+    end
+    trialGroups(groupBounds(end)+1:end) = iBound + 1;
+    trialGroups = trialGroups .* goodTrials;
+    plotTitleSuffix = '';
+    fileNameSuffix = '_Blocks_Separated';
+    if ~isempty(blockShading)
+        sepBlockStims = 1;
+    end
+    binNames = blockNames;
+    plotTitleSuffix = make_plotTitleSuffix(binNames);
+    
+    
+% trialGroups = trialGroups - 2;
+% trialGroups(1:5) = 0;
+% binNames = binNames(3:4);
+
+
+% % GROUP BY BLOCK TYPE
+% groupNames = blockNames(1:2);
+% trialGroups = zeros(1, nTrials);
+% trialGroups = trialGroups .* goodTrials;
+% for iBound = 1:numel(groupBounds)-1
+%     trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(logical(mod(trialGroups, 2))) = 1;
+% trialGroups(~logical(mod(trialGroups, 2))) = 2;
+% fileNameSuffix = '_Block_Type_Groups';
 
 % --------------------------------------------------------------------------------------------------
 try
@@ -2039,12 +2167,12 @@ for iROI = ROIlist
     end
     ax(1).Title.String = [plotTitlePrefix, plotTitleSuffix];
 
-    % Scale y-axes to match
-    yMin = min([yL{:}]);
-    yMax = max([yL{:}]);
-    for iGroup = 1:nGroups
-        ylim(ax(iGroup), [yMin yMax]);
-    end
+%     % Scale y-axes to match
+%     yMin = min([yL{:}]);
+%     yMax = max([yL{:}]);
+%     for iGroup = 1:nGroups
+%         ylim(ax(iGroup), [yMin yMax]);
+%     end
 
 
     % Save figure ------------------------------------------------------------------------------
@@ -2064,44 +2192,64 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 
 disp(ROInames)
 
+plotTrials = 1:nTrials;
 plotROIs = [1:nROIs-1];%[1 3 5];% 
-useDff = 0; 
-subtractBaseline = 1;
+useDff = 1; 
+subtractBaseline = 0;
 nBins = 50;
 
-plotVols = 1:size(ROIData, 1);% stimVols;% [1:stimVols(1), stimVols(2:end)];
-fileNameSuffix = '';% '_stimVols';%  '_nonStimVols';%
-plotTitleSuffix = '';% ' (stim vols only)';%  ' (non-stim Vols only)';%
 statsVertPos = 0.75;
-labelFontSize = 10;
-statsFontSize = 10;
+labelFontSize = 11;
+statsFontSize = 9;
 titleFontSize = 16;
 
+% All frames
+plotVols = 1:nVolumes;
+% plotTrials = [1:80, 82:nTrials];
+fileNameSuffix = '_allVols';     
+plotTitleSuffix = '';  
+% 
+% % Stim period only
+% plotVols = stimVols;
+% % plotTrials = [1:80, 82:nTrials];
+% fileNameSuffix = '_stimVols';
+% plotTitleSuffix = ' (stim vols only)';
+% nBins = 50;
+% 
+% % Non-stim period only
+% plotVols = [1:stimVols(1), stimVols(2:end)];
+% % plotTrials = [1:80, 82:nTrials];
+% fileNameSuffix = '_nonStimVols';
+% plotTitleSuffix = ' (non-stim vols only)';
+
+
 try
-    
+
+% Extract required ROI data
 currROIs = numel(plotROIs);
 if useDff
     ROIData = ROIDffAvg(:,:,plotROIs);
     fileNameSuffix = ['_dFF', fileNameSuffix];
-    plotTitleSuffix = ['  —  dF/F'];
+    plotTitleSuffix = ['  —  dF/F', plotTitleSuffix];
+    baselineData = repmat(ROIDffAvg(:, :, end), 1, 1, currROIs);
 else
     ROIData = ROIDataAvg(:,:,plotROIs);
     fileNameSuffix = ['_RawF', fileNameSuffix];
-    plotTitleSuffix = ['  —  raw F'];
+    plotTitleSuffix = ['  —  raw F', plotTitleSuffix];
+    baselineData = repmat(ROIDataAvg(:, :, end), 1, 1, currROIs);
 end
 if subtractBaseline
-    baselineData = repmat(flData(:, :, end), 1, 1, currROIs);
     ROIData = ROIData - baselineData;
 end
-ROIData = ROIData(plotVols, :, :);
+ROIData = ROIData(plotVols, plotTrials, :);
 
-ROIDataRs = reshape(ROIDataBaseSub, [], size(ROIDataBaseSub, 3));
+ROIDataRs = reshape(ROIData, [], size(ROIData, 3));
 
 % for i=1:nROIs
 %    ROIDataTrim(ROIDataRs(:,i) > ROIub(i), i) = nan; 
 % end
 
-[R P RL RU] = corrcoef(ROIDataTrim, 'Rows', 'pairwise');
+[R P RL RU] = corrcoef(ROIDataRs, 'Rows', 'pairwise');
 disp(R)
 disp(P)
 disp((RU - RL))
@@ -2114,7 +2262,7 @@ for iRow = 1:currROIs
         if iRow < currROIs && jCol > 1 && jCol > iRow 
             subaxis(currROIs-1, currROIs-1, jCol-1, iRow);hold on
             
-            histogram2(ROIDataTrim(:,iRow), ROIDataTrim(:,jCol), nBins, 'DisplayStyle', 'tile')
+            histogram2(ROIDataRs(:,iRow), ROIDataRs(:,jCol), nBins, 'DisplayStyle', 'tile')
             
             xlabel(ROInames{iRow});
             ylabel(ROInames{jCol});
@@ -2135,13 +2283,17 @@ for iRow = 1:currROIs
             ax.Title.String = {['r = ' num2str(R(iRow,jCol), 2)], pValStr};
             ax.Title.FontSize = statsFontSize;
             axis square
-        elseif jCol < currROIs && iRow < currROIs && iRow > jCol
-            subaxis(currROIs-1, currROIs-1, jCol, iRow);hold on
-            axis off
+            
+            if strcmp(regexp(ROInames{iRow}, '(?<=-).*', 'match'), ...
+                        regexp(ROInames{jCol}, '(?<=-).*', 'match'))
+                ax.XColor = 'red';
+                ax.YColor = 'red';
+                ax.LineWidth = 1;
+            end
         end
         
-        hout = suptitle([regexprep(expDate, '\_', '\\_'), '   Frame-by-frame ROI correlations',...
-                plotTitleSuffix]);
+        hout = suptitle([regexprep(expDate, '\_', '\\_'), '   sid\_', num2str(sid), ...
+                '   Frame-by-frame ROI correlations', plotTitleSuffix]);
         hout.FontSize = titleFontSize;
     end
 end
@@ -2157,18 +2309,130 @@ end
     
 catch foldME; rethrow(foldME); end
 catch foldME; rethrow(foldME); end
+    %% PLOT CORRELATIONS BETWEEN SPECIFIC ROI PAIRS ONLY
+try
+stimVols = round(volumeRate * stimEpochs);
+saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
+    num2str(sid), '\Analysis'], 'Select a save directory');
+
+plotTrials = 1:nTrials;
+disp(ROInames)
+ROIpairs_X = [1 2];
+ROIpairs_Y = [2 3];
+
+useDff = 1; 
+subtractBaseline = 0;
+nBins = 45;
+
+figPos = [-1900 380 1900 600];
+statsVertPos = 0.85;
+labelFontSize = 18;
+statsFontSize = 14;
+titleFontSize = 18;
+
+% All frames
+plotVols = 1:nVolumes; 
+plotTrials = 1:30;
+fileNameSuffix = '';     
+plotTitleSuffix = '  (Trials 1-30)';  
+
+% % Stim period only
+% plotVols = stimVols;
+% fileNameSuffix = '_stimVols';
+% plotTitleSuffix = ' (stim vols only)';
+% nBins = 60;
+
+% % Non-stim period only
+% plotVols = [1:stimVols(1), stimVols(2:end)];
+% fileNameSuffix = '_nonStimVols';
+% plotTitleSuffix = ' (non-stim vols only)';
+
+try
+
+% Extract required ROI data
+if useDff
+    ROIData = ROIDffAvg;
+    fileNameSuffix = ['_dFF', fileNameSuffix];
+    plotTitleSuffix = ['  —  dF/F', plotTitleSuffix];
+    baselineData = repmat(ROIDffAvg(:, :, end), 1, 1, nROIs);
+else
+    ROIData = ROIDataAvg;
+    fileNameSuffix = ['_RawF', fileNameSuffix];
+    plotTitleSuffix = ['  —  raw F', plotTitleSuffix];
+    baselineData = repmat(ROIDataAvg(:, :, end), 1, 1, nROIs);
+end
+if subtractBaseline
+    ROIData = ROIData - baselineData;
+end
+ROIData = ROIData(plotVols, plotTrials, :);
+
+% Calculate pairwise correlations
+ROIpairData = []; P = []; R = []; ROIgroupNames = [];
+for iPair = 1:numel(ROIpairs_X)
+   currPairData = cat(3, ROIData(:,:,ROIpairs_X(iPair)), ROIData(:, :, ROIpairs_Y(iPair)));
+   currDataRs = reshape(currPairData, [], 2);
+   [currR, currP, ~, ~] = corrcoef(currDataRs, 'Rows', 'pairwise');
+   P(end + 1) = currP(2, 1);
+   R(end + 1) = currR(2, 1);
+   ROIpairData{end + 1} = currDataRs;
+end
+
+% Create figure
+f = figure(1);clf;
+f.Color = [1 1 1];
+f.Position = figPos;
+nPairs = numel(ROIpairData);
+for iPair = 1:nPairs
+    subaxis(1, nPairs, iPair);hold on; 
+    histogram2(ROIpairData{iPair}(:,1), ROIpairData{iPair}(:,2), nBins, 'DisplayStyle', 'tile')
+    
+    xlabel(ROInames{ROIpairs_X(iPair)})
+    ylabel(ROInames{ROIpairs_Y(iPair)})
+    ax = gca();
+    ax.XLabel.FontSize = labelFontSize;
+    ax.YLabel.FontSize = labelFontSize;
+    ax.XTickLabel = [];
+    ax.YTickLabel = [];
+    ax.Title.FontWeight = 'normal';
+    ax.Title.Units = 'normalized';
+    ax.Title.HorizontalAlignment = 'left';
+    ax.Title.Position = [0.05 statsVertPos 0];
+    if P(iPair) < 0.01
+        pValStr = 'p < 0.01';
+    else
+        pValStr = ['p = ' num2str(round(P(iPair), 2), 2)];
+    end
+    ax.Title.String = {['r = ' num2str(R(iPair), 2)], pValStr};
+    ax.Title.FontSize = statsFontSize;
+    axis square
+    hout = suptitle([regexprep(expDate, '\_', '\\_'), '   sid\_', num2str(sid), ...
+            '   Frame-by-frame ROI correlations', plotTitleSuffix]);
+    hout.FontSize = titleFontSize;
+end
+
+% Save figure ------------------------------------------------------------------------------
+if saveDir
+    fileName = ['ROI_paired_correlation_histograms', fileNameSuffix];
+    save_figure(f, saveDir, fileName);
+end
+    
+catch foldME; rethrow(foldME); end
+catch foldME; rethrow(foldME); end
 
 %% %================================================================================================
 %%% FICTRAC DATA PLOTTING
 %% %================================================================================================
 % s = stimSepTrials;
 
-currStim = goodTrials; %logical(stimTrialGroups);
-smWin = 3;
+% tempTrials = goodTrials;
+% tempTrials(31:end) = 0;
+
+currStim = goodTrials; %tempTrials% logical(stimTrialGroups);
+smWin = 4;
 nBins = 50;
-thresh = 0.3;
-nROIs = size(ROIDataAvg, 3)-1;
-currTrial = 1;
+thresh = 0.2;
+nROIs = size(ROIDataAvg, 3)-2;
+currTrial = 2;
 
 try
     
@@ -2197,12 +2461,12 @@ goodTrialTypes(~logical(goodTrials .* currStim)) = [];
 goodFl = goodFl - min(goodFl(:));
 
 % Calculate correlations between the fly's speed, yaw, and dF/F
-allSpeed = as_vector(movmean(movmean(mmSpeedData(volFrames,:), smWin, 2), smWin, 2));
+allSpeed = as_vector(repeat_smooth(mmSpeedData(volFrames,:), smWin, 1, 2));
 allYaw =  as_vector(dHDSmooth(volFrames,:)); 
 
 corrMat = [allSpeed, allYaw];
 for iROI = 1:nROIs
-    corrMat(:, end + 1) = as_vector(movmean(goodFl(:,:,iROI), smWin, 2)); % --> columns: [speed, yaw, ROI1, ROI2, ...]
+    corrMat(:, end + 1) = as_vector(movmean(goodFl(:,:,iROI), smWin, 1)); % --> columns: [speed, yaw, ROI1, ROI2, ...]
 end
 
 [R P RU RL] = corrcoef(corrMat);
@@ -2214,6 +2478,29 @@ for iROI = 1:nROIs
     allTrialCorrCoeffs(iROI) = currCorrMat(1,2);
 end
 disp(allTrialCorrCoeffs);
+
+
+% % Calculate corrCoeffs when both speed and fl data have been normalized for each trial
+% speedDataSmooth = repeat_smooth(mmSpeedData(volFrames,:), smWin, 1, 1);
+% speedDataNorm = speedDataSmooth - min(speedDataSmooth(:)); goodFlNorm = goodFlNorm - min(goodFlNorm(:));
+% for iTrial = 1:size(goodFl, 2) 
+%     speedDataNorm(:, iTrial) = speedDataSmooth(:, iTrial) ./ max(speedDataSmooth(:, iTrial));
+%     for iROI = 1:size(goodFl, 3) 
+%         goodFlNorm(:, iTrial, iROI) = (goodFl(:, iTrial, iROI) ./ max(goodFl(:, iTrial, iROI));
+%     end
+% end
+% corrMat = as_vector(speedDataNorm);
+% for iROI = 1:nROIs
+%     corrMat(:, end + 1) = as_vector(movmean(goodFlNorm(:,:,iROI), smWin, 1)); % --> columns: [speed, ROI1, ROI2, ...]
+% end
+% normCorrCoeffs = [];
+% for iROI = 1:nROIs
+%     currCorrMat = corrcoef(corrMat(:, 1), corrMat(:, iROI + 1));
+%     normCorrCoeffs(iROI) = currCorrMat(1,2);
+% end
+% disp(normCorrCoeffs);
+% figure(19); clf; plot(corrMat);xlim([0 220]);
+
 
 % Find best fitting # of lag frames for each ROI (using MoveSpeed);
 xCorrs = []; lags = []; lagInds = []; bestLags = [];
@@ -2394,12 +2681,12 @@ ylabel('Trial')
 % ---------------------------------------------------------------------------------------------------
 %  Single trial plots
 % ---------------------------------------------------------------------------------------------------
+currGroup =  find(currTrial <= groupBounds, 1) - 1;
 
-shadeVols = [];
-if ~isempty(infoStruct.stimOnsetTimes)
-    shadeTimes = [infoStruct.stimOnsetTimes(1), infoStruct.stimOnsetTimes(1) + infoStruct.stimDurs(1)];
-    shadeVols = round(shadeTimes * volumeRate);
-end
+shadeTimes = stimEpochs(blockShading{(currGroup)},:);
+shadeColors = stimShadingColors(blockShading{(currGroup)});
+shadeVols = round(shadeTimes * volumeRate);
+
 xTickVol = [0:1/trialDuration:1] * (trialDuration * volumeRate);
 xTickLabels = [0:1/trialDuration:1] * trialDuration;
 
@@ -2420,13 +2707,15 @@ ax.FontSize = 20;
 ax.XTick = xTickVol;
 ax.XTickLabels = xTickLabels;
 plotColors = default_plot_colors();
-currMoveSpeed = mmSpeedData(volFrames,currTrial);
+smSpeedData = repeat_smooth(mmSpeedData, smWin, 1, 2);
+currMoveSpeed = repeat_smooth(smSpeedData(volFrames,currTrial), smWin, 1, 2);
+
 yyaxis left
 
-plot(repeat_smooth(currMoveSpeed, smWin, 1, 2), 'LineWidth', 2, 'Color', plotColors(1,:))
+plot(currMoveSpeed, 'LineWidth', 2, 'Color', plotColors(1,:))
 ylabel('Move speed (mm/sec)');
 lgdStr = {'Move speed'};
-ylim([0 max(mmSpeedData(:))]);
+% ylim([0 max(as_vector(repeat_smooth(mmSpeedData, smWin, 1, 1)))]);
 % ylim([0 max(repeat_smooth(currMoveSpeed, smWin, 1, 2))]);
 % ylim([0 30])
 yyaxis right
@@ -2439,12 +2728,14 @@ for iROI = 1:nROIs
     plot(currDataNorm, ':', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :))
     
 %     plot(smooth(goodFl(:,currTrial,iROI),smWin), ':', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :))
-    lgdStr{end + 1} = ['ROI ', num2str(iROI)];
+    lgdStr{end + 1} = ROInames{iROI};
 end
 ylabel('Raw florescence (AU)');
-legend(lgdStr, 'autoupdate', 'off');
+legend(lgdStr, 'autoupdate', 'off', 'location', 'nw');
 if ~isempty(infoStruct.stimOnsetTimes)
-    plot_stim_shading(shadeVols, 'Axes', ax);
+    for iEpoch = 1:size(shadeVols, 1)
+        plot_stim_shading(shadeVols(iEpoch, :), 'Axes', ax, 'Color', rgb(shadeColors{iEpoch}));
+    end
 else
     annotNames = annotationTypeSummary.AnnotationType;
     if any(contains(annotNames, 'ClosedLoopStim'))
@@ -2498,12 +2789,14 @@ for iROI = 1:nROIs
     
     
     plot(smooth(goodFl(:,currTrial,iROI),smWin), '--', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :))
-    lgdStr{end + 1} = ['ROI ', num2str(iROI)];
+    lgdStr{end + 1} = ROInames{iROI};
 end
 ylabel('Raw florescence (AU)');
-legend(lgdStr, 'autoupdate', 'off');
+legend(lgdStr, 'autoupdate', 'off', 'location', 'nw');
 if ~isempty(infoStruct.stimOnsetTimes)
-    plot_stim_shading(shadeVols, 'Axes', ax);
+    for iEpoch = 1:size(shadeVols, 1)
+        plot_stim_shading(shadeVols(iEpoch, :), 'Axes', ax, 'Color', rgb(shadeColors{iEpoch}));
+    end
 else
     annotNames = annotationTypeSummary.AnnotationType;
     if any(contains(annotNames, 'ClosedLoopStim'))
@@ -2705,7 +2998,7 @@ catch foldME; rethrow(foldME); end
     %% PCA
 try
 % Pull out data for one plane
-planeNum = 7;
+planeNum = 8;
 planeData = pcaData(:,:,:,planeNum);
 
 figure(2); clf;

@@ -2,8 +2,8 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_02_20_exp_1';
-sid = 2;
+expDate = '2019_04_01_exp_2';
+sid = 0;
 FRAME_RATE = 25;
 trialDuration = 20;
 
@@ -33,10 +33,10 @@ nTrials = numel(goodTrials);
 
 % Load FicTrac data
 ftDir = fullfile(vidDir, 'FicTracData');
-ftData = load_fictrac_data(frameInfo, 'Sid', sid, 'ParentDir', ftDir);
+ftData = load_fictrac_data(frameInfo, 'Sid', sid, 'ParentDir', ftDir)
 goodTrials(ftData.badFtTrials) = 0;
 disp('FicTrac data loaded...')
-
+disp(['Total FicTrac resets during experiment: ', num2str(sum(ftData.resets))])
 % Load flow data
 load(fullfile(vidDir, ['sid_', num2str(sid), '_flow_data_norm.mat'])) % flyFlowNorm
 flowArr = [];
@@ -83,15 +83,15 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 1;
-flowThresh = 0.04;
-moveThresh = 0.08;
+t = 80;
+flowThresh = 0.03;
+moveThresh = 0.035;
 
 smWin = 3;
 smWinAlt = 1;
 
 moveSmReps = 4;
-flowSmReps = 6;
+flowSmReps = 4;
 
 minIsoMoveLen = 4;
 minLocEpochLen = 6;
