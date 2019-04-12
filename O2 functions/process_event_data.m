@@ -51,7 +51,7 @@ alignEventSummary = annotationTypeSummary(activeEventTypes, 2);
 disp(alignEventSummary)
 
 % Choose active filter events
-activeFilterTypes = [2];
+activeFilterTypes = [4];
 filterEventSummary = annotationTypeSummary(activeFilterTypes, 2);
 disp(filterEventSummary)
 
@@ -122,7 +122,7 @@ for iEvent = 1:numel(activeEventTypes)
     currEventName = annotationTypeSummary.AnnotationType{activeEventTypes(iEvent)};
     analysisWindows(end + 1, :) = alignEventInfo.(currEventName).analysisWindows;
     overshoots(end + 1) = alignEventInfo.(currEventName).overshoots;
-    filterMatches{end + 1} = alignEventInfo.(currEventName).filterMatches{:}
+    filterMatches{end + 1} = alignEventInfo.(currEventName).filterMatches{:};
 end
 
 % ==================================================================================================
@@ -176,9 +176,9 @@ filterEventInfo.Sound.allFiltNames = {'WithSound', 'NoSound'};
 withNoStim =  [ 0  1  0 ];
 noNoStim =    [-1 -1  0 ];
 anyNoStim =   [ 0  0  0 ];
-filterEventInfo.Sound.filtWindows = [  0  0  ];
-filterEventInfo.Sound.allFilts = [withNoStim; noNoStim]; 
-filterEventInfo.Sound.allFiltNames = {'WithNoStim', 'NoNoStim'}; 
+filterEventInfo.NoStim.filtWindows = [  0  0  ];
+filterEventInfo.NoStim.allFilts = [withNoStim; noNoStim]; 
+filterEventInfo.NoStim.allFiltNames = {'WithNoStim', 'NoNoStim'}; 
 
 % Locomotion
 startLoc = [-1  1  0 ];
@@ -187,7 +187,7 @@ contLoc =  [ 1  1  0 ];
 noLoc =    [-1 -1 -1 ];
 anyLoc =   [ 0  0  0 ];
 withLoc =  [ 0  1  0 ];
-filterEventInfo.locomotion.filtWindows = [ 0  0 ];
+filterEventInfo.locomotion.filtWindows = [ 1  1 ];
 filterEventInfo.locomotion.allFilts = [noLoc; startLoc; contLoc]; %endMove; anyMove;startLoc; 
 filterEventInfo.locomotion.allFiltNames = { 'NoLoc', 'startLoc', 'contLoc'}; %'EndMove', 'AnyMove','StartLoc',
 
@@ -200,10 +200,9 @@ anyIsoMove =   [ 0  0  0 ];
 withIsoMove =  [ 0  1  0 ];
 afterIsoMove = [ 1  0  0 ];
 beforeIsoMove =[-1  1  0 ];
-filterEventInfo.isoMove.filtWindows = [  1  1  ];
+filterEventInfo.isoMove.filtWindows = [ 1  1 ];
 filterEventInfo.isoMove.allFilts = [noIsoMove; beforeIsoMove; afterIsoMove]; %endMove; anyMove;
 filterEventInfo.isoMove.allFiltNames = {'NoIsoMove', 'beforeIsoMove', 'afterIsoMove'}; %'EndMove', , 'AnyMove'
-
 
 % All behavior
 startMove = [-1  1  0 ];
@@ -211,7 +210,7 @@ endMove =   [ 1  0 -1 ];
 contMove =  [ 1  1  0 ];
 noMove =    [-1 -1 -1 ];
 anyMove =   [ 0  0  0 ];
-filterEventInfo.move.filtWindows = [ 0  0 ];
+filterEventInfo.move.filtWindows = [ 1  1 ];
 filterEventInfo.move.allFilts = [noMove; startMove; contMove]; %endMove; anyMove;
 filterEventInfo.move.allFiltNames = {'NoMove', 'StartMove', 'ContMove'}; %'EndMove', , 'AnyMove'
 

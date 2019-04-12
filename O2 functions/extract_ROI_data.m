@@ -6,6 +6,7 @@ addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 load(fullfile(parentDir, ROIfile)); % Contains variable 'ROImetadata'
 nROIs = numel(ROImetadata);
 disp('ROIs loaded')
+write_to_log('ROIs loaded', mfilename);
 
 % Load imaging data
 if exist(fullfile(parentDir, 'analysisMetadata.mat'), 'file')
