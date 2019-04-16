@@ -250,23 +250,23 @@ catch foldME; rethrow(foldME); end
 
 %% SET UP PLOTTING PARAMETERS
 try
-stimNames = {'EtOH\_neat', 'OptoStim'}; % {'EtOH\_e-2'};%
-stimTrialGroups = [s.OdorA + 2*s.OptoStim];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
-stimGroupNames = {'OdorA', 'OptoStim'};%{'OdorA', 'OdorB'}; %
+stimNames = {'EtOH\_neat', 'OdorOmission', 'NoStim'}; % {'EtOH\_e-2'};%
+stimTrialGroups = [s.OdorA + 2*s.OdorAOmit, 3*s.NoStim];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
+stimGroupNames = {'OdorA', 'OdorOmission', 'NoStim'};%{'OdorA', 'OdorB'}; %
 
-stimEpochs = [10 13; 10 11];%reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% [7 10 ; 10 13];%
+stimEpochs = [reshape(2:2:20, 2, 5)']% [10 13; 10 10.25];%reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% [7 10 ; 10 13];%
 stimShadingColors = repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % {'red', 'green'};%
-stimShadingColors{2} = 'green';
-stimEpochNames = {'Odor', 'LED stim'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
+stimShadingColors{3} = 'green';
+stimEpochNames = {'Odor'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
 
 
 %     groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 % groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
-groupBounds = [1 20 40 60 80];
+groupBounds = [1 10 20 40 50 60 70 90 100];
 groupBounds(1) = 0;
 
-blockNames = {'Odor1', 'LED-25%', 'LED-25%\_2', 'LED-50%'}; %{'OdorOnly'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
-blockShading = {1, 2, 2, 2};%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
+blockNames = {'Baseline', 'Odor1', 'OdorOmit1', 'Odor2', 'NoStim1', 'Odor3', 'OdorOmit2', 'Odor4'}; %{'OdorOnly'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
+blockShading = {[], 3, [1 2 4 5], 3, [], 3, [1 2 4 5], 3};%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
 
 
 % Save plotting parameters for this experiment
@@ -499,7 +499,7 @@ else
     nGroups = length(unique(trialGroups(trialGroups ~= 0)));
     if isempty(cm)
         cm = parula(nGroups);
-        cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime')];
+        cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime'); rgb('black')];
     end
     for iGroup = 1:nGroups
         ax = gca();
@@ -543,7 +543,7 @@ fontSize = 18;
 sepBlockStims = 0;
 
 % ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'
-ftVarName =   'moveSpeed';%'yawVel' %             'yawSpeed'%  'fwSpeed'% 
+ftVarName =   'moveSpeed';%   'yawVel' %          'yawSpeed'%  'fwSpeed'% 
 sdCap = 3.5;
 smWin = 9;
 cmName = @parula;
@@ -796,7 +796,7 @@ axYawSpeed = subaxis(3,1,3, 'S', 0, 'M', M, 'PB', 0.06, 'PL', 0.06); hold on
 nGroups = length(unique(trialGroups(trialGroups ~= 0)));
 if isempty(cm)
     cm = parula(nGroups);
-    cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime')];
+    cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime');rgb('black')];
 end
 for iGroup = 1:nGroups
     
@@ -893,7 +893,7 @@ nFrames = size(mmXY, 1);
 startFrame = startTime * FRAME_RATE;
 endFrame = (startTime + plotLen) * FRAME_RATE;
 trialGroups = ones(size(mmXY, 3), 1) .* goodTrials';
-cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime')];
+cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime');rgb('black')];
 
 % % PLOT ALL TRIALS COLORED BY TIME
 % surfPlot = 1;
@@ -1195,21 +1195,38 @@ dffDataFileName = 'ROI_Data_Avg.mat';
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "L-LH", "R-LH", "L-ANT", "R-ANT", "Control"];
 % ROInames = ["Left", "Right", "R-VLP", "Control"];
-ROInames = ["L-SLP", "R-SLP&B-ANT",  "R-VLP", "Control"];
-
+% ROInames = ["L-SLP", "R-SLP&B-ANT",  "R-VLP", "Control"];
+% ROInames = ["SLP", "ANT", "PPL1", "Control"];
+ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
+% ROInames = ["L-SLP", "R-SLP", "Bi-ANT", "Control"];
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
 % dffDataFileName = 'ROI_Data_Avg_SLP_comparison.mat';
 
+activeROIs = [1 2];
+
+
 % Load metadata
 load(fullfile(expDir, metaDataFileName)); % --> ROImetadata(.mask, .xi, .yi, .plane, .color, .refImg)
+if ~isempty(activeROIs)
+    ROImetadata = ROImetadata(activeROIs);
+end
 infoStruct.ROImetadata = ROImetadata;
 infoStruct.nROIs = numel(ROImetadata); nROIs = infoStruct.nROIs;
 
 % Load imaging and dF/F data
 load(fullfile(expDir, dffDataFileName)); % --> 'ROIDataAvg', 'ROIDffAvg', 'ROIDataBaseSub' ([volume, trial, ROI])
+if ~isempty(activeROIs)
+    ROIDataAvg = ROIDataAvg(:,:, activeROIs);
+    ROIDffAvg = ROIDffAvg(:,:, activeROIs);
+    ROIDataBaseSub = ROIDataBaseSub(:,:, activeROIs);
+end
+
 disp('ROI data loaded')
 
 % Create ROI names if necessary
+if ~isempty(activeROIs) && exist('ROInames', 'var')
+    ROInames = ROInames(activeROIs);
+end
 if ~exist('ROInames', 'var') || numel(ROInames) ~= nROIs
     ROInames = join([repmat("ROI", 1, nROIs); string(1:nROIs)], 1);
 end
@@ -1263,7 +1280,8 @@ sepBlockStims = 0; clear minMax;
 useDff = 0;
 subtractBaseline = 1;
 colorbarOn = 1;
-minMax = [150 500; 150 550; 50 250; 0 300]; % [ROI, min-max]
+% minMax = [-0.2 1; -0.2 1.5; -0.2 1; 0 300]; % [ROI, min-max]
+minMax = [0 150; 0 180; 100 375; 150 500; 150 475; 200 800]; % [ROI, min-max]
 % % 
 
 % trialGroups = [];
@@ -1695,8 +1713,8 @@ try
     cm = []; fileNameSuffix = '';
     figPos = [-1450 50 900 700]; %[ -1450 50 800 900];%
     
-    useDff = 1;
-    subtractBaseline = 0;
+    useDff = 0;
+    subtractBaseline = 1;
     
     smWin = 3;
     singleTrials = 0;
@@ -2134,6 +2152,11 @@ for iROI = ROIlist
     clear ax
     for iGroup = 1:nGroups
         currFlData = flData(:, trialGroups == iGroup, iROI); % --> [volume, trial]
+
+% MANUALLY EXLUDE OPTO STIM VOLUMES
+if iGroup == 2 || iGroup == 4
+    currFlData(68:73, :) = nan;
+end
         currBehavData = behavData(:, trialGroups == iGroup);
         subaxis(nRows, 2, 1, iGroup+1, 2,1)  %( (iPlot*3 + 1):(iPlot*3 + 3) ))                                                     
         ax(iGroup) = gca;
