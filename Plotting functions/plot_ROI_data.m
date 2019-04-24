@@ -111,7 +111,10 @@ if isempty(cm)
                 rgb('gold'); ...
                 rgb('DarkRed'); ...
                 rgb('Yellow'); ...
-                rgb('lime')];
+                rgb('lime'); ...
+                rgb('black'); ...
+                rgb('maroon'); ...
+                rgb('grey')];
     end
 end
 
@@ -128,14 +131,14 @@ for iGroup = 1:nGroups
     end
     
     % Separate data from current trial group and calculate average fl data 
-    groupAvgFl = mean(flData(:, trialGroups == iGroup), 2);
+    groupAvgFl = mean(flData(:, trialGroups == iGroup), 2, 'omitnan');
     groupFlData = flData(:, trialGroups == iGroup); % --> [volume, trial]
     
     % Discard any trials that are too many SDs from mean
     outliers = zeros(1, size(flData, 2));
     for iTrial = 1:size(flData, 2)
         if trialGroups(iTrial) == iGroup
-            if max(abs(flData(:, iTrial) - groupAvgFl) > (outlierSD * mean(std(flData, 0, 2))))
+            if max(abs(flData(:, iTrial) - groupAvgFl) > (outlierSD * mean(std(flData, 0, 2, 'omitnan'))))
                 outliers(iTrial) = 1;
             end
         end
@@ -148,12 +151,12 @@ for iGroup = 1:nGroups
     groupStdDev = std(groupFlData, 0, 2);
     
     % Re-calculate average without outliers
-    groupAvgFl = mean(flData(:,  logical((trialGroups == iGroup) .* ~logical(outliers))), 2);
+    groupAvgFl = mean(flData(:,  logical((trialGroups == iGroup) .* ~logical(outliers))), 2, 'omitnan');
     
     % Plot individual trials in background
     if singleTrials
         for iTrial = 1:size(groupFlData, 2)
-            currData = smooth(groupFlData(:, iTrial), smoothWin);
+            currData = movmean(groupFlData(:, iTrial), smoothWin, 1, 'omitnan');
             
             % Plot trial dF/F if not using annotation data for color coding
             if nGroups == 1
@@ -161,20 +164,20 @@ for iGroup = 1:nGroups
             else
                 currColor = cm(iGroup, :);
             end
-            plt = plot(ax, volTimes, smooth(currData, smoothWin), 'color', currColor, 'LineWidth', 1);
+            plt = plot(ax, volTimes, movmean(currData, smoothWin, 1, 'omitnan'), 'color', currColor, 'LineWidth', 1);
             plt.Color(4) = singleTrialAlpha;
             
         end%iTrial
     end%if
 
     if shadeSDs
-        upper = smooth(groupAvgFl, 3) + groupStdDev;
-        lower = smooth(groupAvgFl, 3) - groupStdDev;
+        upper = movmean(groupAvgFl, 3, 1, 'omitnan') + groupStdDev;
+        lower = movmean(groupAvgFl, 3, 1, 'omitnan') - groupStdDev;
         jbfill(volTimes, upper', lower', shadeColor, shadeColor, 1, 0.2);
     end
     
     % Plot mean response line    
-    meanPlots(iGroup) = plot(ax, volTimes, smooth(groupAvgFl, smoothWin), 'LineWidth', 2, 'Color', meanLineColor * 1);
+    meanPlots(iGroup) = plot(ax, volTimes, movmean(groupAvgFl, smoothWin, 'omitnan'), 'LineWidth', 2, 'Color', meanLineColor * 1);
 
 end%iGroup
 

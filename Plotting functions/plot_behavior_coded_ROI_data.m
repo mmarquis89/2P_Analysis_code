@@ -94,7 +94,7 @@ ax.XLabel.String = 'Time (s)';
 xlim(ax, [min(volTimes), max(volTimes)]);
 
 % Calculate average fl data
-avgFl = mean(flData, 2);
+avgFl = mean(flData, 2, 'omitnan');
 
 % Discard any trials that are too many SDs from mean
 outliers = zeros(1, size(flData, 2));
@@ -111,7 +111,7 @@ behavData(:, logical(outliers)) = [];
 stdDev = std(flData, 0, 2);
 
 % Re-calculate average without outliers
-avgFl = mean(flData, 2);
+avgFl = mean(flData, 2, 'omitnan');
 
 % Plot individual trials
 if singleTrials
@@ -141,9 +141,9 @@ end
 
 % Plot mean response line
 if singleTrials
-    plot(ax, volTimes, smooth(avgFl, smoothWin), 'LineWidth', 2, 'Color', 'k');
+    plot(ax, volTimes, movmean(avgFl, smoothWin, 'omitnan'), 'LineWidth', 2, 'Color', 'k');
 else
-    avgBehavData = mean(behavData, 2);
+    avgBehavData = mean(behavData, 2, 'omitnan');
     avgBehavData = [avgBehavData(2); avgBehavData(2:end)]; % to drop artifically low first trial
     currX = ((1:nVolumes) ./ volumeRate)';
     currY = movmean(avgFl, smoothWin, 'omitnan');
@@ -170,15 +170,15 @@ if strcmp(edgeColorMode, 'flat')
         currFlData = flData;
         currFlData(behavData ~= behavVals(iVal)) = nan;
         behavValMean = mean(currFlData, 2, 'omitnan');
-        plot(ax, volTimes, smooth(behavValMean, smoothWin), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
+        plot(ax, volTimes, movmean(behavValMean, smoothWin, 1, 'omitnan'), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
     end
 end
 
 % Shade one SD above and below mean in grey
 if shadeSDs
-    upper = smooth(avgFl, smoothWin) + stdDev;
-    lower = smooth(avgFl, smoothWin) - stdDev;
-    jbfill(volTimes, upper', lower', [0 0 0], [0 0 0], 1, 0.2);
+    upper = movmean(groupAvgFl, 3, 1, 'omitnan') + groupStdDev;
+    lower = movmean(groupAvgFl, 3, 1, 'omitnan') - groupStdDev;
+    jbfill(volTimes, upper', lower', shadeColor, shadeColor, 1, 0.2);
 end
 
 % Plot alignment line if applicable

@@ -84,7 +84,7 @@ if isempty(trialGroups)
 else
     % Separate into trial groups, adding black spacers in between
     plotArr = []; spacerInds = [];
-    spacerArr = ones(4, size(dataArr, 2)) * (max(dataArr(:)) + 1);
+    spacerArr = ones(4, size(dataArr, 2)) * max(dataArr(:)) * 1.01;
     for iGroup = 1:numel(unique(trialGroups(trialGroups > 0)))
         if iGroup == 1
             plotArr = dataArr(trialGroups == iGroup, :);

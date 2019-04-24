@@ -135,8 +135,8 @@ system7zip(parentDirTemp, archiveName, '7z', '20181030*', 1);
 %% -------------------------------------------------------------------------------------------------
 
 parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2018 Jan-Mar'];
-dirName = '2018_02_28_exp_3';
-expDir = fullfile(parentDirTemp, dirName);
+dirName = '2018_03_16_exp_2';
+expDirTemp = fullfile(parentDirTemp, dirName);
 
 % Create folder for compiled analysis data
 if ~isdir(fullfile(parentDirTemp, 'analysis_dirs'))
@@ -144,16 +144,17 @@ if ~isdir(fullfile(parentDirTemp, 'analysis_dirs'))
 end
 
 % Get names of any sid dirs 
-sidDirs = dir(fullfile(expDir, '*sid_*'));
+sidDirs = dir(fullfile(expDirTemp, '*sid_*'));
 sidDirs = sidDirs([sidDirs.isdir]);
 
 for iSid = 1:numel(sidDirs)
    
     % Check whether the sid dir contains an analysis folder
-    analysisDir = dir(fullfile(expDir, sidDirs(iSid).name, 'a*lysis'));
+    analysisDir = dir(fullfile(expDirTemp, sidDirs(iSid).name, 'a*lysis'));
     if ~isempty(analysisDir)
        % Copy analysis data before archiving experiment
-       copyfile(fullfile(analysisDir.folder, analysisDir.name), fullfile(parentDirTemp, 'analysis_dirs', dirName, sidDirs(iSid).name));
+       copyfile(fullfile(analysisDir.folder, analysisDir.name), fullfile(parentDirTemp, ...
+            'analysis_dirs', dirName, sidDirs(iSid).name));
     end
 end
 

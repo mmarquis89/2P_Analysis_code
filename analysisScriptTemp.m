@@ -250,24 +250,25 @@ catch foldME; rethrow(foldME); end
 
 %% SET UP PLOTTING PARAMETERS
 try
-stimNames = {'EtOH\_neat', 'OdorOmission', 'NoStim'}; % {'EtOH\_e-2'};%
-stimTrialGroups = [s.OdorA + 2*s.OdorAOmit, 3*s.NoStim];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
-stimGroupNames = {'OdorA', 'OdorOmission', 'NoStim'};%{'OdorA', 'OdorB'}; %
+stimNames = {'EtOH\_neat', 'OptoStim'}; % {'EtOH\_e-2'};%
+stimTrialGroups = [s.OdorA + 2*s.OptoStim];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
+stimGroupNames = {'OdorA', 'OptoStim'};%{'OdorA', 'OdorB'}; %
 
-stimEpochs = [reshape(2:2:20, 2, 5)']% [10 13; 10 10.25];%reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% [7 10 ; 10 13];%
-stimShadingColors = repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % {'red', 'green'};%
-stimShadingColors{3} = 'green';
-stimEpochNames = {'Odor'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
-
+stimEpochs = [10 15; 10 10.1];%[reshape(2:2:20, 2, 5)']% reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% [7 10 ; 10 13];%
+stimShadingColors = {'red', 'green'};%repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % 
+% stimShadingColors{3} = 'green';
+stimEpochNames = {'Odor', 'OptoStim'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
 
 %     groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 % groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
-groupBounds = [1 10 20 40 50 60 70 90 100];
+groupBounds = [0:10:nTrials-1];
 groupBounds(1) = 0;
 
-blockNames = {'Baseline', 'Odor1', 'OdorOmit1', 'Odor2', 'NoStim1', 'Odor3', 'OdorOmit2', 'Odor4'}; %{'OdorOnly'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
-blockShading = {[], 3, [1 2 4 5], 3, [], 3, [1 2 4 5], 3};%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
+blockNames = {'Odor1', 'OptoStim1', 'Odor2', 'OptoStim2', 'Odor3', 'OptoStim3', 'Odor4', 'OptoStim4', 'Odor5', 'OptoStim5',}; %{'OdorOnly'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
+blockShading = repmat({1,2}, 1, 5);%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
 
+
+stimGroupShading = {1, 2};
 
 % Save plotting parameters for this experiment
 overwrite = confirm_save(fullfile(expDir, 'plotting_params.mat'), 'DialogText', ...
@@ -288,7 +289,7 @@ catch foldME; rethrow(foldME); end
     %% PLOT 2-D SUMMARY OF BEHAVIOR DATA ANNOTATIONS
 try
 saveDir = uigetdir(savePath, 'Select a save directory');
-sepBlockStims = 0;
+sepBlockStims = 0; sepGroupStims = 0;
 % 
 % trialGroups = [goodTrials];
 % plotTitleSuffix = '';
@@ -301,6 +302,7 @@ sepBlockStims = 0;
 % trialGroups = trialGroups .* goodTrials;
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% sepGroupStims = 1;
 
 % GROUP CHRONOLOGICALLY BY BLOCKS
 trialGroups = zeros(1, nTrials);
@@ -326,7 +328,6 @@ end
 % if ~isempty(blockShading)
 %     sepBlockStims = 1;  
 % end
-
 
 
 try
@@ -380,8 +381,29 @@ if sepBlockStims
     for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))
         currBlockShading = stimEpochs(blockShading{iBlock}, :);
         nStimEpochs = size(currBlockShading, 1);
-        epochInds = blockShading{iBlock};
         currShadeColors = stimShadingColors(blockShading{iBlock});
+        draw_stim_lines(currBlockShading, currShadeColors, ...
+                        'plotAxes', ax, 'yLims', blockRanges(iBlock, :));      
+    end
+    
+elseif sepGroupStims
+    
+    % Calculate y-axis ranges for each stim type
+    blockStarts = 1;
+    blockEnds = [];
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))-1
+        blockTrials = sum(trialGroups == iBlock);
+        blockStarts(iBlock + 1) = blockStarts(iBlock) + 4 + blockTrials;
+        blockEnds(iBlock) = blockStarts(iBlock) + blockTrials - 1;
+    end
+    blockEnds(end + 1) = numel(trialGroups) + (4 * numel(unique(trialGroups(trialGroups > 0))));
+    blockRanges = [blockStarts - 1; blockEnds + 1]';
+    
+    % Plot stim start and end for each block
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))
+        currBlockShading = stimEpochs(stimGroupShading{iBlock}, :);
+        nStimEpochs = size(currBlockShading, 1);
+        currShadeColors = stimShadingColors(stimGroupShading{iBlock});
         draw_stim_lines(currBlockShading, currShadeColors, ...
                         'plotAxes', ax, 'yLims', blockRanges(iBlock, :));      
     end
@@ -418,11 +440,11 @@ cm = [];
 % 
 % figTitle = [figTitle, ['  —  sid\_', num2str(sid)]];
 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups .* goodTrials;
-% fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
-% groupNames = stimNames;
-% % % % 
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* goodTrials;
+fileNameSuffix = [make_fileNameSuffix(stimGroupNames), '_', actionName]; 
+groupNames = stimNames;
+% % 
 % % GROUP BY EARLY/LATE
 % groupNames = [];
 % groupBounds = [1, 30, 60];
@@ -434,16 +456,16 @@ cm = [];
 % trialGroups(groupBounds(end):end) = numel(groupBounds);
 % groupNames{end + 1} = ['Trials ', num2str(groupBounds(end)), '-', num2str(nTrials)];
 % fileNameSuffix = '_EarlyVsLateTrials';
-
-% PLOT AND COLOR EACH BLOCK SEPARATELY
-groupNames = blockNames;
-trialGroups = zeros(1, nTrials);
-trialGroups = trialGroups .* goodTrials;
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-fileNameSuffix = '_Blocks_Separated';
+% 
+% % PLOT AND COLOR EACH BLOCK SEPARATELY
+% groupNames = blockNames;
+% trialGroups = zeros(1, nTrials);
+% trialGroups = trialGroups .* goodTrials;
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+% fileNameSuffix = '_Blocks_Separated';
 
 % % GROUP BY BLOCK TYPE 
 % groupNames = blockNames(1:2); 
@@ -499,7 +521,8 @@ else
     nGroups = length(unique(trialGroups(trialGroups ~= 0)));
     if isempty(cm)
         cm = parula(nGroups);
-        cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime'); rgb('black')];
+        cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); ...
+                rgb('lime'); rgb('black'); rgb('maroon'); rgb('grey')];
     end
     for iGroup = 1:nGroups
         ax = gca();
@@ -539,12 +562,12 @@ catch foldME; rethrow(foldME); end
     %% PLOT 2-D SUMMARY OF FICTRAC DATA
 try
 saveDir = uigetdir(savePath, 'Select a save directory');
-fontSize = 18;
-sepBlockStims = 0;
+fontSize = 14;
+sepBlockStims = 0; sepGroupStims = 0;
 
 % ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'
-ftVarName =   'moveSpeed';%   'yawVel' %          'yawSpeed'%  'fwSpeed'% 
-sdCap = 3.5;
+ftVarName =  'moveSpeed';%'yawVel' %              'yawSpeed'%  'fwSpeed'% 
+sdCap = 3;
 smWin = 9;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
@@ -569,6 +592,13 @@ fileNameSuffix = '_Blocks_Separated';
 if ~isempty(blockShading)
     sepBlockStims = 1;
 end
+% 
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups; 
+% trialGroups = trialGroups .* goodTrials;
+% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% sepGroupStims = 1;
 
 % % % 
 % % GROUP BY ALTERNATING TRIALS
@@ -655,10 +685,30 @@ if sepBlockStims
     for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))
         currBlockShading = stimEpochs(blockShading{iBlock}, :);
         nStimEpochs = size(currBlockShading, 1);
-        epochInds = blockShading{iBlock};
         currShadeColors = stimShadingColors(blockShading{iBlock});
         draw_stim_lines(currBlockShading, currShadeColors, ...
-                        'plotAxes', ax, 'yLims', blockRanges(iBlock, :));      
+            'plotAxes', ax, 'yLims', blockRanges(iBlock, :));
+    end
+elseif sepGroupStims
+    
+    % Calculate y-axis ranges for each stim type
+    blockStarts = 1;
+    blockEnds = [];
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))-1
+        blockTrials = sum(trialGroups == iBlock);
+        blockStarts(iBlock + 1) = blockStarts(iBlock) + 4 + blockTrials;
+        blockEnds(iBlock) = blockStarts(iBlock) + blockTrials - 1;
+    end
+    blockEnds(end + 1) = numel(trialGroups) + (4 * numel(unique(trialGroups(trialGroups > 0))));
+    blockRanges = [blockStarts - 1; blockEnds + 1]';
+    
+    % Plot stim start and end for each block
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))
+        currBlockShading = stimEpochs(stimGroupShading{iBlock}, :);
+        nStimEpochs = size(currBlockShading, 1);
+        currShadeColors = stimShadingColors(stimGroupShading{iBlock});
+        draw_stim_lines(currBlockShading, currShadeColors, ...
+            'plotAxes', ax, 'yLims', blockRanges(iBlock, :));
     end
     
 else
@@ -680,7 +730,7 @@ try
     
 saveDir = uigetdir(savePath, 'Select a save directory');
 
-includeQuiescence = 0;
+includeQuiescence = 1;
 if ~includeQuiescence
     fileNameSuffix = 'NoQuiescence_';
 else
@@ -688,7 +738,7 @@ else
 end
 figTitle = [expDate, '  —  Trial-Averaged FicTrac data'];
 trialGroups = goodTrials';
-smWin = 11;
+smWin = 9;
 cm = [];
 % 
 % 
@@ -699,12 +749,12 @@ cm = [];
 % 
 % figTitle = [figTitle, '  —  sid_', num2str(sid)];
 
-% % % % % 
+% % % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups .* goodTrials; 
 % fileNameSuffix = [fileNameSuffix, '_StimTypeComparison']; 
 % groupNames = stimNames;
-% % % 
+% % 
 % % % % 
 
 % % GROUP BY EARLY/LATE
@@ -719,16 +769,16 @@ cm = [];
 % trialGroups = trialGroups .* goodTrials;
 % binNames{end + 1} = ['Trials ', num2str(binBounds(end)), '-', num2str(nTrials)];
 % fileNameSuffix = [fileNameSuffix, 'EarlyVsLateTrials'];
-
-% PLOT AND COLOR EACH BLOCK SEPARATELY
-groupNames = blockNames;
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-trialGroups = trialGroups .* goodTrials;
-fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+% % 
+% % PLOT AND COLOR EACH BLOCK SEPARATELY
+% groupNames = blockNames;
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+% trialGroups = trialGroups .* goodTrials;
+% fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
 
 % 
 % trialGroups = trialGroups - 1;
@@ -796,7 +846,8 @@ axYawSpeed = subaxis(3,1,3, 'S', 0, 'M', M, 'PB', 0.06, 'PL', 0.06); hold on
 nGroups = length(unique(trialGroups(trialGroups ~= 0)));
 if isempty(cm)
     cm = parula(nGroups);
-    cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); rgb('lime');rgb('black')];
+    cm = [rgb('blue'); rgb('red'); rgb('green'); rgb('magenta'); rgb('cyan'); rgb('gold'); ...
+            rgb('lime');rgb('black');rgb('maroon');rgb('grey')];
 end
 for iGroup = 1:nGroups
     
@@ -1188,22 +1239,23 @@ ROIselectionGui();
 catch foldME; rethrow(foldME); end
     %% LOAD ROI DATA AND PLOT ROIs
 try
+activeROIs = [];
 expDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
 metaDataFileName = 'ROI_metadata.mat';
 dffDataFileName = 'ROI_Data_Avg.mat';
 
+
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "L-LH", "R-LH", "L-ANT", "R-ANT", "Control"];
-% ROInames = ["Left", "Right", "R-VLP", "Control"];
-% ROInames = ["L-SLP", "R-SLP&B-ANT",  "R-VLP", "Control"];
 % ROInames = ["SLP", "ANT", "PPL1", "Control"];
-ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
+% ROInames = ["L-SLP", "R-SLP&B-ANT",  "R-VLP", "Control"];
+ROInames = ["SLP", "ANT", "LH", "PPM2", "Control"];
+% ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "Bi-ANT", "Control"];
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
 % dffDataFileName = 'ROI_Data_Avg_SLP_comparison.mat';
 
-activeROIs = [1 2];
-
+activeROIs = [];
 
 % Load metadata
 load(fullfile(expDir, metaDataFileName)); % --> ROImetadata(.mask, .xi, .yi, .plane, .color, .refImg)
@@ -1218,7 +1270,12 @@ load(fullfile(expDir, dffDataFileName)); % --> 'ROIDataAvg', 'ROIDffAvg', 'ROIDa
 if ~isempty(activeROIs)
     ROIDataAvg = ROIDataAvg(:,:, activeROIs);
     ROIDffAvg = ROIDffAvg(:,:, activeROIs);
-    ROIDataBaseSub = ROIDataBaseSub(:,:, activeROIs);
+    if max(activeROIs) <= size(ROIDataBaseSub, 3)
+        ROIDataBaseSub = ROIDataBaseSub(:,:, activeROIs);
+    else
+        currROIs = activeROIs(activeROIs ~= max(activeROIs));
+        ROIDataBaseSub = ROIDataBaseSub(:,:,currROIs);
+    end
 end
 
 disp('ROI data loaded')
@@ -1275,25 +1332,27 @@ catch foldME; rethrow(foldME); end
 try
 saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), ...
         '\Analysis'], 'Select a save directory');
-sepBlockStims = 0; clear minMax;
+sepBlockStims = 0; sepGroupStims = 0; clear minMax;
+fontSize = 14;
 
 useDff = 0;
 subtractBaseline = 1;
 colorbarOn = 1;
-% minMax = [-0.2 1; -0.2 1.5; -0.2 1; 0 300]; % [ROI, min-max]
-minMax = [0 150; 0 180; 100 375; 150 500; 150 475; 200 800]; % [ROI, min-max]
-% % 
+% minMax = [-0.12 1.5; -0.12 1; -0.12 0.8; -0.12 2.5; 0 1]; % [ROI, min-max]
+% minMax = [60 500; 250 1050; 25 130; 30 400; 0 600; 50 700]; % [ROI, min-max]
+% % % 
 
 % trialGroups = [];
 % plotTitleSuffix = 'All Trials';
 % fileNameSuffix = '_AllTrials';
 % 
 % % % % % % % % % % % % plotTitleSuffix = ['sid\_', num2str(sid)]
-% 
-% GROUP BY STIM TYPE
+
+% % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups; 
 % plotTitleSuffix = make_plotTitleSuffix(stimNames); %
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+% sepGroupStims = 1;
 
 % GROUP CHRONOLOGICALLY BY BLOCKS
 trialGroups = zeros(1, nTrials);
@@ -1365,7 +1424,7 @@ for iROI = 1:currNumROIs
         end
     end
     cm = parula(numel(unique(currFlData(:,goodTrials))));
-    currFlData(:, ~goodTrials) = max(as_vector(currFlData(:,goodTrials))) + 1;
+    currFlData(:, ~goodTrials) = max(as_vector(currFlData(:,goodTrials))) * 1.01;
     if sum(~goodTrials)
         cm = [0 0 0; cm(2:end-1, :); 1 1 1];
     end
@@ -1381,7 +1440,7 @@ for iROI = 1:currNumROIs
         colorbar;
     end
     
-    ax.FontSize = 18;
+    ax.FontSize = fontSize;
     
 % Plot stim times
 hold on
@@ -1405,9 +1464,30 @@ if sepBlockStims
         epochInds = blockShading{iBlock};
         currShadeColors = stimShadingColors(blockShading{iBlock});
         draw_stim_lines(currBlockShading, currShadeColors, 'plotAxes', ax, 'yLims', ...
-            blockRanges(iBlock, :), 'frameRate', volumeRate);      
+            blockRanges(iBlock, :), 'frameRate', volumeRate);
     end
+elseif sepGroupStims
     
+    % Calculate y-axis ranges for each stim type
+    blockStarts = 1;
+    blockEnds = [];
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))-1
+        blockTrials = sum(trialGroups == iBlock);
+        blockStarts(iBlock + 1) = blockStarts(iBlock) + 4 + blockTrials;
+        blockEnds(iBlock) = blockStarts(iBlock) + blockTrials - 1;
+    end
+    blockEnds(end + 1) = numel(trialGroups) + (4 * numel(unique(trialGroups(trialGroups > 0))));
+    blockRanges = [blockStarts - 1; blockEnds + 1]';
+    
+    % Plot stim start and end for each block
+    for iBlock = 1:numel(unique(trialGroups(trialGroups > 0)))
+        currBlockShading = stimEpochs(stimGroupShading{iBlock}, :);
+        nStimEpochs = size(currBlockShading, 1);
+        epochInds = blockShading{iBlock};
+        currShadeColors = stimShadingColors(stimGroupShading{iBlock});
+        draw_stim_lines(currBlockShading, currShadeColors, ...
+            'plotAxes', ax, 'yLims', blockRanges(iBlock, :), 'frameRate', volumeRate);
+    end
 else
     % Draw one set of lines for the entire plot
     draw_stim_lines(stimEpochs, stimShadingColors, 'plotAxes', ax, 'frameRate', volumeRate);
@@ -1560,11 +1640,11 @@ try
     cm = []; sepBlockStims = 0; fileNameSuffix = '';
     figPos = [-1450 50 900 700]; %[ -1450 50 800 900];% 
     
-    useDff = 1;
-    subtractBaseline = 0;
+    useDff = 0;
+    subtractBaseline = 1;
     
     smWin = 3;
-    singleTrials = 1;
+    singleTrials = 0;
     singleTrialAlpha = 0.5;
     stdDevShading = 1;
     outlierSD = 4;
@@ -1711,7 +1791,7 @@ try
             num2str(sid), '\Analysis'], 'Select a save directory');
     trialGroups = goodTrials;
     cm = []; fileNameSuffix = '';
-    figPos = [-1450 50 900 700]; %[ -1450 50 800 900];%
+    figPos = [ -1450 50 800 900];%[-1450 50 1000 900] 
     
     useDff = 0;
     subtractBaseline = 1;
@@ -1725,7 +1805,7 @@ try
 %     % GROUP BY STIM TYPE
 %     trialGroups = stimTrialGroups .* goodTrials;
 %     fileNameSuffix = '_StimTypeComparison';
-%     groupNames = stimNames;
+%     binNames = stimGroupNames;
 
     % GROUP CHRONOLOGICALLY BY BLOCKS
     trialGroups = zeros(1, nTrials);
@@ -1802,7 +1882,7 @@ try
 
         % Create figure
         f = figure(iROI); clf
-        f.Position = [-1450 50 1000 900];
+        f.Position = figPos;
         f.Color = [1 1 1];
 
         % Plot reference image and ROI outline
@@ -1827,7 +1907,8 @@ try
                                 'Legend', binNames, ...
                                 'VolumeRate', volumeRate, ...
                                 'YAxisLabel', yAxisLabel, ...
-                                'StdDevShading', stdDevShading);
+                                'StdDevShading', stdDevShading, ...
+                                'SmoothWinSize', smWin);
         title([regexprep(expDate, {'_', 'exp'}, {'', '-'}), ...
                 '   ', ROInames{iROI}, plotTitleSuffix]);
         
@@ -1858,8 +1939,8 @@ cm =[rgb('RoyalBlue') * 0.6; ...
     rgb('Cyan') * 0.85];
 figPos = [-1450 50 1000 900]; %[ -1450 50 800 900];%
 
-useDff = 1;
-subtractBaseline = 0;
+useDff = 0;
+subtractBaseline = 1;
 annotValues = [3 0]; 
 cm = cm(1:max(annotValues) + 1, :);
 annotTypeInd = 4;
@@ -2011,13 +2092,14 @@ try
  saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
         num2str(sid), '\Analysis'], 'Select a save directory');
 trialGroups = goodTrials;
-cm = []; sepBlockStims = 0; fileNameSuffix = ''; CLimCap = 1;
-figPos = [-1450 50 1000 900]; %[ -1450 50 800 900];%
+cm = []; groupShading = []; fileNameSuffix = ''; CLimCap = 1;
+figPos = [ -1450 50 800 900]; %[-1450 50 1000 900]; %
+fontSize = 8;
 
 useDff = 0;
 subtractBaseline = 1;
 
-smWin = 3;
+smWin = 5;
 singleTrials = 0;
 singleTrialAlpha = 0.4;
 stdDevShading = 0;
@@ -2041,27 +2123,90 @@ CLimCap = 1;
 % trialGroups = stimTrialGroups .* goodTrials;
 % fileNameSuffix = '_StimTypeComparison';
 % plotTitleSuffix = make_plotTitleSuffix(stimNames);
+% groupShading = stimGroupShading;
 
-    % GROUP CHRONOLOGICALLY BY BLOCKS
-    trialGroups = zeros(1, nTrials);
-    for iBound = 1:numel(groupBounds)-1
-        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-    end
-    trialGroups(groupBounds(end)+1:end) = iBound + 1;
-    trialGroups = trialGroups .* goodTrials;
-    plotTitleSuffix = '';
-    fileNameSuffix = '_Blocks_Separated';
-    if ~isempty(blockShading)
-        sepBlockStims = 1;
-    end
-    binNames = blockNames;
-    plotTitleSuffix = make_plotTitleSuffix(binNames);
-%     
+%     % GROUP CHRONOLOGICALLY BY BLOCKS
+%     trialGroups = zeros(1, nTrials);
+%     for iBound = 1:numel(groupBounds)-1
+%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+%     end
+%     trialGroups(groupBounds(end)+1:end) = iBound + 1;
+%     trialGroups = trialGroups .* goodTrials;
+%     plotTitleSuffix = '';
+%     fileNameSuffix = '_Blocks_Separated';
+%     if ~isempty(blockShading)
+%         sepBlockStims = 1;
+%     end
+%     binNames = blockNames;
+%     plotTitleSuffix = make_plotTitleSuffix(binNames);
+%     groupShading = blockShading;
 %     
 % trialGroups = trialGroups - 1;
 % trialGroups(1:20) = 0;
 % binNames = binNames(2:4);
 
+% SPLIT TRIALS INTO GROUPS BASED ON BEHAVIORAL RESPONSE TO DIFFERENT STIMULI
+sdCap = 5;
+analysisWindow = [1 2];
+groupFraction = 8;
+offsetAlign = 0;
+
+% Extract FicTrac speed data
+rawData = infoStruct.ftData.moveSpeed;         % --> [frame, trial]
+rawData = rawData';                            % --> [trial, frame]
+plotData = (rad2deg(rawData .* FRAME_RATE));   % --> [trial, frame] (deg/sec)
+
+% Cap values at n SD above mean
+capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
+plotData(plotData > capVal) = capVal;
+
+% Smooth data
+smSpeedData = movmean(plotData, smWin, 2);
+
+stimTrialGroups = stimTrialGroups .* goodTrials;
+groupNums = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0))) * 2;
+trialGroups = []; newGroupShading = []; B = [];
+for iGroup = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0)))
+   
+    currGroupTrials = stimTrialGroups == iGroup;
+    currGroupShading = stimGroupShading{iGroup};
+    currStimStartTime = stimEpochs(currGroupShading, 1 + offsetAlign);
+    
+    % Get mean ficTrac moveSpeed from before and after each stim onset
+    startFrame = round((currStimStartTime - analysisWindow(1)) * FRAME_RATE);
+    endFrame = round((currStimStartTime + analysisWindow(2)) * FRAME_RATE);
+    stimFrame = round(currStimStartTime * FRAME_RATE);
+    baselineMean = mean(smSpeedData(currGroupTrials, startFrame:stimFrame), 2);
+    respMean = mean(smSpeedData(currGroupTrials, stimFrame:endFrame), 2);
+%     respMean = mean(smSpeedData(currGroupTrials, stimFrame+FRAME_RATE:endFrame), 2);
+    
+    meanDiff = (respMean - baselineMean);
+    
+    [B{iGroup}, I] = sort(meanDiff);
+    
+    nGroupTrials = round(numel(I)/groupFraction);
+    lowMoveTrials = I(1:nGroupTrials);
+    highMoveTrials = I(end - nGroupTrials + 1:end);
+    
+    newGroup = zeros(numel(I), 1);
+    newGroup(lowMoveTrials) = groupNums(1); groupNums(1) = [];
+    newGroup(highMoveTrials) = groupNums(1); groupNums(1) = [];
+    
+    trialGroups(currGroupTrials) = newGroup;
+    newGroupShading = [newGroupShading, {currGroupShading}, {currGroupShading}];
+end
+groupShading = newGroupShading;
+
+figure(100);clf;hold on; 
+plot(B{1}); plot(B{2}); plot(1:numel(B{1}), zeros(1, numel(B{1})), '--')
+yL = ylim();
+plot([nGroupTrials, nGroupTrials], yL);
+plot([numel(B{1}) - nGroupTrials + 1, numel(B{1}) - nGroupTrials + 1], yL);
+title('Mean speed increase at stim onset');
+ylabel('Delta speed (mm/sec)')
+legend 1 2
+
+% --------------------------------------------------------------------------------------------------
 
 % % GROUP BY BLOCK TYPE
 % groupNames = blockNames(1:2);
@@ -2073,8 +2218,10 @@ CLimCap = 1;
 % trialGroups(logical(mod(trialGroups, 2))) = 1;
 % trialGroups(~logical(mod(trialGroups, 2))) = 2;
 % fileNameSuffix = '_Block_Type_Groups';
+% groupShading 
 
 % --------------------------------------------------------------------------------------------------
+
 try
 % Create base file name and select data
 if useDff
@@ -2138,7 +2285,7 @@ for iROI = ROIlist
     f = figure(iROI); clf
     f.Position = figPos;
     f.Color = [1 1 1];
-
+    
     % Plot reference image and ROI outline
     currPlane = ROImetadata{iROI}(1).plane;
     xData = ROImetadata{iROI}(1).xi;
@@ -2153,10 +2300,6 @@ for iROI = ROIlist
     for iGroup = 1:nGroups
         currFlData = flData(:, trialGroups == iGroup, iROI); % --> [volume, trial]
 
-% MANUALLY EXLUDE OPTO STIM VOLUMES
-if iGroup == 2 || iGroup == 4
-    currFlData(68:73, :) = nan;
-end
         currBehavData = behavData(:, trialGroups == iGroup);
         subaxis(nRows, 2, 1, iGroup+1, 2,1)  %( (iPlot*3 + 1):(iPlot*3 + 3) ))                                                     
         ax(iGroup) = gca;
@@ -2169,9 +2312,10 @@ end
                    'EdgeColorMode', edgeColorMode, ...
                    'Colormap', cm, ...
                    'SmoothWinSize', smWin);
+        ax(iGroup).FontSize = fontSize;
         c = colorbar;
         c.Label.String = cbLabel;
-        c.FontSize = 12;
+        c.FontSize = fontSize;
         ax(iGroup).Position(3) = 0.83; % So the colorbar label fits inside the figure
         cL = ax(iGroup).CLim;
         ax(iGroup).CLim = [cL(1), cL(2) * CLimCap];
@@ -2183,13 +2327,13 @@ end
             xlabel([]);
         end
         hold on
-        if sepBlockStims
-            % Plot stim start(s) and end(s) for the current block
-            currBlockShading = blockShading{iGroup};
-            currStimEpochs = stimEpochs(currBlockShading, :);
-            currStimShadingColors = stimShadingColors(currBlockShading);
+        
+        % Add stimulus epoch shading
+        if ~isempty(groupShading)
+            currGroupShading = groupShading{iGroup};
+            currStimEpochs = stimEpochs(currGroupShading, :);
+            currStimShadingColors = stimShadingColors(currGroupShading);
         else
-            % Just draw one set of lines for each stim epoch
             currStimEpochs = stimEpochs;
             currStimShadingColors = stimShadingColors;
         end
@@ -2226,7 +2370,7 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 disp(ROInames)
 
 plotTrials = 1:nTrials;
-plotROIs = [1:nROIs-1];%[1 3 5];% 
+plotROIs = [1:nROIs-2];%[1 3 5];% 
 useDff = 1; 
 subtractBaseline = 0;
 nBins = 50;
@@ -2464,7 +2608,7 @@ currStim = goodTrials; %tempTrials% logical(stimTrialGroups);
 smWin = 4;
 nBins = 50;
 thresh = 0.2;
-nROIs = size(ROIDataAvg, 3)-2;
+nROIs = size(ROIDataAvg, 3)-1;
 currTrial = 2;
 
 try
@@ -3031,7 +3175,7 @@ catch foldME; rethrow(foldME); end
     %% PCA
 try
 % Pull out data for one plane
-planeNum = 8;
+planeNum = 4;
 planeData = pcaData(:,:,:,planeNum);
 
 figure(2); clf;
