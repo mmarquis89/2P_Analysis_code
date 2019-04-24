@@ -116,7 +116,7 @@ avgFl = mean(flData, 2, 'omitnan');
 % Plot individual trials
 if singleTrials
     for iTrial = 1:size(flData, 2)
-        currFl = movmean(flData(:, iTrial), smoothWin, 'omitnan');
+        currFl = smoothdata(flData(:, iTrial), 1, smoothWin);
         currBehavData = behavData(:, iTrial);
         currX = ((1:nVolumes) ./ volumeRate)';
         currY = currFl;
@@ -141,12 +141,12 @@ end
 
 % Plot mean response line
 if singleTrials
-    plot(ax, volTimes, movmean(avgFl, smoothWin, 'omitnan'), 'LineWidth', 2, 'Color', 'k');
+    plot(ax, volTimes, smoothdata(avgFl, 1, smoothWin), 'LineWidth', 2, 'Color', 'k');
 else
     avgBehavData = mean(behavData, 2, 'omitnan');
     avgBehavData = [avgBehavData(2); avgBehavData(2:end)]; % to drop artifically low first trial
     currX = ((1:nVolumes) ./ volumeRate)';
-    currY = movmean(avgFl, smoothWin, 'omitnan');
+    currY = smoothdata(avgFl, 1, smoothWin);
     currXY = [currX, currY];
     currXY = currXY(~any(isnan(currXY), 2), :);             % to skip over any nan values
     avgBehavData = avgBehavData(~any(isnan(currXY), 2), :); % to skip over any nan values
@@ -170,14 +170,14 @@ if strcmp(edgeColorMode, 'flat')
         currFlData = flData;
         currFlData(behavData ~= behavVals(iVal)) = nan;
         behavValMean = mean(currFlData, 2, 'omitnan');
-        plot(ax, volTimes, movmean(behavValMean, smoothWin, 1, 'omitnan'), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
+        plot(ax, volTimes, smoothdata(behavValMean, 1, smoothWin), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
     end
 end
 
 % Shade one SD above and below mean in grey
 if shadeSDs
-    upper = movmean(groupAvgFl, 3, 1, 'omitnan') + groupStdDev;
-    lower = movmean(groupAvgFl, 3, 1, 'omitnan') - groupStdDev;
+    upper = smoothdata(groupAvgFl, 1, 3) + groupStdDev;
+    lower = smoothdata(groupAvgFl, 1, 3) - groupStdDev;
     jbfill(volTimes, upper', lower', shadeColor, shadeColor, 1, 0.2);
 end
 

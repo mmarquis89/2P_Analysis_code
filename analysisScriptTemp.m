@@ -636,12 +636,12 @@ end
 % Cap values at n SD above mean
 capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
 h = figure(2); clf; h.Position = [-1900 100 800 800];
-subplot(211); hist(as_vector(movmean(plotData, smWin, 2)), 100);
+subplot(211); hist(as_vector(smoothdata(plotData, 2, 'gaussian', smWin)), 100);
 plotData(plotData > capVal) = capVal;
-subplot(212);  hist(as_vector(movmean(plotData, smWin, 2)), 100)
+subplot(212);  hist(as_vector(smoothdata(plotData, 2, 'gaussian', smWin)), 100)
 
 % Smooth data
-smPlotData = movmean(plotData, smWin, 2);
+smPlotData = smoothdata(plotData, 2, 'gaussian', smWin);
 
 % Create colormap
 cm = cmName(numel(unique(smPlotData)));
@@ -870,9 +870,9 @@ for iGroup = 1:nGroups
     currYawSpeed(currYawSpeed >= outlierCalc(dHD(:))) = nan;
     currYawVel(currYawVel >= outlierCalc(yawVel(:))) = nan;
 
-    meanSpeed = smooth(mean(currXYSpeed, 2, 'omitnan'), smWin);
-    meanYawSpeed = smooth(mean(currYawSpeed, 2, 'omitnan'), smWin);
-    meanYawVel = smooth(mean(currYawVel, 2, 'omitnan'), smWin);
+    meanSpeed = smoothdata(mean(currXYSpeed, 2, 'omitnan'), 'gaussian', smWin);
+    meanYawSpeed = smoothdata(mean(currYawSpeed, 2, 'omitnan'), 'gaussian', smWin);
+    meanYawVel = smoothdata(mean(currYawVel, 2, 'omitnan'), 'gaussian', smWin);
 
     % XY speed plot
     axes(axMoveSpeed)
@@ -1006,11 +1006,11 @@ nGroups = numel(unique(trialGroups(trialGroups > 0)));
 for iTrial = 1:size(mmXY, 3)%[16 80 28]
     
     currXY = mmXY(:, :, iTrial);
-    smoothX = smooth(currXY(:, 1), 7);
-    smoothY = smooth(currXY(:, 2), 7);
+    smoothX = smoothdata(currXY(:, 1), 'gaussian', 7);
+    smoothY = smoothdata(currXY(:, 2), 'gaussian', 7);
     
     % Rotate so fly is facing upwards at starting point
-    smoothHD = mod(smooth(unwrap(HD(:, iTrial)), 11), (2*pi));
+    smoothHD = mod(smoothdata(unwrap(HD(:, iTrial)), 'gaussian', 11), (2*pi));
     theta = -smoothHD(startFrame) + pi/2;
     R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
     smoothXYRot = R * [smoothX'; smoothY'];
@@ -2161,7 +2161,7 @@ capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
 plotData(plotData > capVal) = capVal;
 
 % Smooth data
-smSpeedData = movmean(plotData, smWin, 2);
+smSpeedData = smoothdata(plotData, 2, 'gaussian', smWin);
 
 stimTrialGroups = stimTrialGroups .* goodTrials;
 groupNums = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0))) * 2;
@@ -2616,7 +2616,7 @@ try
 % Pull out good trials from data 
 mmSpeedData = ftData.moveSpeed(:,logical(goodTrials .* currStim)) * FRAME_RATE * 4.5;   % --> [frame, trial] (mm/sec)
 dHD = rad2deg(ftData.yawSpeed(:,logical(goodTrials .* currStim)) * FRAME_RATE);         % --> [frame, trial] (deg/sec)
-dHDSmooth = movmean(movmean((dHD), smWin, 1), smWin, 1);                                 
+dHDSmooth = repeat_smooth(dHD, 2, 'smWin', smWin);                                 
 goodFl = ROIDffAvg(:,logical(goodTrials .* currStim),:);
 % goodFl = ROIDataAvg(:,logical(goodTrials .* currStim),:);   % --> [volume, trial, ROI]
 
@@ -2638,12 +2638,12 @@ goodTrialTypes(~logical(goodTrials .* currStim)) = [];
 goodFl = goodFl - min(goodFl(:));
 
 % Calculate correlations between the fly's speed, yaw, and dF/F
-allSpeed = as_vector(repeat_smooth(mmSpeedData(volFrames,:), smWin, 1, 2));
+allSpeed = as_vector(repeat_smooth(mmSpeedData(volFrames,:), 2, 'smWin', smWin));
 allYaw =  as_vector(dHDSmooth(volFrames,:)); 
 
 corrMat = [allSpeed, allYaw];
 for iROI = 1:nROIs
-    corrMat(:, end + 1) = as_vector(movmean(goodFl(:,:,iROI), smWin, 1)); % --> columns: [speed, yaw, ROI1, ROI2, ...]
+    corrMat(:, end + 1) = as_vector(smoothdata(goodFl(:,:,iROI), 1, 'gaussian', smWin)); % --> columns: [speed, yaw, ROI1, ROI2, ...]
 end
 
 [R P RU RL] = corrcoef(corrMat);
@@ -2728,8 +2728,8 @@ end
 
 % Remove frames if move speed falls below threshold
 dffDataVec = []; flDataThresh = [];
-mmSpeedDataSmooth = movmean(movmean(mmSpeedData(volFrames, :), smWin, 1), smWin, 1);
-flDataSmooth = movmean(movmean(goodFl, smWin, 1), smWin, 1);
+mmSpeedDataSmooth = repeat_smooth(mmSpeedData(volFrames, :), 2, 'smWin', smWin);
+flDataSmooth = repeat_smooth(goodFl, smWin, 1, 2, 'smWin', smWin);
 speedThresh = as_vector(mmSpeedDataSmooth > thresh);
 mmSpeedDataVec = mmSpeedDataSmooth(:);
 speedDataThresh = mmSpeedDataVec(speedThresh);
@@ -2771,7 +2771,7 @@ end
 ax = gca();
 ax.FontSize = 20;
 title('XY vs. Yaw speed')
-histogram2(allYaw, smooth(as_vector(mmSpeedData(volFrames, :))), nBins, 'DisplayStyle', 'tile')
+histogram2(allYaw, smoothdata(as_vector(mmSpeedData(volFrames, :)), 'gaussian', 3), nBins, 'DisplayStyle', 'tile')
 xlabel('Yaw speed (deg/sec)'); ylabel('Move speed (mm/sec)')
 ax.FontSize = 14;
 
@@ -2832,7 +2832,7 @@ ax = gca;
 capVal = mean(mmSpeedData(:)) + (3 * std(mmSpeedData(:)));
 speedDataTrim = mmSpeedData;
 speedDataTrim(speedDataTrim > capVal) = capVal;
-imagesc(movmean(speedDataTrim', smWin, 2));
+imagesc(smoothdata(speedDataTrim', 2, 'smWin', smWin));
 ax.FontSize = 14;
 title('Move speed (mm/sec)');
 xlabel('Time (sec)')
@@ -2884,8 +2884,8 @@ ax.FontSize = 20;
 ax.XTick = xTickVol;
 ax.XTickLabels = xTickLabels;
 plotColors = default_plot_colors();
-smSpeedData = repeat_smooth(mmSpeedData, smWin, 1, 2);
-currMoveSpeed = repeat_smooth(smSpeedData(volFrames,currTrial), smWin, 1, 2);
+smSpeedData = repeat_smooth(mmSpeedData, 2, 'smWin', smWin);
+currMoveSpeed = repeat_smooth(smSpeedData(volFrames,currTrial), 2, 'smWin', smWin);
 
 yyaxis left
 
@@ -2899,7 +2899,7 @@ yyaxis right
 for iROI = 1:nROIs
     
     currData = goodFl(:,currTrial, iROI);
-    currDataSm = smooth(currData, smWin);
+    currDataSm = smoothdata(currData, 'gaussian', smWin);
     currDataZeroed = currDataSm - min(currDataSm(:));
     currDataNorm = currDataZeroed ./ max(currDataZeroed(:));
     plot(currDataNorm, ':', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :))
@@ -2950,7 +2950,7 @@ ax.XTick = xTickVol;
 ax.XTickLabels = xTickLabels;
 currHD = dHDSmooth(volFrames,currTrial);
 yyaxis left
-plot(smooth(smooth(currHD,smWin),smWin), 'LineWidth', 2, 'Color', plotColors(1,:))
+plot(repeat_smooth(currHD, 2, 'smWin', smWin), 'LineWidth', 2, 'Color', plotColors(1,:))
 ylabel('Yaw speed (deg/sec)');
 lgdStr = {'Yaw speed'};
 yyaxis right
@@ -2965,7 +2965,7 @@ for iROI = 1:nROIs
     
     
     
-    plot(smooth(goodFl(:,currTrial,iROI),smWin), '--', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :))
+    plot(smoothdata(goodFl(:,currTrial,iROI), 'gaussian', smWin), '--', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :))
     lgdStr{end + 1} = ROInames{iROI};
 end
 ylabel('Raw florescence (AU)');
@@ -3005,8 +3005,8 @@ for iROI = 1:nROIs
     ax = gca();
     ax.FontSize = 14;
     currMoveSpeed = mmSpeedData(volFrames,currTrial);
-    plot(smooth(currMoveSpeed,smWin), smooth(goodFl(:, currTrial, iROI),smWin), 'o', 'color', 'b', 'markersize', 5);
-    C = corrcoef(smooth(currMoveSpeed, smWin), smooth(goodFl(:, currTrial, iROI), smWin));
+    plot(smoothdata(currMoveSpeed, 'gaussian', smWin), smoothdata(goodFl(:, currTrial, iROI), 'gaussian', smWin), 'o', 'color', 'b', 'markersize', 5);
+    C = corrcoef(smoothdata(currMoveSpeed, 'gaussian', smWin), smoothdata(goodFl(:, currTrial, iROI), 'gaussian', smWin));
     title(['ROI ', num2str(iROI),'  (r = ', sprintf('%.3f)', C(2,1))]);
     tight_ax(ax);
     xlabel('Move speed (mm/sec)'); ylabel('Raw F (AU)')
@@ -3047,7 +3047,7 @@ for iTrial = 1:size(mmXY, 3)
 
     % Smooth velocity data
     smoothWin = 5;
-    smoothVelData = smooth(smooth(currMoveSpeed, smoothWin), smoothWin);  % --> [sample, axis, trial]
+    smoothVelData = repeat_smooth(currMoveSpeed, 2, 'smWin', smoothWin);  % --> [sample, axis, trial]
 
 %     % LP filter velocity data
 %     velData = filtfilt(kb, ka, smoothVelData);
@@ -3083,7 +3083,7 @@ for iTrial = 1:size(mmXY, 3)
             pad = 0;
         end
         currSegInd = (pad + ((iSeg-1)*vectorLen)):(iSeg * vectorLen);
-        plot(axMove, smooth(currIntXY(currSegInd, 1), 3), smooth(currIntXY(currSegInd, 2), 3), 'Color', cm(iSeg, :), 'LineWidth', 2)
+        plot(axMove, smoothdata(currIntXY(currSegInd, 1), 'gaussian', 3), smoothdata(currIntXY(currSegInd, 2), 'gaussian', 3), 'Color', cm(iSeg, :), 'LineWidth', 2)
     end
     axis equal;
     lims = 1.1 * (max(abs([ylim(axMove), xlim(axMove)])));
@@ -3111,7 +3111,7 @@ for iTrial = 1:size(mmXY, 3)
     % Yaw speed plot
     axes(axYawSpeed);
     hold on
-    plot(smooth(currYawSpeed, 11), 'LineWidth', 2, 'color', 'r');
+    plot(smoothdata(currYawSpeed, 'gaussian', 11), 'LineWidth', 2, 'color', 'r');
     axYawSpeed.XTick = xTickFR;
     axYawSpeed.XTickLabel = xTickLabels;
     legend({'Yaw speed (deg/sec)'}, 'FontSize', 11, 'Location', 'nw', 'AutoUpdate', 'off')
@@ -3238,7 +3238,7 @@ try
         title(num2str(iROI))
         
         % Plot dF/F and event annotations
-        plot(smooth(concatROIDff(:,iROI), 3), 'b');
+        plot(smoothdata(concatROIDff(:,iROI), 'gaussian', 3), 'b');
         plot(odorVols, 'r');
 %         plot(odorBVols, 'g');
 %         plot(soundVols, 'y');
@@ -3323,11 +3323,11 @@ for iTrial = 1:size(goodFl, 2)
     vidFile = fullfile(vidDir, vidName);
     
     % Prepare ficTrac variables
-    currX = smooth(mmXYdata(:,1,iTrial), smWin);
-    currY = smooth(mmXYdata(:,2,iTrial), smWin);
-    currSpeed = smooth(mmSpeedData(:,iTrial), smWin);
-    currFWSpeed = smooth(mmFWSpeed(:,iTrial), smWin);
-    currYawSpeed = smooth(dHD(:,iTrial), smWin);
+    currX = smoothdata(mmXYdata(:,1,iTrial), 'gaussian', smWin);
+    currY = smoothdata(mmXYdata(:,2,iTrial), 'gaussian', smWin);
+    currSpeed = smoothdata(mmSpeedData(:,iTrial), 'gaussian', smWin);
+    currFWSpeed = smoothdata(mmFWSpeed(:,iTrial), 'gaussian', smWin);
+    currYawSpeed = smoothdata(dHD(:,iTrial), 'gaussian', smWin);
     currHD = HD(:,iTrial);
     
     % Calculate shade volumes if applicable
@@ -3407,7 +3407,7 @@ for iTrial = 1:size(goodFl, 2)
         axes(axFW); hold on
         axFW.FontSize = 14;
         plotColors = default_plot_colors();
-        fwSpeedSmooth = smooth(smooth(currFWSpeed(:), smWin), smWin);
+        fwSpeedSmooth = repeat_smooth(currFWSpeed(:), 2, 'smWin', smWin);
         yyaxis left
         lgdObj = plot(frameTimes, fwSpeedSmooth, 'LineWidth', 2, 'Color', plotColors(1,:));
         plot(frameTimes(iFrame), fwSpeedSmooth(iFrame), 'd', 'markersize', 10, 'Color', 'k', 'markerfacecolor', 'k');
@@ -3419,7 +3419,7 @@ for iTrial = 1:size(goodFl, 2)
         end
         yyaxis right
         for iROI = 1:nROIs
-            currFl = smooth(goodFlNorm(:,iTrial,iROI),smWin);
+            currFl = smoothdata(goodFlNorm(:,iTrial,iROI),'gaussian', smWin);
             lgdObj(end + 1) = plot(volTimes, currFl, ':', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :));
             lgdStr{end + 1} = ['ROI ', num2str(iROI)];
             [~, idx] = min(abs(volFrames - iFrame));
@@ -3436,7 +3436,7 @@ for iTrial = 1:size(goodFl, 2)
         axes(axYaw); hold on
         axYaw.FontSize = 14;
         plotColors = default_plot_colors();
-        yawSpeedSmooth = smooth(smooth(currYawSpeed,smWin),smWin);
+        yawSpeedSmooth = repeat_smooth(currYawSpeed, 2, 'smWin', smWin);
         yyaxis left
         lgdObj = plot(frameTimes, yawSpeedSmooth, 'LineWidth', 2, 'Color', plotColors(1,:));
         ylabel('Yaw speed (deg/sec)');
@@ -3448,7 +3448,7 @@ for iTrial = 1:size(goodFl, 2)
         plot(frameTimes(iFrame), yawSpeedSmooth(iFrame), 'd', 'markersize', 10, 'Color', 'k', 'markerfacecolor', 'k');
         yyaxis right
         for iROI = 1:nROIs
-            currFl = smooth(goodFlNorm(:,iTrial,iROI),smWin);
+            currFl = smoothdata(goodFlNorm(:,iTrial,iROI),'gaussian', smWin);
             lgdObj(end + 1) = plot(volTimes, currFl, ':', 'LineWidth', 2, 'Color', plotColors(iROI + 1, :));
             lgdStr{end + 1} = ['ROI ', num2str(iROI)];
             [~, idx] = min(abs(volFrames - iFrame));

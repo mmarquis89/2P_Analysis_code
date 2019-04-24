@@ -103,11 +103,11 @@ fwSpeed = ftData.fwSpeed * FRAME_RATE * 4.5;          % --> [frame, trial]
 yawSpeed = rad2deg(ftData.yawSpeed * FRAME_RATE);     % --> [frame, trial]
 
 % Smooth data
-smMoveSpd = repeat_smooth(moveSpeed, smWin, 1, moveSmReps);
-smYawSpd = repeat_smooth(yawSpeed, smWin, 1, moveSmReps);
-smFlow = repeat_smooth(flowArr, smWin, 1, flowSmReps);
-smFlowAlt = repeat_smooth(flowArr, smWinAlt, 1, 1);
-smMoveAlt = repeat_smooth(moveSpeed, smWinAlt, 1, 1);
+smMoveSpd = repeat_smooth(moveSpeed, moveSmReps, 'SmWin', smWin);
+smYawSpd = repeat_smooth(yawSpeed, moveSmReps, 'SmWin', smWin);
+smFlow = repeat_smooth(flowArr, moveSmReps, 'SmWin', smWin);
+smFlowAlt = smooth(flowArr, smWinAlt, 1, 1);
+smMoveAlt = smooth(moveSpeed, smWinAlt, 1, 1);
 
 % Scale from 0-1
 quick_norm = @(x) (x - min(abs(x(:))))  ./  max( abs(x(:)) - min(abs(x(:))) );

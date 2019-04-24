@@ -44,9 +44,9 @@ end
 
 % Plot data
 if isempty(lineColor)
-    plotHandle = plot(smooth(annotDataArr,3));
+    plotHandle = plot(smoothdata(annotDataArr, 'gaussian', 3));
 else
-    plotHandle = plot(smooth(annotDataArr,3), 'Color', lineColor);
+    plotHandle = plot(smoothdata(annotDataArr, 'gaussian', 3), 'Color', lineColor);
 end
 % Format axes
 plotHandle.LineWidth = 1;

@@ -162,7 +162,7 @@ for iFrame = 1:nFrames
     
     axes('Units', 'Pixels', 'Position', [0 ax.Position(4) ax.Position(3) (h.Position(4) - ax.Position(4))]);
     hold on
-    plot(frameTimes(2:end), smooth(flyFlowNorm(2:end), 5), 'color', 'm');    % Plot fly movmement ROI flow
+    plot(frameTimes(2:end), smoothdata(flyFlowNorm(2:end), 'gaussian', 5), 'color', 'm');    % Plot fly movmement ROI flow
     plot([currFrameTime, currFrameTime], ylim(), 'LineWidth', 2, 'color', 'r')
     for iTrial = 1:length(trialBoundTimes)
        plot([trialBoundTimes(iTrial), trialBoundTimes(iTrial)], ylim(), 'LineWidth', 2, 'color', 'k') 

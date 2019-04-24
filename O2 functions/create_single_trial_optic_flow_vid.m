@@ -154,7 +154,7 @@ for iFrame = (preAlignFrames + 1):(preAlignFrames + nFrames)
     % Optic flow plot
     axes('Units', 'Pixels', 'Position', [0 ax.Position(4) ax.Position(3) (h.Position(4) - ax.Position(4))]);
     hold on
-    plot(smooth(plotFlowData(2:end), 5), 'color', 'm');    % Plot fly movmement ROI flow
+    plot(smoothdata(plotFlowData(2:end), 'gaussian', 5), 'color', 'm');    % Plot fly movmement ROI flow
     ylim([0 1]);
     plot([iFrame, iFrame], ylim(), 'LineWidth', 2, 'color', 'r')
     for iTrial = 1:length(trialBounds)

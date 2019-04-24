@@ -129,9 +129,9 @@ outputData.timestamp = squeeze(allData(:, 22, :));
 outputData.seqNum = squeeze(allData(:, 23, :));
 
 % Create convenient derived variables
-outputData.yawSpeed = [zeros(1, size(outputData.intHD, 2)); diff(smoothdata(unwrap(outputData.intHD, [], 1), 1, 'movmean', 5), 1)];
-outputData.fwSpeed = [zeros(1, size(outputData.intHD, 2)); diff(smoothdata(outputData.intForwardMove, 1, 'movmean', 5), 1)];
-outputData.sideSpeed = [zeros(1, size(outputData.intHD, 2)); diff(smoothdata(outputData.intSideMove, 1, 'movmean', 5), 1)];
+outputData.yawSpeed = [zeros(1, size(outputData.intHD, 2)); diff(smoothdata(unwrap(outputData.intHD, [], 1), 1, 'gaussian', 5), 1)];
+outputData.fwSpeed = [zeros(1, size(outputData.intHD, 2)); diff(smoothdata(outputData.intForwardMove, 1, 'gaussian', 5), 1)];
+outputData.sideSpeed = [zeros(1, size(outputData.intHD, 2)); diff(smoothdata(outputData.intSideMove, 1, 'gaussian', 5), 1)];
 
 outputData.droppedFrames = droppedFrames;
 outputData.resets = resets;
