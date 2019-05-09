@@ -749,12 +749,12 @@ cm = [];
 % 
 % figTitle = [figTitle, '  —  sid_', num2str(sid)];
 
-% % % 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups .* goodTrials; 
-% fileNameSuffix = [fileNameSuffix, '_StimTypeComparison']; 
-% groupNames = stimNames;
 % % 
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* goodTrials; 
+fileNameSuffix = [fileNameSuffix, '_StimTypeComparison']; 
+groupNames = stimNames;
+% 
 % % % % 
 
 % % GROUP BY EARLY/LATE
@@ -1335,11 +1335,11 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 sepBlockStims = 0; sepGroupStims = 0; clear minMax;
 fontSize = 14;
 
-useDff = 0;
-subtractBaseline = 1;
+useDff = 1;
+subtractBaseline = 0;
 colorbarOn = 1;
 % minMax = [-0.12 1.5; -0.12 1; -0.12 0.8; -0.12 2.5; 0 1]; % [ROI, min-max]
-% minMax = [60 500; 250 1050; 25 130; 30 400; 0 600; 50 700]; % [ROI, min-max]
+% minMax = [125 400; 600 1800; 25 100; 75 425; 0 600; 50 700]; % [ROI, min-max]
 % % % 
 
 % trialGroups = [];
@@ -1807,35 +1807,35 @@ try
 %     fileNameSuffix = '_StimTypeComparison';
 %     binNames = stimGroupNames;
 
-    % GROUP CHRONOLOGICALLY BY BLOCKS
-    trialGroups = zeros(1, nTrials);
-    for iBound = 1:numel(groupBounds)-1
-        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-    end
-    trialGroups(groupBounds(end)+1:end) = iBound + 1;
-    trialGroups = trialGroups .* goodTrials;
-    plotTitleSuffix = '';
-    fileNameSuffix = '_Blocks_Separated';
-    if ~isempty(blockShading)
-        sepBlockStims = 1;
-    end
-    binNames = blockNames;
+%     % GROUP CHRONOLOGICALLY BY BLOCKS
+%     trialGroups = zeros(1, nTrials);
+%     for iBound = 1:numel(groupBounds)-1
+%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+%     end
+%     trialGroups(groupBounds(end)+1:end) = iBound + 1;
+%     trialGroups = trialGroups .* goodTrials;
+%     plotTitleSuffix = '';
+%     fileNameSuffix = '_Blocks_Separated';
+%     if ~isempty(blockShading)
+%         sepBlockStims = 1;
+%     end
+%     binNames = blockNames;
     
 %         % Skip first block
 %         trialGroups = trialGroups - 1;
 %         trialGroups(1:20) = 0;
 %         binNames = binNames(2:4);
 
-%     % GROUP BY BLOCK TYPE
-%     groupNames = blockNames(1:2);
-%     trialGroups = zeros(1, nTrials);
-%     trialGroups = trialGroups .* goodTrials;
-%     for iBound = 1:numel(groupBounds)-1
-%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-%     end
-%     trialGroups(logical(mod(trialGroups, 2))) = 1;
-%     trialGroups(~logical(mod(trialGroups, 2))) = 2;
-%     fileNameSuffix = '_Block_Type_Groups';
+    % GROUP BY BLOCK TYPE
+    groupNames = blockNames(1:2);
+    trialGroups = zeros(1, nTrials);
+    trialGroups = trialGroups .* goodTrials;
+    for iBound = 1:numel(groupBounds)-1
+        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+    end
+    trialGroups(logical(mod(trialGroups, 2))) = 1;
+    trialGroups(~logical(mod(trialGroups, 2))) = 2;
+    fileNameSuffix = '_Block_Type_Groups';
 
 %     % GROUP BY EARLY/LATE
 %     fileNameSuffix = '_EarlyVsLateTrials';
@@ -2145,9 +2145,9 @@ CLimCap = 1;
 % trialGroups(1:20) = 0;
 % binNames = binNames(2:4);
 
-% SPLIT TRIALS INTO GROUPS BASED ON BEHAVIORAL RESPONSE TO DIFFERENT STIMULI
+% SPLIT TRIALS INTO HIGH-MOVEMENT AND LOW-MOVEMENT GROUPS
 sdCap = 5;
-analysisWindow = [1 2];
+analysisWindow = [1 1];
 groupFraction = 8;
 offsetAlign = 0;
 
@@ -2172,17 +2172,12 @@ for iGroup = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0)))
     currGroupShading = stimGroupShading{iGroup};
     currStimStartTime = stimEpochs(currGroupShading, 1 + offsetAlign);
     
-    % Get mean ficTrac moveSpeed from before and after each stim onset
+    % Get mean ficTrac moveSpeed around each stim onset
     startFrame = round((currStimStartTime - analysisWindow(1)) * FRAME_RATE);
     endFrame = round((currStimStartTime + analysisWindow(2)) * FRAME_RATE);
-    stimFrame = round(currStimStartTime * FRAME_RATE);
-    baselineMean = mean(smSpeedData(currGroupTrials, startFrame:stimFrame), 2);
-    respMean = mean(smSpeedData(currGroupTrials, stimFrame:endFrame), 2);
-%     respMean = mean(smSpeedData(currGroupTrials, stimFrame+FRAME_RATE:endFrame), 2);
+    analysisMean = mean(smSpeedData(currGroupTrials, startFrame:endFrame), 2);
     
-    meanDiff = (respMean - baselineMean);
-    
-    [B{iGroup}, I] = sort(meanDiff);
+    [B{iGroup}, I] = sort(analysisMean);
     
     nGroupTrials = round(numel(I)/groupFraction);
     lowMoveTrials = I(1:nGroupTrials);
@@ -2196,15 +2191,80 @@ for iGroup = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0)))
     newGroupShading = [newGroupShading, {currGroupShading}, {currGroupShading}];
 end
 groupShading = newGroupShading;
-
+fileNameSuffix = '_HiLowMove_test_plots';
+% plotTitleSuffix = make_plotTitleSuffix({});
 figure(100);clf;hold on; 
 plot(B{1}); plot(B{2}); plot(1:numel(B{1}), zeros(1, numel(B{1})), '--')
 yL = ylim();
 plot([nGroupTrials, nGroupTrials], yL);
 plot([numel(B{1}) - nGroupTrials + 1, numel(B{1}) - nGroupTrials + 1], yL);
-title('Mean speed increase at stim onset');
-ylabel('Delta speed (mm/sec)')
+title('Mean speed around stim onset');
+ylabel('Mean speed (mm/sec)')
 legend 1 2
+
+% % 
+% % SPLIT TRIALS INTO GROUPS BASED ON BEHAVIORAL RESPONSE TO DIFFERENT STIMULI
+% sdCap = 5;
+% analysisWindow = [1 2];
+% groupFraction = 8;
+% offsetAlign = 0;
+% 
+% % Extract FicTrac speed data
+% rawData = infoStruct.ftData.moveSpeed;         % --> [frame, trial]
+% rawData = rawData';                            % --> [trial, frame]
+% plotData = (rad2deg(rawData .* FRAME_RATE));   % --> [trial, frame] (deg/sec)
+% 
+% % Cap values at n SD above mean
+% capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
+% plotData(plotData > capVal) = capVal;
+% 
+% % Smooth data
+% smSpeedData = smoothdata(plotData, 2, 'gaussian', smWin);
+% 
+% stimTrialGroups = stimTrialGroups .* goodTrials;
+% groupNums = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0))) * 3;
+% trialGroups = []; newGroupShading = []; B = [];
+% for iGroup = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0)))
+%    
+%     currGroupTrials = stimTrialGroups == iGroup;
+%     currGroupShading = stimGroupShading{iGroup};
+%     currStimStartTime = stimEpochs(currGroupShading, 1 + offsetAlign);
+%     
+%     % Get mean ficTrac moveSpeed from before and after each stim onset
+%     startFrame = round((currStimStartTime - analysisWindow(1)) * FRAME_RATE);
+%     endFrame = round((currStimStartTime + analysisWindow(2)) * FRAME_RATE);
+%     stimFrame = round(currStimStartTime * FRAME_RATE);
+%     baselineMean = mean(smSpeedData(currGroupTrials, startFrame:stimFrame), 2);
+%     respMean = mean(smSpeedData(currGroupTrials, stimFrame:endFrame), 2);
+% %     respMean = mean(smSpeedData(currGroupTrials, stimFrame+FRAME_RATE:endFrame), 2);
+%     
+%     meanDiff = (respMean - baselineMean);
+%     
+%     [B{iGroup}, I] = sort(meanDiff);
+%     
+%     nGroupTrials = round(numel(I)/groupFraction);
+%     lowMoveTrials = I(1:nGroupTrials);
+%     highMoveTrials = I(end - nGroupTrials + 1:end);
+% %     lowDiffTrials = I(round(numel(I)/2) - round(nGroupTrials/2):round(numel(I)/2) + round(nGroupTrials/2))
+%     
+%     newGroup = zeros(numel(I), 1);
+%     newGroup(lowMoveTrials) = groupNums(1); groupNums(1) = [];
+%     newGroup(highMoveTrials) = groupNums(1); groupNums(1) = [];
+% %     newGroup(lowDiffTrials) = groupNums(1); groupNums(1) = [];
+%     trialGroups(currGroupTrials) = newGroup;
+%     newGroupShading = [newGroupShading, {currGroupShading}, {currGroupShading}];
+% %     newGroupShading = [newGroupShading, {currGroupShading}, {currGroupShading}, {currGroupShading}];
+% end
+% groupShading = newGroupShading;
+% 
+% figure(100);clf;hold on; 
+% plot(B{1}); plot(B{2}); plot(1:numel(B{1}), zeros(1, numel(B{1})), '--')
+% yL = ylim();
+% plot([nGroupTrials, nGroupTrials], yL);
+% plot([numel(B{1}) - nGroupTrials + 1, numel(B{1}) - nGroupTrials + 1], yL);
+% title('Mean speed increase at stim onset');
+% ylabel('Delta speed (mm/sec)')
+% legend 1 2
 
 % --------------------------------------------------------------------------------------------------
 

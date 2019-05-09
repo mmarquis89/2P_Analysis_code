@@ -235,11 +235,23 @@ pcaTab.Units = 'normalized';
             currcolor = cm(mod(parentIdxROI,size(cm,1))+1,:); % parentIdxROI starts at 1 when gui initializes
             
             % Prompt user to create a polygon ROI
-            [mask, xi, yi] = roipoly; % --> [ROInum, y, x]
-            myData.ROIs{parentIdxROI}(indexROI).mask = mask;
+            h = imfreehand(gca);
+            pos = getPosition(h);
+            xi = pos(:,1);
+            yi = pos(:,2);
+            myData.ROIs{parentIdxROI}(indexROI).mask = createMask(h);
             myData.ROIs{parentIdxROI}(indexROI).xi = xi;
             myData.ROIs{parentIdxROI}(indexROI).yi = yi;
             currAxes = gca;
+            
+%             [mask, xi, yi] = roipoly; % --> [ROInum, y, x]
+%             myData.ROIs{parentIdxROI}(indexROI).mask = mask;
+%             myData.ROIs{parentIdxROI}(indexROI).xi = xi;
+%             myData.ROIs{parentIdxROI}(indexROI).yi = yi;
+%             currAxes = gca;
+%             
+%             
+            
             
             % Plot ROI and a numeric identifier
             ROIplots(end+1) = plot(xi, yi, 'linewidth', 2, 'color', currcolor);

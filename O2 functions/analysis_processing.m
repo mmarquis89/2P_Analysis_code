@@ -37,50 +37,50 @@ end
 
 % Process and save annotation types ('annotationTypes.mat')
 save(fullfile(imgSaveDir, 'analysisMetadata.mat'), 'analysisMetadata', '-v7.3')
-[annotationTypes, annotationTypeSummary] = process_annotation_types(analysisMetadata);
-save(fullfile(imgSaveDir, 'annotationTypes.mat'), 'annotationTypes', 'annotationTypeSummary', '-v7.3');
-write_to_log('Annotation types saved', mfilename);
-
-m = matfile(fullfile(imgSaveDir, sessionDataFile));
-sz = size(m, 'wholeSession');
-clear m
-nPixels = prod(sz(1:2));
-
-nTrials = analysisMetadata.nTrials; 
-nVolumes = analysisMetadata.nVolumes; 
-nPlanes = analysisMetadata.nPlanes;
-
-% Calculate overall behavior state dF/F
-memGB = ceil(1.5e-08 * nPixels * nTrials * nVolumes * nPlanes);
-if memGB > 249
-    memGB = 249;
-end
-timeLimitMin = ceil(1e-08 * nPixels * nTrials * nVolumes * nPlanes);
-if timeLimitMin > 719
-    timeLimitMin = 719;
-end
-queueName = 'short';
-jobName = [expDate, '_sid_', num2str(sid), '_behavior_state_dFF_calc'];
-c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-inputArgs = {imgSaveDir, sessionDataFile};
-behavStateDffCalcJob = c.batch(@behavioral_state_dff_calc, 0, inputArgs);
-
-% Extract ROI data
-ROIfile = 'ROI_metadata.mat';
-sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
-memGB = ceil(2.5e-08 * nPixels * nTrials * nVolumes * nPlanes);
-if memGB > 249
-    memGB = 249;
-end
-timeLimitMin = ceil(2e-08 * nPixels * nTrials * nVolumes * nPlanes);
-if timeLimitMin > 719
-    timeLimitMin = 719;
-end
-queueName = 'short';
-jobName = [expDate, '_sid_', num2str(sid), '_extract_ROI_data'];
-c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
-inputArgs = {imgSaveDir, sessionDataFile, ROIfile};
-c.batch(@extract_ROI_data, 0, inputArgs);
+% [annotationTypes, annotationTypeSummary] = process_annotation_types(analysisMetadata);
+% save(fullfile(imgSaveDir, 'annotationTypes.mat'), 'annotationTypes', 'annotationTypeSummary', '-v7.3');
+% write_to_log('Annotation types saved', mfilename);
+% 
+% m = matfile(fullfile(imgSaveDir, sessionDataFile));
+% sz = size(m, 'wholeSession');
+% clear m
+% nPixels = prod(sz(1:2));
+% 
+% nTrials = analysisMetadata.nTrials; 
+% nVolumes = analysisMetadata.nVolumes; 
+% nPlanes = analysisMetadata.nPlanes;
+% 
+% % Calculate overall behavior state dF/F
+% memGB = ceil(1.5e-08 * nPixels * nTrials * nVolumes * nPlanes);
+% if memGB > 249
+%     memGB = 249;
+% end
+% timeLimitMin = ceil(1e-08 * nPixels * nTrials * nVolumes * nPlanes);
+% if timeLimitMin > 719
+%     timeLimitMin = 719;
+% end
+% queueName = 'short';
+% jobName = [expDate, '_sid_', num2str(sid), '_behavior_state_dFF_calc'];
+% c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
+% inputArgs = {imgSaveDir, sessionDataFile};
+% behavStateDffCalcJob = c.batch(@behavioral_state_dff_calc, 0, inputArgs);
+% 
+% % Extract ROI data
+% ROIfile = 'ROI_metadata.mat';
+% sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
+% memGB = ceil(2.5e-08 * nPixels * nTrials * nVolumes * nPlanes);
+% if memGB > 249
+%     memGB = 249;
+% end
+% timeLimitMin = ceil(2e-08 * nPixels * nTrials * nVolumes * nPlanes);
+% if timeLimitMin > 719
+%     timeLimitMin = 719;
+% end
+% queueName = 'short';
+% jobName = [expDate, '_sid_', num2str(sid), '_extract_ROI_data'];
+% c = set_job_params(c, queueName, timeLimitMin, memGB, jobName); 
+% inputArgs = {imgSaveDir, sessionDataFile, ROIfile};
+% c.batch(@extract_ROI_data, 0, inputArgs);
 
 
 end%function

@@ -146,7 +146,7 @@ else
     avgBehavData = mean(behavData, 2, 'omitnan');
     avgBehavData = [avgBehavData(2); avgBehavData(2:end)]; % to drop artifically low first trial
     currX = ((1:nVolumes) ./ volumeRate)';
-    currY = smoothdata(avgFl, 1, smoothWin);
+    currY = smoothdata(avgFl, 1, 'gaussian', smoothWin);
     currXY = [currX, currY];
     currXY = currXY(~any(isnan(currXY), 2), :);             % to skip over any nan values
     avgBehavData = avgBehavData(~any(isnan(currXY), 2), :); % to skip over any nan values

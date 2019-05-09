@@ -156,7 +156,7 @@ for iGroup = 1:nGroups
     % Plot individual trials in background
     if singleTrials
         for iTrial = 1:size(groupFlData, 2)
-            currData = smoothdata(groupFlData(:, iTrial), 1, smoothWin);
+            currData = smoothdata(groupFlData(:, iTrial), 1, 'gaussian', smoothWin);
             
             % Plot trial dF/F if not using annotation data for color coding
             if nGroups == 1
@@ -164,7 +164,7 @@ for iGroup = 1:nGroups
             else
                 currColor = cm(iGroup, :);
             end
-            plt = plot(ax, volTimes, smoothdata(currData, 1, smoothWin), 'color', currColor, 'LineWidth', 1);
+            plt = plot(ax, volTimes, smoothdata(currData, 1, 'gaussian', smoothWin), 'color', currColor, 'LineWidth', 1);
             plt.Color(4) = singleTrialAlpha;
             
         end%iTrial
@@ -177,7 +177,7 @@ for iGroup = 1:nGroups
     end
     
     % Plot mean response line    
-    meanPlots(iGroup) = plot(ax, volTimes, smoothdata(groupAvgFl, 1, smoothWin), 'LineWidth', 2, 'Color', meanLineColor * 1);
+    meanPlots(iGroup) = plot(ax, volTimes, smoothdata(groupAvgFl, 1, 'gaussian', smoothWin), 'LineWidth', 2, 'Color', meanLineColor * 1);
 
 end%iGroup
 
