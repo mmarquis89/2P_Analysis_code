@@ -2,10 +2,10 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_04_22_exp_3';
+expDate = '2019_05_25_exp_1';
 sid = 0;
 FRAME_RATE = 25;
-trialDuration = 20;
+trialDuration = 10;
 
 behaviorLabels = {'Quiescence', 'Locomotion', 'IsolatedMovement'};
 
@@ -36,7 +36,9 @@ ftDir = fullfile(vidDir, 'FicTracData');
 ftData = load_fictrac_data(frameInfo, 'Sid', sid, 'ParentDir', ftDir)
 goodTrials(ftData.badFtTrials) = 0;
 disp('FicTrac data loaded...')
-disp(['Total FicTrac resets during experiment: ', num2str(sum(ftData.resets))])
+disp(['Total FicTrac resets in experiment: ', num2str(sum(ftData.resets))])
+disp(['Total dropped frames in experiment: ', num2str(sum(cellfun(@numel, ftData.droppedFrames)))]);
+
 % Load flow data
 load(fullfile(vidDir, ['sid_', num2str(sid), '_flow_data_norm.mat'])) % flyFlowNorm
 flowArr = [];
@@ -83,14 +85,14 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 10;
-flowThresh = 0.02;
-moveThresh = 0.07;
+t = 62;
+flowThresh = 0.03;
+moveThresh = 0.045;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 6;
+moveSmReps = 4;
 flowSmReps = 4;
 
 minIsoMoveLen = 6;
@@ -106,8 +108,8 @@ yawSpeed = rad2deg(ftData.yawSpeed * FRAME_RATE);     % --> [frame, trial]
 smMoveSpd = repeat_smooth(moveSpeed, moveSmReps, 'SmWin', smWin);
 smYawSpd = repeat_smooth(yawSpeed, moveSmReps, 'SmWin', smWin);
 smFlow = repeat_smooth(flowArr, moveSmReps, 'SmWin', smWin);
-smFlowAlt = smooth(flowArr, smWinAlt, 1, 1);
-smMoveAlt = smooth(moveSpeed, smWinAlt, 1, 1);
+smFlowAlt = smoothdata(flowArr, 1, 'gaussian', smWinAlt);
+smMoveAlt = smoothdata(moveSpeed, 1, 'gaussian', smWinAlt);
 
 % Scale from 0-1
 quick_norm = @(x) (x - min(abs(x(:))))  ./  max( abs(x(:)) - min(abs(x(:))) );

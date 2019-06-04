@@ -244,15 +244,6 @@ pcaTab.Units = 'normalized';
             myData.ROIs{parentIdxROI}(indexROI).yi = yi;
             currAxes = gca;
             
-%             [mask, xi, yi] = roipoly; % --> [ROInum, y, x]
-%             myData.ROIs{parentIdxROI}(indexROI).mask = mask;
-%             myData.ROIs{parentIdxROI}(indexROI).xi = xi;
-%             myData.ROIs{parentIdxROI}(indexROI).yi = yi;
-%             currAxes = gca;
-%             
-%             
-            
-            
             % Plot ROI and a numeric identifier
             ROIplots(end+1) = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
             ROItext(end+1) = text(mean(xi),mean(yi),[num2str(parentIdxROI), '.' num2str(indexROI)],'Color',currcolor, 'FontSize',12);

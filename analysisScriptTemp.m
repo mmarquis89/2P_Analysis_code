@@ -350,11 +350,10 @@ f = figure(7);clf
 f.Position = [-1050 45 1020 950];
 f.Color = [1 1 1];
 ax = gca;
-[~, ax, f] = plot_2D_summary(infoStruct, annotArr, ...
+[~, ax, f] = plot_2D_summary(annotArr, FRAME_RATE, ...
     'plotAxes', ax, ...
     'trialGroups', trialGroups, ...
     'titleStr', titleString, ...
-    'sampRate', FRAME_RATE, ...
     'colormap', cMap ...
     );
 
@@ -650,10 +649,9 @@ cm = cmName(numel(unique(smPlotData)));
 titleStr = [figTitle, plotTitleSuffix];
 fileName = ['2D_FicTrac_', ftVarName '_Summary', fileNameSuffix, '_', ...
             regexprep(expDate, {'_', 'exp'}, {'', '_'})];
-[~, ax, f] = plot_2D_summary(infoStruct, smPlotData, ...
+[~, ax, f] = plot_2D_summary(smPlotData, FRAME_RATE, ...
                 'trialGroups', trialGroups, ...
                 'titleStr', titleStr, ...
-                'sampRate', FRAME_RATE, ...
                 'colormap', cm ...
                 );
 ax.Title.FontSize = fontSize;
@@ -749,12 +747,12 @@ cm = [];
 % 
 % figTitle = [figTitle, '  —  sid_', num2str(sid)];
 
+% % % 
+% % GROUP BY STIM TYPE
+% trialGroups = stimTrialGroups .* goodTrials; 
+% fileNameSuffix = [fileNameSuffix, '_StimTypeComparison']; 
+% groupNames = stimNames;
 % % 
-% GROUP BY STIM TYPE
-trialGroups = stimTrialGroups .* goodTrials; 
-fileNameSuffix = [fileNameSuffix, '_StimTypeComparison']; 
-groupNames = stimNames;
-% 
 % % % % 
 
 % % GROUP BY EARLY/LATE
@@ -770,15 +768,15 @@ groupNames = stimNames;
 % binNames{end + 1} = ['Trials ', num2str(binBounds(end)), '-', num2str(nTrials)];
 % fileNameSuffix = [fileNameSuffix, 'EarlyVsLateTrials'];
 % % 
-% % PLOT AND COLOR EACH BLOCK SEPARATELY
-% groupNames = blockNames;
-% trialGroups = zeros(1, nTrials);
-% for iBound = 1:numel(groupBounds)-1
-%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-% end
-% trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
-% trialGroups = trialGroups .* goodTrials;
-% fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
+% PLOT AND COLOR EACH BLOCK SEPARATELY
+groupNames = blockNames;
+trialGroups = zeros(1, nTrials);
+for iBound = 1:numel(groupBounds)-1
+   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+end
+trialGroups(groupBounds(end)+1:end) = numel(groupBounds);
+trialGroups = trialGroups .* goodTrials;
+fileNameSuffix = [fileNameSuffix, 'Blocks_Separated'];
 
 % 
 % trialGroups = trialGroups - 1;
@@ -1246,10 +1244,9 @@ dffDataFileName = 'ROI_Data_Avg.mat';
 
 
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
-% ROInames = ["L-SLP", "R-SLP", "L-LH", "R-LH", "L-ANT", "R-ANT", "Control"];
+ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT","Bi-ANT", "Control"];
 % ROInames = ["SLP", "ANT", "PPL1", "Control"];
-% ROInames = ["L-SLP", "R-SLP&B-ANT",  "R-VLP", "Control"];
-ROInames = ["SLP", "ANT", "LH", "PPM2", "Control"];
+% ROInames = ["SLP", "ANT", "LH", "PPM2", "Control"];
 % ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "Bi-ANT", "Control"];
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
@@ -1430,7 +1427,7 @@ for iROI = 1:currNumROIs
     end
     
     % Plot fluorescence heatmap
-    plot_2D_summary(infoStruct, currFlData', ...
+    plot_2D_summary(currFlData', volumeRate, ...
         'plotAxes', ax, ...
         'trialGroups', trialGroups, ...
         'titleStr', [plotTitlePrefix, ' — ', plotTitleSuffix], ...
@@ -2125,82 +2122,82 @@ CLimCap = 1;
 % plotTitleSuffix = make_plotTitleSuffix(stimNames);
 % groupShading = stimGroupShading;
 
-%     % GROUP CHRONOLOGICALLY BY BLOCKS
-%     trialGroups = zeros(1, nTrials);
-%     for iBound = 1:numel(groupBounds)-1
-%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-%     end
-%     trialGroups(groupBounds(end)+1:end) = iBound + 1;
-%     trialGroups = trialGroups .* goodTrials;
-%     plotTitleSuffix = '';
-%     fileNameSuffix = '_Blocks_Separated';
-%     if ~isempty(blockShading)
-%         sepBlockStims = 1;
-%     end
-%     binNames = blockNames;
-%     plotTitleSuffix = make_plotTitleSuffix(binNames);
-%     groupShading = blockShading;
+    % GROUP CHRONOLOGICALLY BY BLOCKS
+    trialGroups = zeros(1, nTrials);
+    for iBound = 1:numel(groupBounds)-1
+        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+    end
+    trialGroups(groupBounds(end)+1:end) = iBound + 1;
+    trialGroups = trialGroups .* goodTrials;
+    plotTitleSuffix = '';
+    fileNameSuffix = '_Blocks_Separated';
+    if ~isempty(blockShading)
+        sepBlockStims = 1;
+    end
+    binNames = blockNames;
+    plotTitleSuffix = make_plotTitleSuffix(binNames);
+    groupShading = blockShading;
 %     
 % trialGroups = trialGroups - 1;
 % trialGroups(1:20) = 0;
 % binNames = binNames(2:4);
-
-% SPLIT TRIALS INTO HIGH-MOVEMENT AND LOW-MOVEMENT GROUPS
-sdCap = 5;
-analysisWindow = [1 1];
-groupFraction = 8;
-offsetAlign = 0;
-
-% Extract FicTrac speed data
-rawData = infoStruct.ftData.moveSpeed;         % --> [frame, trial]
-rawData = rawData';                            % --> [trial, frame]
-plotData = (rad2deg(rawData .* FRAME_RATE));   % --> [trial, frame] (deg/sec)
-
-% Cap values at n SD above mean
-capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
-plotData(plotData > capVal) = capVal;
-
-% Smooth data
-smSpeedData = smoothdata(plotData, 2, 'gaussian', smWin);
-
-stimTrialGroups = stimTrialGroups .* goodTrials;
-groupNums = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0))) * 2;
-trialGroups = []; newGroupShading = []; B = [];
-for iGroup = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0)))
-   
-    currGroupTrials = stimTrialGroups == iGroup;
-    currGroupShading = stimGroupShading{iGroup};
-    currStimStartTime = stimEpochs(currGroupShading, 1 + offsetAlign);
-    
-    % Get mean ficTrac moveSpeed around each stim onset
-    startFrame = round((currStimStartTime - analysisWindow(1)) * FRAME_RATE);
-    endFrame = round((currStimStartTime + analysisWindow(2)) * FRAME_RATE);
-    analysisMean = mean(smSpeedData(currGroupTrials, startFrame:endFrame), 2);
-    
-    [B{iGroup}, I] = sort(analysisMean);
-    
-    nGroupTrials = round(numel(I)/groupFraction);
-    lowMoveTrials = I(1:nGroupTrials);
-    highMoveTrials = I(end - nGroupTrials + 1:end);
-    
-    newGroup = zeros(numel(I), 1);
-    newGroup(lowMoveTrials) = groupNums(1); groupNums(1) = [];
-    newGroup(highMoveTrials) = groupNums(1); groupNums(1) = [];
-    
-    trialGroups(currGroupTrials) = newGroup;
-    newGroupShading = [newGroupShading, {currGroupShading}, {currGroupShading}];
-end
-groupShading = newGroupShading;
-fileNameSuffix = '_HiLowMove_test_plots';
-% plotTitleSuffix = make_plotTitleSuffix({});
-figure(100);clf;hold on; 
-plot(B{1}); plot(B{2}); plot(1:numel(B{1}), zeros(1, numel(B{1})), '--')
-yL = ylim();
-plot([nGroupTrials, nGroupTrials], yL);
-plot([numel(B{1}) - nGroupTrials + 1, numel(B{1}) - nGroupTrials + 1], yL);
-title('Mean speed around stim onset');
-ylabel('Mean speed (mm/sec)')
-legend 1 2
+% 
+% % SPLIT TRIALS INTO HIGH-MOVEMENT AND LOW-MOVEMENT GROUPS
+% sdCap = 5;
+% analysisWindow = [1 1];
+% groupFraction = 8;
+% offsetAlign = 0;
+% 
+% % Extract FicTrac speed data
+% rawData = infoStruct.ftData.moveSpeed;         % --> [frame, trial]
+% rawData = rawData';                            % --> [trial, frame]
+% plotData = (rad2deg(rawData .* FRAME_RATE));   % --> [trial, frame] (deg/sec)
+% 
+% % Cap values at n SD above mean
+% capVal = mean(plotData(:), 'omitnan') + (sdCap * std(plotData(:), 'omitnan'));
+% plotData(plotData > capVal) = capVal;
+% 
+% % Smooth data
+% smSpeedData = smoothdata(plotData, 2, 'gaussian', smWin);
+% 
+% stimTrialGroups = stimTrialGroups .* goodTrials;
+% groupNums = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0))) * 2;
+% trialGroups = []; newGroupShading = []; B = [];
+% for iGroup = 1:numel(unique(stimTrialGroups(stimTrialGroups > 0)))
+%    
+%     currGroupTrials = stimTrialGroups == iGroup;
+%     currGroupShading = stimGroupShading{iGroup};
+%     currStimStartTime = stimEpochs(currGroupShading, 1 + offsetAlign);
+%     
+%     % Get mean ficTrac moveSpeed around each stim onset
+%     startFrame = round((currStimStartTime - analysisWindow(1)) * FRAME_RATE);
+%     endFrame = round((currStimStartTime + analysisWindow(2)) * FRAME_RATE);
+%     analysisMean = mean(smSpeedData(currGroupTrials, startFrame:endFrame), 2);
+%     
+%     [B{iGroup}, I] = sort(analysisMean);
+%     
+%     nGroupTrials = round(numel(I)/groupFraction);
+%     lowMoveTrials = I(1:nGroupTrials);
+%     highMoveTrials = I(end - nGroupTrials + 1:end);
+%     
+%     newGroup = zeros(numel(I), 1);
+%     newGroup(lowMoveTrials) = groupNums(1); groupNums(1) = [];
+%     newGroup(highMoveTrials) = groupNums(1); groupNums(1) = [];
+%     
+%     trialGroups(currGroupTrials) = newGroup;
+%     newGroupShading = [newGroupShading, {currGroupShading}, {currGroupShading}];
+% end
+% groupShading = newGroupShading;
+% fileNameSuffix = '_HiLowMove_test_plots';
+% % plotTitleSuffix = make_plotTitleSuffix({});
+% figure(100);clf;hold on; 
+% plot(B{1}); plot(B{2}); plot(1:numel(B{1}), zeros(1, numel(B{1})), '--')
+% yL = ylim();
+% plot([nGroupTrials, nGroupTrials], yL);
+% plot([numel(B{1}) - nGroupTrials + 1, numel(B{1}) - nGroupTrials + 1], yL);
+% title('Mean speed around stim onset');
+% ylabel('Mean speed (mm/sec)')
+% legend 1 2
 
 % % 
 % % SPLIT TRIALS INTO GROUPS BASED ON BEHAVIORAL RESPONSE TO DIFFERENT STIMULI

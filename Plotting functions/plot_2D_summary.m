@@ -1,4 +1,4 @@
-function [plotHandle, plotAxes, plotFig] = plot_2D_summary(infoStruct, dataArr, varargin)
+function [plotHandle, plotAxes, plotFig] = plot_2D_summary(dataArr, sampRate, varargin)
 %===================================================================================================
 % PLOT A 2D SUMMARY FIGURE OF DATA THROUGHOUT EXPERIMENT
 %
@@ -8,11 +8,10 @@ function [plotHandle, plotAxes, plotFig] = plot_2D_summary(infoStruct, dataArr, 
 % trialGroups == 0 will be omitted from the plots.
 %
 % INPUTS:
-%       infoStruct    = the main imaging data structure containing metadata for the experiment.
-%                         Specifically, must contain the fields "expDate", "trialDuration" and
-%                         "volumeRate" (latter is only necessary if using default 'sampRate' value.
 %
 %       dataArr       = array of data to be plotted in format [trial, volume/frame]
+%
+%       sampRate      = the sampling rate of dataArr in samples/sec
 %
 % OPTIONAL NAME-VALUE PAIR INPUTS:
 %       'plotAxes'    = (default: [])
@@ -31,8 +30,6 @@ function [plotHandle, plotAxes, plotFig] = plot_2D_summary(infoStruct, dataArr, 
 %
 %       'colormap'    = (default: parula)
 %
-%       'sampRate'    = (default: infoStruct.volumeRate)
-%
 % OUTPUTS:
 %       plotHandle  = the handle to the plot that was created by the function
 %
@@ -46,12 +43,11 @@ p = inputParser;
 addParameter(p, 'plotAxes', []);
 addParameter(p, 'figPos', [-1050 45 1050 950])
 addParameter(p, 'trialGroups', [])
-addParameter(p, 'titleStr', regexprep(infoStruct.expDate, '_', '\\_'));
+addParameter(p, 'titleStr', '');
 addParameter(p, 'saveDir', 0);
 addParameter(p, 'fileName', 'Untitled');
 addParameter(p, 'xAxLabel', 'Time (sec)');
 addParameter(p, 'colormap', parula(numel(unique(dataArr))));
-addParameter(p, 'sampRate', []);
 parse(p, varargin{:});
 plotAxes = p.Results.plotAxes;
 figPos = p.Results.figPos;
@@ -61,10 +57,6 @@ saveDir = p.Results.saveDir;
 fileName = p.Results.fileName;
 xAxLabel = p.Results.xAxLabel;
 cm = p.Results.colormap;
-sampRate = p.Results.sampRate;
-if isempty(sampRate)
-   sampRate = infoStruct.volumeRate; 
-end
 
 % Create or select figure and axes depending on whether an axes handle was provided
 if isempty(plotAxes)
@@ -99,13 +91,13 @@ else
     colormap(plotAxes, [cm(1:end,:); 0 0 0])
 end
 
-
 % Format axes
 ax = gca();
 ax.FontSize = 12;
-ax.YTick = 0:10:infoStruct.nTrials;
-ax.XTick = [0:5:infoStruct.trialDuration] * sampRate;
-ax.XTickLabel = 0:5:infoStruct.trialDuration;
+ax.YTick = 0:10:size(dataArr, 1);
+trialDuration = size(dataArr, 2) / sampRate;
+ax.XTick = (0:5:trialDuration) * sampRate;
+ax.XTickLabel = 0:5:trialDuration;
 title(titleStr);
 xlabel(xAxLabel)
 ylabel('Trial')

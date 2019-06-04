@@ -10,7 +10,7 @@ addParameter(p, 'SmWin', []);
 parse(p, varargin{:});
 dim = p.Results.Dim;
 method = p.Results.Method;
-smWin = p.Results.smWin;
+smWin = p.Results.SmWin;
 
 outputArr = inputArr;
 

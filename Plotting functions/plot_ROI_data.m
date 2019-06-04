@@ -171,8 +171,8 @@ for iGroup = 1:nGroups
     end%if
 
     if shadeSDs
-        upper = smoothdata(groupAvgFl, 1, 3) + groupStdDev;
-        lower = smoothdata(groupAvgFl, 1, 3) - groupStdDev;
+        upper = smoothdata(groupAvgFl, 1, 'gaussian', 3) + groupStdDev;
+        lower = smoothdata(groupAvgFl, 1, 'gaussian', 3) - groupStdDev;
         jbfill(volTimes, upper', lower', shadeColor, shadeColor, 1, 0.2);
     end
     
@@ -184,7 +184,7 @@ end%iGroup
 % Plot alignment line if applicable
 yL = ylim();
 if volTimes(1) < 0
-    plot(ax, [0 0], [-100 100], 'Color', 'k', 'LineWidth', 2); % Huge Y-range so it doesn't get cut off if I increase the ylims later
+    plot(ax, [0 0], [-10e5 10e5], 'Color', 'k', 'LineWidth', 2); % Huge Y-range so it doesn't get cut off if I increase the ylims later
 end
 ylim(yL);
 
