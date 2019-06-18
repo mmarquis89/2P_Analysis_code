@@ -654,6 +654,9 @@ fileName = ['2D_FicTrac_', ftVarName '_Summary', fileNameSuffix, '_', ...
                 'titleStr', titleStr, ...
                 'colormap', cm ...
                 );
+if sepBlockStims
+   ax.YTick = []; 
+end            
 ax.Title.FontSize = fontSize;
 ax.FontSize = fontSize;
 % Update colormap if necessary
@@ -1244,9 +1247,9 @@ dffDataFileName = 'ROI_Data_Avg.mat';
 
 
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
-ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT","Bi-ANT", "Control"];
+% ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT","Bi-ANT", "Control"];
 % ROInames = ["SLP", "ANT", "PPL1", "Control"];
-% ROInames = ["SLP", "ANT", "LH", "PPM2", "Control"];
+ROInames = ["SLP", "ANT", "LH", "PPM2", "Control"];
 % ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "Bi-ANT", "Control"];
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
@@ -1332,11 +1335,11 @@ saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', 
 sepBlockStims = 0; sepGroupStims = 0; clear minMax;
 fontSize = 14;
 
-useDff = 1;
+useDff = 0;
 subtractBaseline = 0;
 colorbarOn = 1;
 % minMax = [-0.12 1.5; -0.12 1; -0.12 0.8; -0.12 2.5; 0 1]; % [ROI, min-max]
-% minMax = [125 400; 600 1800; 25 100; 75 425; 0 600; 50 700]; % [ROI, min-max]
+% minMax = [110 270; 300 750; 150 1000; 75 425; 0 600; 50 700]; % [ROI, min-max]
 % % % 
 
 % trialGroups = [];
@@ -1436,7 +1439,9 @@ for iROI = 1:currNumROIs
     if colorbarOn
         colorbar;
     end
-    
+    if sepBlockStims
+        ax.YTick = [];
+    end
     ax.FontSize = fontSize;
     
 % Plot stim times
@@ -1666,10 +1671,10 @@ try
 %     end
     %     plotTitleSuffix = ['  —  sid\_', num2str(sid)]
 
-%     % GROUP BY STIM TYPE
-%     trialGroups = stimTrialGroups .* goodTrials;
-%     fileNameSuffix = '_StimTypeComparison';
-%     plotTitleSuffix = make_plotTitleSuffix(stimNames);
+    % GROUP BY STIM TYPE
+    trialGroups = stimTrialGroups .* goodTrials;
+    fileNameSuffix = '_StimTypeComparison';
+    plotTitleSuffix = make_plotTitleSuffix(stimNames);
     
 % --------------------------------------------------------------------------------------------------
 try
@@ -1901,7 +1906,7 @@ try
                                 'SingleTrials', singleTrials, ...
                                 'SingleTrialAlpha', singleTrialAlpha, ...
                                 'OutlierSD', outlierSD, ...
-                                'Legend', binNames, ...
+                                'Legend', groupNames, ...
                                 'VolumeRate', volumeRate, ...
                                 'YAxisLabel', yAxisLabel, ...
                                 'StdDevShading', stdDevShading, ...

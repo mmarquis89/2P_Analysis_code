@@ -2,7 +2,7 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_05_25_exp_1';
+expDate = '2019_06_14_exp_1';
 sid = 0;
 FRAME_RATE = 25;
 trialDuration = 10;
@@ -85,14 +85,14 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 62;
-flowThresh = 0.03;
-moveThresh = 0.045;
+t = 13;
+flowThresh = 0.05;
+moveThresh = 0.06;
 
 smWin = 3;
 smWinAlt = 1;
 
-moveSmReps = 4;
+moveSmReps = 5;
 flowSmReps = 4;
 
 minIsoMoveLen = 6;
@@ -107,7 +107,7 @@ yawSpeed = rad2deg(ftData.yawSpeed * FRAME_RATE);     % --> [frame, trial]
 % Smooth data
 smMoveSpd = repeat_smooth(moveSpeed, moveSmReps, 'SmWin', smWin);
 smYawSpd = repeat_smooth(yawSpeed, moveSmReps, 'SmWin', smWin);
-smFlow = repeat_smooth(flowArr, moveSmReps, 'SmWin', smWin);
+smFlow = repeat_smooth(flowArr, flowSmReps, 'SmWin', smWin);
 smFlowAlt = smoothdata(flowArr, 1, 'gaussian', smWinAlt);
 smMoveAlt = smoothdata(moveSpeed, 1, 'gaussian', smWinAlt);
 
