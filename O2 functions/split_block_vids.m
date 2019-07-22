@@ -64,6 +64,10 @@ try
         end
         firstFrameLocs(badInds) = [];
         
+        % Refuse to allow the first trial to contain < 10 frames (avoiding more FlyCap2 artifacts)
+        badInds = firstFrameLocs > 1 & firstFrameLocs < 10;
+        firstFrameLocs(badInds) = [];    
+        
         % Calculate frame counts for each trial
         firstFrameLocs = [1, firstFrameLocs];
         frameCounts = diff([firstFrameLocs, length(cornerLum) + 1]);

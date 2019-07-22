@@ -28,19 +28,44 @@ try
     nBlocks = numel(blockVids);
     write_to_log(['nBlocks = ', num2str(nBlocks)],mfilename);
     
-    % Remake block vids so that they can be read correctly by Matlab
-    memGB = 2;
-    timeLimitMin = 30;
-    queueName = 'short';
-    jobName = [expDate, '_sid_', num2str(sid), '_remake_block_vids'];
-    remakeJobArr = [];
-    for iBlock = 1:nBlocks
+    % Remake block vids so that they can be read correctly by Matlab  
+    vidCheckComplete = 0;
+    while ~vidCheckComplete
+        
+        memGB = 2;
+        timeLimitMin = 10;
+        queueName = 'short';
+        jobName = [expDate, '_sid_', num2str(sid), '_remake_block_vids'];
+        remakeJobArr = [];
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
-        inputArgs = {vidDataDir, blockVids(iBlock).name, sid, iBlock-1}
-        remakeJobArr{end + 1} = c.batch(@remake_block_vid, 0, inputArgs);
+
+        % Check whether any any of the block vid files are missing
+        write_to_log('Checking for missing block vid files...', mfilename);
+        missingBlocks = [];
+        for iBlock = 1:nBlocks
+            if ~exist(fullfile(vidDataDir, ['block_vid_sid_', num2str(sid), '_bid_', ...
+                        pad(num2str(iBlock - 1), 3, 'left', '0'), '.avi']), 'file')
+                missingBlocks(end + 1) = iBlock - 1;
+            end
+        end
+        if ~isempty(missingBlocks)
+            write_to_log(['Missing vids for the following blocks: ', num2str(missingBlocks)], ... 
+                    mfilename);           
+            
+            for iBlock = 1:numel(missingBlocks)
+                currBlock = missingBlocks(iBlock);
+                inputArgs = {vidDataDir, blockVids(currBlock + 1).name, sid, currBlock}
+                remakeJobArr{iBlock} = c.batch(@remake_block_vid, 0, inputArgs);
+            end
+            
+        else
+            write_to_log('All block vids have been remade', mfilename);
+            vidCheckComplete = 1;
+        end
+            % Pause execution until all jobs are done
+        remakeJobArr = wait_for_jobs(remakeJobArr);
     end
-    remakeJobArr = wait_for_jobs(remakeJobArr);
-    %
+    
     % Identify new block vids
     blockVids = dir(fullfile(vidDataDir, ['block_vid_sid_', num2str(sid), '_bid_*.avi']));
     blockVids = blockVids(~contains({blockVids.name}, 'tid')); % In case there are already single trial vids
@@ -160,14 +185,14 @@ try
     %-----------------------------------------------------------------------------------------------
     
     
-    % % Start jobs to calculate optic flow for all trial
+    % % Start jobs to calculate optic flow for all trials
     
     flowCheckComplete = 0;
     while ~flowCheckComplete
         
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
         memGB = 1;
-        b = 0.04;
+        b = 0.02;
         % if maxFrames <= 2000
         %     b = 0.08;
         % else

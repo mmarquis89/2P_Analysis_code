@@ -291,9 +291,9 @@ try
 saveDir = uigetdir(savePath, 'Select a save directory');
 sepBlockStims = 0; sepGroupStims = 0;
 % 
-% trialGroups = [goodTrials];
-% plotTitleSuffix = '';
-% fileNameSuffix = '_AllTrials';
+trialGroups = [goodTrials];
+plotTitleSuffix = '';
+fileNameSuffix = '_AllTrials';
 
 % % % % % % % % % % % % % % % % plotTitleSuffix = ['  —  sid\_', num2str(sid)];
 
@@ -304,18 +304,18 @@ sepBlockStims = 0; sepGroupStims = 0;
 % fileNameSuffix = make_fileNameSuffix(stimGroupNames);
 % sepGroupStims = 1;
 
-% GROUP CHRONOLOGICALLY BY BLOCKS
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = iBound + 1;
-trialGroups = trialGroups .* goodTrials;
-plotTitleSuffix = '';
-fileNameSuffix = '_Blocks_Separated';
-if ~isempty(blockShading)
-    sepBlockStims = 1;
-end
+% % GROUP CHRONOLOGICALLY BY BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end)+1:end) = iBound + 1;
+% trialGroups = trialGroups .* goodTrials;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated';
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;
+% end
 
 % % GROUP BY ALTERNATING TRIALS
 % trialGroups = zeros(1, nTrials);
@@ -565,32 +565,32 @@ fontSize = 14;
 sepBlockStims = 0; sepGroupStims = 0;
 
 % ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'
-ftVarName =  'moveSpeed';%'yawVel' %              'yawSpeed'%  'fwSpeed'% 
-sdCap = 3;
-smWin = 9;
+ftVarName =  'fwSpeed'%;%'yawVel' %              'yawSpeed'%  'fwSpeed'% 
+sdCap = 300;
+smWin = 1;
 cmName = @parula;
 figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 
 % % % % % 
-% % ALL TRIALS
-% trialGroups = [];
-% fileNameSuffix = ['_AllTrials'];
-% plotTitleSuffix = '';
+% ALL TRIALS
+trialGroups = [];
+fileNameSuffix = ['_AllTrials'];
+plotTitleSuffix = '';
 % 
 % plotTitleSuffix = ['  —  sid\_', num2str(sid)];
 % % 
-% GROUP CHRONOLOGICALLY BY BLOCKS
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = iBound + 1;
-trialGroups = trialGroups .* goodTrials;
-plotTitleSuffix = '';
-fileNameSuffix = '_Blocks_Separated';
-if ~isempty(blockShading)
-    sepBlockStims = 1;
-end
+% % GROUP CHRONOLOGICALLY BY BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end)+1:end) = iBound + 1;
+% trialGroups = trialGroups .* goodTrials;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated';
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;
+% end
 % 
 % % GROUP BY STIM TYPE
 % trialGroups = stimTrialGroups; 
