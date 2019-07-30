@@ -192,7 +192,7 @@ try
         
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
         memGB = 1;
-        b = 0.02;
+        b = 0.01;
         % if maxFrames <= 2000
         %     b = 0.08;
         % else

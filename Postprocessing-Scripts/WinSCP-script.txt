@@ -1,0 +1,21 @@
+
+# INPUT PARAMETERS:
+# %1% = expDate
+# %2% = sid
+# %3% = parentDir
+
+# OPEN CONNECTION
+open sftp://mjm60:Bub21kiss%21@transfer.rc.hms.harvard.edu/ -hostkey="ssh-rsa 2048 8yw8x5M4WqNYuVY3FMltn3Hu3rc19VN6pvBpWn2dsrw="
+
+echo "test"
+
+# TRANSFER .mat AND RAW VID FILES
+cd "/n/scratch2/mjm60/%1%/BehaviorVideo"
+get *.mat "%3%"
+get fc2*.avi "%3%"
+
+# TRANSFER PROCESSED VID DATA
+cd "/n/scratch2/mjm60/%1%/sid_%2%/BehaviorVideo"
+get * "%3%_Movies\"
+
+exit
