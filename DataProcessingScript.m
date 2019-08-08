@@ -134,8 +134,8 @@ system7zip(parentDirTemp, archiveName, '7z', '20181030*', 1);
 
 %% -------------------------------------------------------------------------------------------------
 
-parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2018'];
-dirName = '2018_12_04_exp_3';
+parentDirTemp = ['D:\Dropbox (HMS)\2P Data\Imaging Data\']; 
+dirName = '2019_06_28_exp_1';
 expDirTemp = fullfile(parentDirTemp, dirName);
 
 % Create folder for compiled analysis data
@@ -160,5 +160,25 @@ end
 
 % Archive entire exp dir
 system7zip(parentDirTemp, dirName, '7z', dirName, 1);
+
+
+%%
+parentDirTemp = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+targetDir = 'D:\Dropbox (HMS)\2P Data\analysis';
+dataDirs = dir(fullfile(parentDirTemp, '2019*'))
+
+for iDir = 1:numel(dataDirs)
+    sidDirs = dir(fullfile(parentDirTemp, dataDirs(iDir).name, 'sid*'));
+    sidDirs = sidDirs([sidDirs.isdir]);
+    for iSid = 1:numel(sidDirs)
+        analysisDir = dir(fullfile(parentDirTemp, dataDirs(iDir).name, sidDirs(iSid).name, ...
+                'A*alysis'));
+        if ~isempty(analysisDir)
+            copyfile(fullfile(analysisDir.folder, analysisDir.name), fullfile(targetDir, ...
+                    dataDirs(iDir).name, sidDirs(iSid).name));
+        end
+    end
+end
+
 
 

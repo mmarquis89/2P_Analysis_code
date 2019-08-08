@@ -20,7 +20,19 @@ function single_trial_optic_flow_calc(vidSaveDir, sid, tid, roiDataFile, varargi
 %
 %========================================================================================================
 try
+% %------------------------------------------
+% % Create log file for debugging purposes
+% myFile = fopen(fullfile('/home/mjm60/flowlogfiles', ...
+%         ['sid_', num2str(sid), '_tid_', pad(num2str(tid), 3, 'left', '0'), ...
+%         '_log.txt']), 'a');
+% fprintf(myFile, [datestr(datetime), ' Log file opened from within job', '\r\n']);
+% %------------------------------------------
+
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
+
+% %------------------------------------------
+% fprintf(myFile, [datestr(datetime), ' Path added', '\r\n']);
+% %------------------------------------------
 
 % Parse optional arguments
 p = inputParser;
@@ -28,12 +40,19 @@ addParameter(p, 'OutputDir', vidSaveDir);
 parse(p, varargin{:});
 outputDir = p.Results.OutputDir;
 
-disp(outputDir)
+% %------------------------------------------
+% fprintf(myFile, [datestr(datetime), ' Arguments parsed', '\r\n']);
+% %------------------------------------------
 
 % Create output directory if necessary
 if ~isdir(outputDir)
     mkdir(outputDir)
 end
+disp(outputDir)
+
+% %------------------------------------------
+% fprintf(myFile, [datestr(datetime), ' Checked for output dir', '\r\n']);
+% %------------------------------------------
 
 % Load ROI data
 load(roiDataFile);
@@ -42,6 +61,10 @@ load(roiDataFile);
 vidName = ['sid_', num2str(sid), '_tid_', pad(num2str(tid), 3, 'left', '0'), '.avi'];
 trialVid = VideoReader(fullfile(vidSaveDir, vidName));
 disp(fullfile(vidSaveDir, vidName))
+
+% %------------------------------------------
+% fprintf(myFile, [datestr(datetime), ' Trial vid opened', '\r\n']);
+% %------------------------------------------
 
 % Calculate optic flow for each movie frame
 opticFlow = opticalFlowFarneback;
@@ -59,11 +82,20 @@ while hasFrame(trialVid)
     meanFlowMag(frameCount) = (nanmean(currFlowFly(:)));  
 end
 
+% %------------------------------------------
+% fprintf(myFile, [datestr(datetime), ' All optic flow calculated', '\r\n']);
+% %------------------------------------------
+
 % Calculate max flow value in this trial for later normalization
 maxFlowMag = max(meanFlowMag(2:end)); % First frame is artificially high so don't count that
 
 % Save optic flow data
 save(fullfile(outputDir, ['sid_', num2str(sid), '_tid_', pad(num2str(tid), 3, 'left', '0'), '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
+
+% %------------------------------------------
+% fprintf(myFile, [datestr(datetime), ' Optic flow data saved', '\r\n']);
+% fclose(myFile);
+% %------------------------------------------
 
 disp('Optic flow calculation complete')
 catch ME

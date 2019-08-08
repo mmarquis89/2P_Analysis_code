@@ -2,7 +2,6 @@
 %% LOAD IMAGING DATA AND BEHAVIORAL ANNOTATION DATA
 
 expDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select an imaging data directory');
-savePath = fullfile(expDir, 'Analysis');
 
 try
 if expDir == 0
@@ -108,6 +107,7 @@ else
     stimSepTrials = infoStruct.stimSepTrials; s = stimSepTrials;
     behaviorAnnotArr = annotationTypes{contains(annotationTypeSummary.AnnotationType, ...
         'move')}.frameAnnotArr;
+    savePath = fullfile('D:\Dropbox (HMS)\2P Data\Analysis', expDate);
     
     % Create hardcoded parameters
     FRAME_RATE = 25; % This is the frame rate for the behavior video

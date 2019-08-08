@@ -7,6 +7,7 @@ try
     
     % Initialize cluster communication
     c = parcluster;
+   
     write_to_log('Cluster communication opened...', mfilename)
     
     % Extract expDate from directory path
@@ -192,7 +193,7 @@ try
         
         c = set_job_params(c, queueName, timeLimitMin, memGB, jobName);
         memGB = 1;
-        b = 0.01;
+        b = 0.015;
         % if maxFrames <= 2000
         %     b = 0.08;
         % else
@@ -217,14 +218,22 @@ try
             end
         end
         if ~isempty(missingTids)
-            write_to_log(['Missing flow data for the following trials: ', num2str(missingTids)], ... 
-                    mfilename);           
+            write_to_log(['Missing flow data for the following trials: ', num2str(missingTids)], ...
+                mfilename);
             
             for iTrial = 1:numel(missingTids)
                 disp([vidSaveDir, ' ', num2str(sid), ' ', num2str(missingTids(iTrial)), ' ', ...
-                        roiFilePath, ' ', flowVidDir])
+                    roiFilePath, ' ', flowVidDir])
+%             %------------------------------------------
+%             % Create log file for debugging
+%                 myFile = fopen(fullfile('/home/mjm60/flowlogfiles', ...
+%                         ['sid_', num2str(sid), '_tid_', pad(num2str(tid), 3, 'left', '0'), ...
+%                         '_log.txt']), 'a');
+%                 fprintf(myFile, [datestr(datetime), ' Log file created', '\r\n']);
+%                 fclose(myFile);
+%             %------------------------------------------
                 inputArgs = {vidSaveDir, sid, missingTids(iTrial), roiFilePath, 'OutputDir', ...
-                        flowVidDir};
+                    flowVidDir};
                 flowJobArr{iTrial} = c.batch(@single_trial_optic_flow_calc, 0, inputArgs);
             end
             

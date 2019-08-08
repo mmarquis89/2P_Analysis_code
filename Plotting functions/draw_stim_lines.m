@@ -4,7 +4,7 @@ function hPlots = draw_stim_lines(stimEpochs, stimShadingColors, varargin)
 % For drawing vertical lines on a 2D-behavior annotation style plot to indicate stim times.
 
 % INPUTS:
-%       stimEpochs         = Nx2 numeric array with one frow for each pair of lines to be drawn
+%       stimEpochs         = Nx2 numeric array with one row for each pair of lines to be drawn
 %
 %       stimShadingColors  = Cell array containing strings specifying a line color for each row in 
 %                            stimEpochs.
