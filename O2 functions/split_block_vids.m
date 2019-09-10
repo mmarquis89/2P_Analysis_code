@@ -44,7 +44,7 @@ try
         % Detect first frames
         cornerLum = cornerLum - median(cornerLum);
         %         peakThresh = 8 * std(cornerLum);
-        peakThresh = 0.95 * max(cornerLum);
+        peakThresh = 0.5 * max(cornerLum);
         MIN_DIST = 5;
         write_to_log('About to find peaks...', mfilename)
         try

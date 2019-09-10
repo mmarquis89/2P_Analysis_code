@@ -2,10 +2,10 @@
 % LOAD DATA
 % ==================================================================================================
 
-expDate = '2019_08_05_exp_2';
+expDate = '2019_09_05_exp_3';
 sid = 0;
 FRAME_RATE = 25;
-trialDuration = 20;
+trialDuration = 10;
 
 behaviorLabels = {'Quiescence', 'Locomotion', 'IsolatedMovement'};
 
@@ -85,10 +85,10 @@ save(fullfile(imgDir, 'autoAnnotations.mat'), 'trialAnnotations', 'annotParams',
 close all
 
 %%
-t = 10
+t = 227
 
-flowThresh = 0.02;
-moveThresh = 0.06;
+flowThresh = 0.03;
+moveThresh = 0.05;
 
 smWin = 3;
 smWinAlt = 1;

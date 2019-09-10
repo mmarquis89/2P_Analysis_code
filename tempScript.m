@@ -1,28 +1,20 @@
 
-goodFlyNums = [3     7     8    10    15    17    18    19];
-analysisData = allData;
-goodFlyData = analysisData(ismember([analysisData.flyNum], goodFlyNums));
-for i = 1:numel(goodFlyData)
-    goodFlyData(i).flyNum = find(goodFlyNums == goodFlyData(i).flyNum);
-end
-nFlies = numel(goodFlyNums);
-analysisData = goodFlyData;
+flowRate = 20; % mL/min
+tubeDia = g20; % in
 
-analysisData = allData;
-badFlyNums = 1:24; 
-badFlyNums = badFlyNums(~ismember(badFlyNums, goodFlyNums));
-badFlyData = analysisData(ismember([analysisData.flyNum], badFlyNums));
-for i = 1:numel(badFlyData)
-    badFlyData(i).flyNum = find(badFlyNums == badFlyData(i).flyNum);
-end
-nFlies = numel(badFlyNums);
-analysisData = badFlyData;
 
-runningFlyNums = [1 2 11 13 20 24];
-analysisData = allData;
-runningFlyData = analysisData(ismember([analysisData.flyNum], runningFlyNums));
-for i = 1:numel(runningFlyData)
-    runningFlyData(i).flyNum = find(runningFlyNums == runningFlyData(i).flyNum);
-end
-nFlies = numel(runningFlyNums);
-analysisData = runningFlyData;
+
+% Convert flow to cubic in/sec
+flowRate = flowRate / 983.224;
+
+% Multiply by area at tube mouth to get flow speed in in/sec
+tubeArea = pi * ((tubeDia / 2)^2);
+
+% Calculate flow speed in cm/sec
+flowSpeed = (flowRate / tubeArea) * 2.54;
+
+disp(' ')
+disp(['Flow rate: ', num2str(flowRate, 3)])
+disp(['Tube diameter: ', num2str(tubeDia, 3)])
+disp(['Tube area: ', num2str(tubeArea, 3)])
+disp(['Flow speed: ', num2str(flowSpeed, 3)])

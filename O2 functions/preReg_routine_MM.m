@@ -1,4 +1,4 @@
-function preReg_routine_MM(parentDir, sid, expDate, varargin)
+function preReg_routine_MM(parentDir, sid, varargin)
 %===================================================================================================
 % Load and process raw ScanImage imaging data
 %
