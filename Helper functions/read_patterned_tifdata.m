@@ -144,6 +144,7 @@ offset_bytes_per_frame = uint64(d(1));
 %find the maximum number of frames that fit in the file
 
 function s = open_patterned_tifdata(filename)
+write_to_log(filename, mfilename); % Added for debugging by MM 09.13.19
 assert(exist(filename,'file') == 2, 'file not found');
 fileinfo = dir(filename);
 filesize = uint64(fileinfo.bytes);

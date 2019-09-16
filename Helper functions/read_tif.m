@@ -13,6 +13,8 @@ function [ output ] = read_tif( tifPath )
 %       output = image data array: [Lines, Pixels, Planes, Volumes]
 % ==================================================================================================
 
+write_to_log(['Attempting to open ', tifPath], mfilename);
+
 % Open .tif file and metadata
 if exist(regexprep(tifPath, '.tif', '.mat'), 'file')
     

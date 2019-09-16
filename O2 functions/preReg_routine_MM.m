@@ -1,13 +1,11 @@
-function preReg_routine_MM(parentDir, sid, varargin)
+function preReg_routine_MM(parentDir, sid, expDate, varargin)
 %===================================================================================================
 % Load and process raw ScanImage imaging data
 %
 % INPUTS:
 %       parentDir   = directory containing the raw data that you want to process.
 %
-%       sid        = the session ID you want to process.
-%
-%       expDate    = the identifier of the experiment you want to process.
+%       sid         = the session ID you want to process.
 %
 % OPTIONAL NAME-VALUE PAIR INPUTS:
 %
@@ -37,7 +35,7 @@ try
         sessionNums(iFile) = str2double(fileNames{iFile}(sidLocs{iFile}+4));
     end
     
-    disp(['Processing', num2str(numel(fileNames)), ' files...'])
+    disp(['Processing ', num2str(numel(fileNames)), ' files...'])
     write_to_log(['Processing ', num2str(numel(fileNames)), ' files...'], mfilename)
     
     % Make session folder for new files if necessary
@@ -54,127 +52,89 @@ try
     for iFile = 1:nTrials
         
         write_to_log(['Processing trial #', num2str(iFile)], mfilename);
+        disp(['Processing trial #', num2str(iFile)])
+        write_to_log(['Attempting to load ', fullfile(parentDir, currFiles{iFile})], mfilename);
         
-        % Extract scanimage data from the first trial
-        if iFile == 1
-            [~, tifMetadata] = read_patterned_tifdata(fullfile(parentDir, currFiles{iFile}));
-            scanimageInfo = tifMetadata.tifinfo;
-            nFlybackFrames = frameStringKeyLookup(scanimageInfo.Software, 'hFastZ.numDiscardFlybackFrames');
-            fclose(tifMetadata.fid);
-        end
-        
-%         write_to_log('Tiff data extracted', mfilename);
-        
-        % Load the .tif file
+        % Load the next .tif (or .mat) data file
         rawFile = read_tif(fullfile(parentDir, currFiles{iFile}));
         rawFile = squeeze(rawFile); % [Lines Pixels Planes Volumes Channels]
-        chanData = zeros(size(rawFile)); chanData = chanData(:,:,1:end-nFlybackFrames,:,:);
-        nChannels = size(chanData, 5);
-        
-%         write_to_log(['Raw tiff data loaded...dims = ', num2str(size(chanData))], mfilename);
-        
-        for iChannel = 1:nChannels
-            
-            % Offset so minimum value = 1
-            workingFile = squeeze(rawFile(:,:,:,:,iChannel));
-            workingFile = workingFile - min(workingFile(:));
-            workingFile = workingFile + 1;
-            
-            %             % Crop edges (why do I even do this here?? Need to ask AKM what this part was for)
-            %             yrange = 3:size(workingFile,1)-2;
-            %             xrange = 3:size(workingFile,2)-2;
-            %             croppedFile = workingFile(yrange,xrange,:,:);
-            
-            % Discard flyback frames
-            workingFile(:,:,(end-(nFlybackFrames-1)):end,:) = [];       % --> [y, x, plane, volume]
-%             write_to_log('Flyback frames trimmed', mfilename);
-%             write_to_log(num2str(size(workingFile)), mfilename);
-%             write_to_log(num2str(size(chanData)), mfilename);
-            chanData(:,:,:,:,iChannel) = workingFile(:,:,:,:,1);    % --> [y, x, plane, volume, channel]
-        end
-        
-        % Separate channels if file includes data from both PMTs
-        if nChannels == 1
-            chanData_1 = squeeze(chanData);
-        else
-            chanData_1 = squeeze(chanData(:,:,:,:,1));
-            chanData_2 = squeeze(chanData(:,:,:,:,2));
-        end
-        
-        %----- Save to session structure -----
-        
-        % Create session array(s) on first loop
+        nVolumes = size(rawFile, 4);
+        nChannels = size(rawFile, 5);
+
+        % Extract scanimage data from the first trial
         if iFile == 1
-            chDataSize = size(chanData_1);
-            sz = [chDataSize(1:4), nTrials];
-            wholeSession = zeros(sz);
-            if nChannels > 1
-                wholeSession2 = zeros(sz);
+            write_to_log(exist(fullfile(parentDir, 'cdata_20190909_125626_sid_0_bid_0_dur_1200_nTrials_60_00001.tif'), 'file'), mfilename);
+            [~, tifMetadata] = read_patterned_tifdata(fullfile(parentDir, currFiles{iFile}));
+            scanimageInfo = tifMetadata.tifinfo;
+            nFlybackFrames = frameStringKeyLookup(scanimageInfo.Software, ...
+                    'hFastZ.numDiscardFlybackFrames');
+            nPlanes = frameStringKeyLookup(scanimageInfo.Software, ...
+                    'hFastZ.numFramesPerVolume') - nFlybackFrames;
+            nChannels = length(frameStringKeyLookup(scanimageInfo.Software, ...
+                    'scanimage.SI.hChannels.channelSave'));
+
+            fclose(tifMetadata.fid);
+            
+            % Create a .mat file for each plane/channel
+            matfiles = [];
+            for iChan = 1:nChannels
+                for iPlane = 1:nPlanes
+                    matfiles{iChan, iPlane} = matfile(fullfile(outputDir, ['sid_', num2str(sid), '_chan_', ...
+                            num2str(iChan), '_plane_', num2str(iPlane), '_sessionFile.mat']));
+                    matfiles{iChan, iPlane}.sessionData = [];
+                end
             end
         end
-        
-        fName = currFiles{iFile};
-
-        % Save data to session array(s)
-%         write_to_log(['iFile = ', num2str(iFile), ', size(wholeSession) = ', ...
-%                     num2str(size(wholeSession)), ', size(chanData_1) = ', ...
-%                     num2str(size(chanData_1))], mfilename);
-        wholeSession(:,:,:,:,iFile) = chanData_1(:,:,:,:,1);
-        if nChannels > 1
-            wholeSession2(:,:,:,:,iFile) = chanData_2(:,:,:,:,2);
+                
+        % Process data and append to each file
+        for iChan = 1:nChannels
+            
+            workingFile = squeeze(rawFile(:,:,:,:,iChan));
+            
+            % Discard flyback frames
+            workingFile(:,:,(end-(nFlybackFrames-1)):end,:) = [];   % --> [y, x, plane, volume]
+            
+            % Clip bottom 5% of minimum pixel values per frame
+            minFrameVals = sort(as_vector(min(min(workingFile))));
+            clipThresh = minFrameVals(round(length(minFrameVals) * 0.05));
+            workingFile(workingFile < clipThresh) = clipThresh;
+            
+            % Then offset so min value = 1
+            workingFile = workingFile - min(workingFile(:));
+            workingFile = workingFile + 1;
+                        
+            % Save data for current plane
+            for iPlane = 1:nPlanes
+                currPlaneData = uint16(squeeze(workingFile(:,:,iPlane,:, iChan))); % --> [y, x, volume]
+                sz = size(matfiles{iChan, iPlane}, 'sessionData');
+                if numel(sz) < 3
+                    matfiles{iChan, iPlane}.sessionData = currPlaneData;
+                else
+                    matfiles{iChan, iPlane}.sessionData(:,:, (sz(3) + 1):(sz(3) + nVolumes)) = ...
+                        currPlaneData;
+                end
+            end
         end
-        
+               
     end%iFile
     
-    disp(size(wholeSession))
-    
-    write_to_log('Session data processing complete', mfilename)
-    
-    % Save session data file
-    save(fullfile(outputDir, ['sid_', num2str(sid), '_sessionFile.mat']), 'wholeSession', '-v7.3')
-    if nChannels == 2
-        clear wholeSession
-        wholeSession = wholeSession2;
-        save(fullfile(outputDir, [sid_', num2str(sid), '_Chan_2_sessionFile.mat']), 'wholeSession', '-v7.3');
-    end
-    
-    disp(outputDir)
-    disp('Session data file saved')
-    
     % Save other imaging metadata variables in separate file
-    save(fullfile(outputDir, 'imgMetadata'), 'expDate', 'scanimageInfo', '-v7.3');
-    
-    disp('Metadata saved')
-    
-    write_to_log('Session data saved', mfilename);
-    
-    % Calculate and save volume-averaged session data
-    volAvgSessionData = squeeze(mean(wholeSession, 4)); % --> [y, x, plane, trial]
-    save(fullfile(outputDir, sprintf('sid_%.0f_volAvgSessionData.mat', sid)), 'volAvgSessionData', '-v7.3');
-    
-    % Create reference images
-    if nChannels == 2
+    save(fullfile(outputDir, 'imgMetadata'), 'expDate', 'scanimageInfo', 'nPlanes', 'nVolumes', ...
+            'nTrials', '-v7.3');
+       
+%     % Create reference images
+%     refImages = [];
+%         
+%         % Use red channel for reference images if available, otherwise GCaMP channel
+%         for iPlane = 1:nPlanes
+%            currPlaneData = matfiles{nChannels, iPlane}.sessionData; % --> [y, x, volume]
+%            refImages(:,:, iPlane) = mean(currPlaneData, 3);         % --> [y, x, volume]
+%         end
+%         channelNum = nChannels;
+%         save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', sid)), 'refImages', ...
+%                 'channelNum', '-v7.3');
         
-        % Use red channel for reference images
-        channelNum = 2;
-        refImages = [];
-        for iPlane = 1:sz(3)
-            refImages{iPlane} = squeeze(mean(mean(wholeSession2(:,:,iPlane,:,:),4),5)); % --> [y, x]
-        end
-        save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum', '-v7.3');
-        
-    else
-        
-        % Use the GCaMP channel to create and save reference images for each plane and for each trial
-        channelNum = 1;
-        refImages = [];
-        for iPlane = 1:sz(3)
-            refImages{iPlane} = squeeze(mean(volAvgSessionData(:,:,iPlane,:),4)); % --> [y, x]
-        end
-        save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', sid)), 'refImages', 'channelNum', '-v7.3');
-    end
-    
-    write_to_log('Reference images created and saved', mfilename)
+%     write_to_log('Reference images created and saved', mfilename)
 catch ME
     write_to_log(getReport(ME), mfilename);
 end%try

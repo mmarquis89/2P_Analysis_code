@@ -9,7 +9,7 @@ vidDataDir= ['/n/scratch2/mjm60/', expDate, '/BehaviorVideo'];
 imgSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/ImagingData'];
 vidSaveDir= ['/n/scratch2/mjm60/', expDate, '/sid_', num2str(sid), '/BehaviorVideo'];
 
-sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
+sessionDataFile = ['rigid_reg_sid_', num2str(sid), '_chan_1_plane_1_sessionFile.mat'];
 
 % Initialize cluster communication
 c = parcluster; 
@@ -29,10 +29,12 @@ for iFile = 1:numel(fileNames)
     load(fullfile(vidDataDir, fileNames{iFile})); % 'blockData' --> each col is an analog input channel
     currFt = blockData;
     analysisMetadata.blockData(iFile).inputData = currFt;
+    save(fullfile(imgSaveDir, 'test.mat'), 'currFt', 'analysisMetadata');
+    write_to_log(num2str(analysisMetadata.blockData(iFile).nTrials), mfilename);
     sampPerTrial = size(currFt, 1) / analysisMetadata.blockData(iFile).nTrials;
     rsFtData = reshape(currFt', size(currFt, 2), sampPerTrial, analysisMetadata.blockData(iFile).nTrials);
     disp(size(rsFtData));
-    analysisMetadata.daqFtData = cat(3, analysisMetadata.daqFtData, rsFtData(:,1:100:end,:));
+    analysisMetadata.daqFtData = cat(3, analysisMetadata.daqFtData, rsFtData(:,1:1000:end,:));
 end
 
 % Process and save annotation types ('annotationTypes.mat')
@@ -42,7 +44,8 @@ save(fullfile(imgSaveDir, 'annotationTypes.mat'), 'annotationTypes', 'annotation
 write_to_log('Annotation types saved', mfilename);
 
 m = matfile(fullfile(imgSaveDir, sessionDataFile));
-sz = size(m, 'wholeSession');
+dataVar = who(m);
+sz = size(m, dataVar{1});
 clear m
 nPixels = prod(sz(1:2));
 
@@ -51,11 +54,11 @@ nVolumes = analysisMetadata.nVolumes;
 nPlanes = analysisMetadata.nPlanes;
 
 % Calculate overall behavior state dF/F
-memGB = ceil(1.5e-08 * nPixels * nTrials * nVolumes * nPlanes);
+memGB = ceil(6e-09 * nPixels * nTrials * nVolumes);
 if memGB > 249
     memGB = 249;
 end
-timeLimitMin = ceil(1e-08 * nPixels * nTrials * nVolumes * nPlanes);
+timeLimitMin = ceil(2e-09 * nPixels * nTrials * nVolumes * nPlanes);
 if timeLimitMin > 719
     timeLimitMin = 719;
 end
@@ -67,12 +70,11 @@ behavStateDffCalcJob = c.batch(@behavioral_state_dff_calc, 0, inputArgs);
 
 % Extract ROI data
 ROIfile = 'ROI_metadata.mat';
-sessionDataFile = ['rigid_sid_', num2str(sid), '_sessionFile.mat'];
-memGB = ceil(2.5e-08 * nPixels * nTrials * nVolumes * nPlanes);
+memGB = ceil(5e-09 * nPixels * nTrials * nVolumes);
 if memGB > 249
     memGB = 249;
 end
-timeLimitMin = ceil(2e-08 * nPixels * nTrials * nVolumes * nPlanes);
+timeLimitMin = ceil(1.5e-09 * nPixels * nTrials * nVolumes * nPlanes);
 if timeLimitMin > 719
     timeLimitMin = 719;
 end

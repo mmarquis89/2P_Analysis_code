@@ -215,7 +215,7 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
     % Plot reference image for the current plane
     plotAxes{iPlane, 1} = axes(tabs{iPlane}, 'Units', 'Normalized', 'Position', axesPosSort(1,:));
     hold on;
-    refImg = imshow(infoStruct.refImg{iPlane}, [0 infoStruct.MAX_INTENSITY]);
+    refImg = imshow(infoStruct.refImg(:,:, iPlane), [0 infoStruct.MAX_INTENSITY]);
     refImg.Parent.Tag = 'refImg';
     refImg.ButtonDownFcn = {@image_ButtonDownFcn};
     refImg.Parent.Title.String = regexprep(infoStruct.expDate, '_', '\\_');   
@@ -316,7 +316,7 @@ function drawROIButton_Callback(~, ~)
         numLoc = strfind(tabGroup.SelectedTab.Tag, '#');
         ROIdata(indexROI).plane = str2double(tabGroup.SelectedTab.Tag(numLoc+1:end));
         ROIdata(indexROI).color = rgb('LimeGreen');
-        ROIdata(indexROI).refImg = infoStruct.refImg{iPlane};
+        ROIdata(indexROI).refImg = infoStruct.refImg(:, :, iPlane);
         
         indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
     else

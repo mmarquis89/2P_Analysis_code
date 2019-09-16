@@ -89,7 +89,7 @@ try
                 '*tid*'])))
             
             write_to_log([fullfile(vidDataDir, ['*sid_', num2str(sid), '*bid_', currBid{:}, ...
-                '*tid*']), ' does not exist...splitting frames now'])
+                '*tid*']), ' does not exist...splitting frames now'], mfilename)
             
             % Check whether block is closed-loop (and therefore all one trial)
             mdFileStr = ['metadata*sid_', num2str(sid), '_bid_', ...

@@ -151,7 +151,7 @@ Y_temp = single(Y_temp);
 
 if nargin < 3 || isempty(template)
     fprintf('Registering the first %i frames just to obtain a good template....',init_batch);
-    write_to_log('Registering initial frames just to obtain a good template...', mfilename);
+    try write_to_log('Registering initial frames just to obtain a good template...', mfilename); catch; end
     template_in = median(Y_temp,nd+1)+add_value;
     fftTemp = fftn(template_in);
     for t = 1:size(Y_temp,nd+1);        
@@ -166,7 +166,7 @@ if nargin < 3 || isempty(template)
     end
     template_in = template_in + add_value;
     fprintf('..done. \n')
-    write_to_log('Initial frames registred', mfilename);
+    try write_to_log('Initial frames registred', mfilename); catch; end
 else
     template_in = single(template + add_value);
 end
@@ -258,7 +258,7 @@ end
 
 cnt_buf = 0;
 fprintf('Template initialization complete.  Now registering all the frames with new template. \n')
-write_to_log('Template initialization complete', mfilename);
+try write_to_log('Template initialization complete', mfilename); catch; end
 %%
 
 prevstr = [];
@@ -435,7 +435,7 @@ for it = 1:iter
         end
         
         str=[num2str(t+lY-1), ' out of ', num2str(T), ' frames registered, iteration ', num2str(it), ' out of ', num2str(iter), '..'];
-        write_to_log(str, mfilename);
+        try write_to_log(str, mfilename); catch; end
         
         refreshdisp(str, prevstr, t);
         prevstr=str; 

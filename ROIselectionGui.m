@@ -35,15 +35,16 @@ close all
 % Load ref images data file
 disp(['Loading ' dataFile, '...'])
 imgData = load([pathName, dataFile]); % 1 x nPlanes cell array
-refImages = imgData.refImages;
-nPlanes = length(refImages);
+% refImages = imgData.refImages;
+refImages = imgData.regTemplates;
+nPlanes = size(refImages, 3);
 disp([dataFile, ' loaded'])
 
 
 % Create hardcoded parameters
 maxInts = [];
 for iPlane = 1:nPlanes
-    maxInts(iPlane) = max(refImages{iPlane}(:));
+    maxInts(iPlane) = max(as_vector(refImages(:, :, iPlane)));
 end
 maxIntDefault = num2str(max(maxInts));
 myData.MAX_INTENSITY = str2double(inputdlg('Enter max intensity value for reference images', '', 1, {maxIntDefault}));
@@ -139,7 +140,7 @@ pcaTab.Units = 'normalized';
                     currAxes = roiRefImgAxes{iPlane};
                     axes(currAxes);
                     axis image; hold on
-                    myImages{iPlane} = imshow(refImages{iPlane}, [0 MAX_INTENSITY], ...
+                    myImages{iPlane} = imshow(refImages(:, :, iPlane), [0 MAX_INTENSITY], ...
                         'InitialMagnification', 'fit', 'Parent', currAxes);
                     myImages{iPlane}.ButtonDownFcn = {@image_ButtonDownFcn};
                     currAxes.Title.String = ['Plane #' num2str(iPlane)];
@@ -151,7 +152,7 @@ pcaTab.Units = 'normalized';
                 roiSelectTabs{iTab}.Title = ['Plane #', num2str(iTab-1)];
                 roiPlaneAxes{iTab-1} = axes(roiSelectTabs{iTab}, 'Position', [0.05 0.1 0.8 0.8]);
                 axis image; hold on
-                roiRefImages{iTab-1} = imshow(refImages{iTab-1}, [0 MAX_INTENSITY], ...
+                roiRefImages{iTab-1} = imshow(refImages(:, :, iTab-1), [0 MAX_INTENSITY], ...
                     'InitialMagnification', 'fit', 'Parent', roiPlaneAxes{iTab-1});
                 roiRefImages{iTab-1}.ButtonDownFcn = {@image_ButtonDownFcn};
                 roiPlaneAxes{iTab-1}.Title.String = ['Plane #' num2str(iTab-1)];
@@ -251,7 +252,7 @@ pcaTab.Units = 'normalized';
             % Save other useful information about the ROI
             myData.ROIs{parentIdxROI}(indexROI).plane = currAxes.UserData;
             myData.ROIs{parentIdxROI}(indexROI).color = currcolor;
-            myData.ROIs{parentIdxROI}(indexROI).refImg = refImages{myData.ROIs{parentIdxROI}(indexROI).plane};
+            myData.ROIs{parentIdxROI}(indexROI).refImg = refImages(:, :, myData.ROIs{parentIdxROI}(indexROI).plane);
             
             indexROI = indexROI + 1; % Track total # of ROIs that have been drawn for this parent ROI
         else
@@ -382,7 +383,7 @@ pcaTab.Units = 'normalized';
             currAxes = pcaScreeningAxes{iPlot};
             axes(currAxes); axis off; cla(currAxes); currAxes.Title.String = '';
             if iPlot == 1
-               pcaRefImg = imshow(refImages{currPlane}, [0 MAX_INTENSITY]);
+               pcaRefImg = imshow(refImages(:, :, currPlane), [0 MAX_INTENSITY]);
                currAxes.Title.String = ['Plane #' num2str(src.Value)];
             else
                 pcaImages{iPlot - 1} = imagesc((imgaussfilt(pcaData(:,:, iPlot-1, currPlane),0.5)), ...

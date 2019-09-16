@@ -55,13 +55,13 @@ addParameter(p, 'sid', []);
 addParameter(p, 'StimMetadataFile', 'stimMetadata.mat');
 addParameter(p, 'AnnotFile', 'autoAnnotations.mat');
 addParameter(p, 'imgMetadataFile', 'imgMetadata.mat');
-addParameter(p, 'refImgFile', 'refImages_Reg.mat')
+addParameter(p, 'refImgFile', [])
 addParameter(p, 'LoadSessionData', 0);
 parse(p, varargin{:});
 sid = p.Results.sid;
 annotFileName = p.Results.AnnotFile;
 imgMetadataFileName = p.Results.imgMetadataFile;
-refImgFileName = p.Results.refImgFile;
+refImgFileName = p.Results.refImgFile; 
 loadSessionData = p.Results.LoadSessionData;
 wholeSession = [];
 
@@ -69,30 +69,59 @@ wholeSession = [];
 if isempty(sid)
     sid = str2double(regexp(sessionDataFile, '(?<=sid_).(?=_)', 'match'));
 end
-
-% Load imaging data session file
-disp(['Loading ' sessionDataFile, '...'])
-if loadSessionData
-    load(fullfile(parentDir, sessionDataFile));
-    sz = size(wholeSession);
-    nPlanes = sz(3);
-    nVolumes = sz(4);
-    nTrials = sz(5);
-else
-    m = matfile(fullfile(parentDir, sessionDataFile));
-    [~, ~, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession');
+if isempty(refImgFileName) 
+    refImgFileName = ['sid_', num2str(sid), '_refImages.mat']; 
 end
-write_to_log('Session data loaded', mfilename)
-disp('Session data loaded')
 
 % Load imaging metadata file
 imgMetadata = load(fullfile(parentDir, imgMetadataFileName)); % fields 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
 imgMetadata.sid = sid;
+nPlanes = imgMetadata.nPlanes;
+nVolumes = imgMetadata.nVolumes;
+nTrials = imgMetadata.nTrials;
 
 write_to_log('Imaging metadata loaded', mfilename)
 disp('Imaging metadata loaded')
 
-% Add info from stim computer metadata files
+% Load imaging data session file(s) if necessary
+disp(['Loading ' sessionDataFile, '...'])
+if loadSessionData
+    if contains('plane', sessionDataFile)
+        
+        % Actually load the data for all planes into a single array
+        chanNum = regexp(sessionDataFile, '(?<=chan_).*(?=_plane)', 'match'); chanNum = chanNum{:};
+        dataFiles = dir(fullfile(parentDir, ['rigid*chan_', chanNum, '_plane_*sessionFile.mat']));
+        for iPlane = 1:nPlanes
+           currPlaneNum = regexp(dataFiles(iPlane).name, '(?<=plane_).*(?=_session)', 'match');
+           currPlaneNum = num2str(currPlaneNum{:});
+           load(fullfile(parentDir, dataFiles(iPlane).name)); % --> 'sessionData' 
+           sz = size(sessionData);
+           rsData = reshape(sessionData, [sz(1), sz(2), nVolumes, nTrials]);
+           if iPlane == 1
+              wholeSession = zeros([sz(1), sz(2), nVolumes, nTrials, nPlanes]);
+           end
+           wholeSession(:,:,:,:, currPlaneNum) = rsData;    % --> [y, x, volume, trial, plane]
+        end
+        wholeSession = permute(wholeSession, [1 2 5 3 4]);  % --> [y, x, plane, volume, trial]
+    else
+        % For backwards compatibility
+        load(fullfile(parentDir, sessionDataFile)); % --> 'wholeSession'
+        sz = size(wholeSession);
+        nPlanes = sz(3);
+        nVolumes = sz(4);
+        nTrials = sz(5);
+    end
+else
+    if ~contains(sessionDataFile, 'plane')
+        % For backwards compatibility        
+        m = matfile(fullfile(parentDir, sessionDataFile));
+        [~, ~, nPlanes, nVolumes, nTrials] = size(m, 'wholeSession');
+    end
+end
+write_to_log('Session data loaded', mfilename)
+disp('Session data loaded')
+
+% Add info from stim computer metadata files to imaging metadata
 stimDataFiles = dir(fullfile(parentDir, ['metadata*sid_', num2str(sid), '*.mat']));
 imgMetadata.stimOnsetTimes = []; imgMetadata.stimDurs = []; imgMetadata.trialType = []; imgMetadata.outputData = [];
 for iFile = 1:numel(stimDataFiles)
