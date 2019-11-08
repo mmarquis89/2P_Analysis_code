@@ -1,4 +1,4 @@
-function [ output ] = read_tif( tifPath )
+function [ tifData, tifMetadata ] = read_tif( tifPath )
 %===================================================================================================
 % Reads a .tif stack of scanimage 2P data into an array.
 %
@@ -10,7 +10,10 @@ function [ output ] = read_tif( tifPath )
 %       tifPath = String specifying path to .tif file
 %
 % Output:
-%       output = image data array: [Lines, Pixels, Planes, Volumes]
+%       tifData     = image data array: [Lines, Pixels, Planes, Volumes]
+%
+%       tifMetadata = one long string containing all the ScanImage metadata for the .tif file
+%
 % ==================================================================================================
 
 write_to_log(['Attempting to open ', tifPath], mfilename);
@@ -21,7 +24,7 @@ if exist(regexprep(tifPath, '.tif', '.mat'), 'file')
     % Just load a .mat file for the data, if available
 %     write_to_log('Found .mat file to use instead of .tif', mfilename);
     load(regexprep(tifPath, '.tif', '.mat')) % "tifData"
-    output = tifData;
+    tifData = tifData;
 else
     % Otherwise get everything from the .tif file
 %     write_to_log('Using .tif file for data and metadata');
@@ -46,14 +49,14 @@ else
     % Save image stack to array, accounting for multiple channels if necessary
     if nChannels == 1
         tifDataReshaped = reshape(tifData, [nLines, nPixels, nPlanes, nVolumes]);
-        output = tifDataReshaped;
+        tifData = tifDataReshaped;
     else
         chanData = [];
         for iChannel = 1:nChannels
             chanData(:,:,:,:, iChannel) = reshape(tifData(:,:,iChannel:nChannels:end), [nLines, ...
                 nPixels, nPlanes, nVolumes]);
         end
-        output = chanData;
+        tifData = chanData;
     end
     % Close tif file handle
     fclose(tifMetadata.fid);

@@ -64,7 +64,7 @@ pcaData = [];
 %----------CONSTRUCTING COMPONENTS----------
 
 % Figure
-f = figure('position', [50 45, 1800, 950], 'Tag', 'figure', 'WindowButtonDownFcn', ...
+f = figure('position', [50, 45, 1800, 950], 'Tag', 'figure', 'WindowButtonDownFcn', ...
     {@figure_WindowButtonDownFcn}, 'Name', 'ROI Selection GUI', 'NumberTitle', 'off');
 
 %%%% TOP LEVEL TAB GROUP %%%%

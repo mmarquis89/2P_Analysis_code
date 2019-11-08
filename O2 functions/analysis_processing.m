@@ -54,7 +54,7 @@ nVolumes = analysisMetadata.nVolumes;
 nPlanes = analysisMetadata.nPlanes;
 
 % Calculate overall behavior state dF/F
-memGB = ceil(6e-09 * nPixels * nTrials * nVolumes);
+memGB = ceil(5e-09 * nPixels * nTrials * nVolumes);
 if memGB > 249
     memGB = 249;
 end
@@ -70,7 +70,7 @@ behavStateDffCalcJob = c.batch(@behavioral_state_dff_calc, 0, inputArgs);
 
 % Extract ROI data
 ROIfile = 'ROI_metadata.mat';
-memGB = ceil(5e-09 * nPixels * nTrials * nVolumes);
+memGB = ceil(6e-09 * nPixels * nTrials * nVolumes);
 if memGB > 249
     memGB = 249;
 end

@@ -116,7 +116,7 @@ avgFl = mean(flData, 2, 'omitnan');
 % Plot individual trials
 if singleTrials
     for iTrial = 1:size(flData, 2)
-        currFl = smoothdata(flData(:, iTrial), 1, smoothWin);
+        currFl = smoothdata(flData(:, iTrial), 1, 'gaussian', smoothWin);
         currBehavData = behavData(:, iTrial);
         currX = ((1:nVolumes) ./ volumeRate)';
         currY = currFl;
@@ -141,7 +141,7 @@ end
 
 % Plot mean response line
 if singleTrials
-    plot(ax, volTimes, smoothdata(avgFl, 1, smoothWin), 'LineWidth', 2, 'Color', 'k');
+    plot(ax, volTimes, smoothdata(avgFl, 1, 'gaussian', smoothWin), 'LineWidth', 2, 'Color', 'k');
 else
     avgBehavData = mean(behavData, 2, 'omitnan');
     avgBehavData = [avgBehavData(2); avgBehavData(2:end)]; % to drop artifically low first trial
@@ -170,7 +170,7 @@ if strcmp(edgeColorMode, 'flat')
         currFlData = flData;
         currFlData(behavData ~= behavVals(iVal)) = nan;
         behavValMean = mean(currFlData, 2, 'omitnan');
-        plot(ax, volTimes, smoothdata(behavValMean, 1, smoothWin), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
+        plot(ax, volTimes, smoothdata(behavValMean, 1, 'gaussian', smoothWin), 'LineWidth', 2, 'Color', cm((behavVals(iVal)+1), :)*0.75)
     end
 end
 

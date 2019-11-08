@@ -2,7 +2,6 @@
 %% LOAD IMAGING DATA AND BEHAVIORAL ANNOTATION DATA
 
 expDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select an imaging data directory');
-savePath = fullfile('D:\Dropbox (HMS)\2P Data\Analysis', expDate, ['sid_', num2str(sid)]);
 
 try
 if expDir == 0
@@ -118,7 +117,7 @@ else
     end
     volTimes = (1:nVolumes)' ./ volumeRate;
     frameTimes = (1:nFrames)' ./ FRAME_RATE;
-    
+    savePath = fullfile('D:\Dropbox (HMS)\2P Data\Analysis', expDate, ['sid_', num2str(sid)]);
 end%if
 catch foldME; rethrow(foldME); end
 
@@ -265,8 +264,8 @@ stimNames =  {'EtOH'};%{'EtOH', 'EtOH+LED', 'LEDOnly'}; %
 stimTrialGroups = [s.OdorA]; % [s.OdorA + 2*s.OdorAandLEDbackground + 3*s.LEDstim];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
 stimGroupNames = {'OdorA'}; %{'OdorA', 'OdorA+LED', 'LED'};%{'OdorA', 'OdorB'}; %
 
-stimEpochs = [8 11 ; 10 11]; % [4 6; 2 8];%[reshape(2:2:20, 2, 5)']% reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% 
-stimShadingColors = {'green', 'red'};%repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % 
+stimEpochs = [10 11]; % [4 6; 2 8];%[reshape(2:2:20, 2, 5)']% reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% 
+stimShadingColors = {'red'};%repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % 
 % stimShadingColors{3} = 'green';
 stimEpochNames = {'Odor-1', 'Odor-2'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
 
@@ -276,10 +275,10 @@ groupBounds = [0 cumsum([infoStruct.blockData.nTrials])];
 groupBounds(1) = 0;
 
 blockNames = {'Odor-1', 'Odor-2'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
-blockShading = {1 , 2}% {[1 2] [1 2] [1 2]}'%repmat({1,2}, 1, 5);%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
+blockShading = {1 , 1}% {[1 2] [1 2] [1 2]}'%repmat({1,2}, 1, 5);%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
 
 
-stimGroupShading = {[1 2] [1 2] [1 2]};
+stimGroupShading = {[1] [1] [1]};
 
 % Save plotting parameters for this experiment
 overwrite = confirm_save(fullfile(expDir, 'plotting_params.mat'), 'DialogText', ...
@@ -749,7 +748,7 @@ try
     
 saveDir = uigetdir(savePath, 'Select a save directory');
 
-includeQuiescence = 0;
+includeQuiescence = 1;
 if ~includeQuiescence
     fileNameSuffix = 'NoQuiescence_';
 else
@@ -1276,7 +1275,7 @@ dffDataFileName = 'ROI_Data_Avg.mat';
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT","Bi-ANT", "Control"];
 % ROInames = ["SLP", "ANT", "PPL1", "Control"];
-ROInames = ["WholeLH", "dLH", "midLH", "vLH", "ALTs"];
+ROInames = ["WholeLH", "ALTs", "dLH", "midLH", "v-midLH", "vLH"];
 % ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "Bi-ANT", "Control"];
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
@@ -1357,8 +1356,7 @@ clear metaDataFileName dffDataFileName
 catch foldME; rethrow(foldME); end
     %% PLOT 2D HEATMAPS OF ROI FLUORESCENCE THROUGHOUT EXPERIMENT 
 try
-saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), ...
-        '\Analysis'], 'Select a save directory');
+saveDir = uigetdir(savePath, 'Select a save directory');
 sepBlockStims = 0; sepGroupStims = 0; clear minMax;
 fontSize = 14;
 
@@ -1584,8 +1582,7 @@ currCondNames = allCondNames{eventInd}(currConds);
 currDffData = ROIEventDff{eventInd}(currConds); % --> {cond}[volume, event, ROI]
 
 saveDir = 0;
-saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), ...
-        '\Analysis'], 'Select a save directory');
+saveDir = uigetdir(savePath, 'Select a save directory');
 
 
 ROIlist = 1:size(currDffData{1}, 3)-1;
@@ -1663,8 +1660,7 @@ end
 catch foldME; rethrow(foldME); end
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL IN SEPARATE PLOTS FOR EACH TRIAL GROUP
 try
-    saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
-            num2str(sid), '\Analysis'], 'Select a save directory');
+    saveDir = uigetdir(savePath, 'Select a save directory');
     trialGroups = goodTrials;
     cm = []; sepBlockStims = 0; fileNameSuffix = '';
     figPos = [-1450 50 900 700]; %[ -1450 50 800 900];% 
@@ -1816,14 +1812,13 @@ catch foldME; rethrow(foldME); end
 catch foldME; rethrow(foldME); end 
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL OVERLAYING MULTIPLE TRIAL GROUPS
 try
-    saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
-            num2str(sid), '\Analysis'], 'Select a save directory');
+    saveDir = uigetdir(savePath, 'Select a save directory');
     trialGroups = goodTrials;
     cm = []; fileNameSuffix = '';
     figPos = [ -1450 50 800 900];%[-1450 50 1000 900] 
     
     useDff = 0;
-    subtractBaseline = 1;
+    subtractBaseline = 0;
     
     smWin = 3;
     singleTrials = 0;
@@ -2117,15 +2112,14 @@ catch foldME; rethrow(foldME); end
 catch foldME; rethrow(foldME); end
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL COLOR CODED BY FICTRAC DATA
 try
- saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
-        num2str(sid), '\Analysis'], 'Select a save directory');
+ saveDir = uigetdir(savePath, 'Select a save directory');
 trialGroups = goodTrials;
 cm = []; groupShading = []; fileNameSuffix = ''; CLimCap = 1;
 figPos = [ -1450 50 800 900]; %[-1450 50 1000 900]; %
 fontSize = 8;
 
 useDff = 0;
-subtractBaseline = 1;
+subtractBaseline = 0;
 
 smWin = 5;
 singleTrials = 0;
@@ -2380,7 +2374,7 @@ for iROI = ROIlist
     yData = ROImetadata{iROI}(1).yi;
     subaxis(nRows, 2, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
     hold on
-    imshow(infoStruct.refImg{currPlane}, [0 infoStruct.MAX_INTENSITY]);
+    imshow(infoStruct.refImg(:, :, currPlane), [0 infoStruct.MAX_INTENSITY]);
     plot(xData, yData, 'Color', 'g');
     title(ROInames{iROI})
     
@@ -2452,8 +2446,7 @@ catch foldME; rethrow(foldME); end
     %% PLOT CORRELATIONS BETWEEN ROIS
 try
 stimVols = round(volumeRate * stimEpochs);
-saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
-    num2str(sid), '\Analysis'], 'Select a save directory');
+saveDir = uigetdir(savePath, 'Select a save directory');
 
 disp(ROInames)
 
@@ -2577,8 +2570,7 @@ catch foldME; rethrow(foldME); end
     %% PLOT CORRELATIONS BETWEEN SPECIFIC ROI PAIRS ONLY
 try
 stimVols = round(volumeRate * stimEpochs);
-saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', ...
-    num2str(sid), '\Analysis'], 'Select a save directory');
+saveDir = uigetdir(savePath, 'Select a save directory');
 
 plotTrials = 1:nTrials;
 disp(ROInames)
