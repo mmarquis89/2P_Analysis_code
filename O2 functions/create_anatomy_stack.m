@@ -17,9 +17,11 @@ function create_anatomy_stack(dirPath, varargin)
 %    OutputDir        = (default: dirPath) directory to save the output files in
 %
 %===================================================================================================
- 
-    addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
-
+    try
+        addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
+    catch
+    end
+    
     % Parse optional arguments
     p = inputParser;
     addParameter(p, 'FileString', '*Stack_*.tif');
@@ -42,7 +44,7 @@ function create_anatomy_stack(dirPath, varargin)
     % Get sum of all stacks
     summedStacks = [];
     for iVol = 1:nStacks
-
+        disp(['Processing stack #', num2str(iVol), ' of ', num2str(nStacks)]);
         if iVol == 1
             firstStack = int16(read_tif(fullfile(dirPath,stacks(iVol).name)));                  % --> [y, x, plane, volume, channel]
             summedStacks = int16(firstStack);                                                   % --> [y, x, plane, volume, channel]

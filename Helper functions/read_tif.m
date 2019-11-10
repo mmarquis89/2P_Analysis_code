@@ -12,7 +12,7 @@ function [ tifData, tifMetadata ] = read_tif( tifPath )
 % Output:
 %       tifData     = image data array: [Lines, Pixels, Planes, Volumes]
 %
-%       tifMetadata = one long string containing all the ScanImage metadata for the .tif file
+%       tifMetadata = structure containing all the ScanImage metadata for the .tif file
 %
 % ==================================================================================================
 
