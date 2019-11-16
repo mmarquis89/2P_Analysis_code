@@ -1,4 +1,4 @@
-function ROIselectionGui()
+function panelsROIselectionGui()
 %===================================================================================================
 % USE REFERENCE IMAGES TO DRAW AND SAVE ROIs FOR A PARTICULAR EXPERIMENT
 % 
@@ -30,8 +30,7 @@ close all
 %++++++++++++++++++++++++ INITIALIZATION TASKS +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 % Prompt user for ref images data file
-[dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', ...
-        'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+[dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
 
 % Load ref images data file
 disp(['Loading ' dataFile, '...'])
@@ -48,8 +47,7 @@ for iPlane = 1:nPlanes
     maxInts(iPlane) = max(as_vector(refImages(:, :, iPlane)));
 end
 maxIntDefault = num2str(max(maxInts));
-myData.MAX_INTENSITY = str2double(inputdlg('Enter max intensity value for reference images', '', 1, ...
-        {maxIntDefault}));
+myData.MAX_INTENSITY = str2double(inputdlg('Enter max intensity value for reference images', '', 1, {maxIntDefault}));
 MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
 
 % Initialize global variables
