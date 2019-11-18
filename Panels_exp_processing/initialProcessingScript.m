@@ -193,7 +193,7 @@ for iFile = 2:numel(imgDataFiles)
     
         
     % ----- Plane-wise (2D) NoRMCorre motion correction -----
-    imgDataReg = zeros(size(imgData));
+    imgData = zeros(size(imgData));
     regTemplates = [];
     for iPlane = 1:size(imgData, 3)
         
@@ -210,7 +210,7 @@ for iFile = 2:numel(imgDataFiles)
         tic; [planeData, ~, regTemplate, ~] = normcorre_batch(currData, options_rigid); toc
                 
         % Add data to full volume arrays
-        imgDataReg(:, :, iPlane, :) = planeData;        % --> [y, x, plane, volume]
+        imgData(:, :, iPlane, :) = planeData;        % --> [y, x, plane, volume]
         regTemplates(:, :, iPlane) = regTemplate;       % --> [y, x, plane]
         
     end%iPlane
@@ -221,11 +221,11 @@ for iFile = 2:numel(imgDataFiles)
             '.mat']), 'imgDataReg', '-v7.3')
     
     % Save registered data reference images
-    refImages = mean(imgDataReg, 4);    % --> [y, x, plane]
-    sz = size(imgDataReg);
-    imgDataReg = imgDataReg(:, :, :, 1:(100 * floor(sz(4) / 100)));
-    imgDataReg = reshape(imgDataReg, sz(1), sz(2), sz(3), 100, []);
-    timePointRefImages = squeeze(mean(imgDataReg, 4));  % --> [y, x, plane, section of volumes]
+    refImages = mean(imgData, 4);    % --> [y, x, plane]
+    sz = size(imgData);
+    imgData = imgData(:, :, :, 1:(100 * floor(sz(4) / 100)));
+    imgData = reshape(imgData, sz(1), sz(2), sz(3), 100, []);
+    timePointRefImages = squeeze(mean(imgData, 4));  % --> [y, x, plane, section of volumes]
     save(fullfile(outputDir, ['refImages_reg_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
         '.mat']), 'refImages', 'regTemplates', 'timePointRefImages', '-v7.3');
     
