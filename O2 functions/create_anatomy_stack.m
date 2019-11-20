@@ -46,10 +46,10 @@ function create_anatomy_stack(dirPath, varargin)
     for iVol = 1:nStacks
         disp(['Processing stack #', num2str(iVol), ' of ', num2str(nStacks)]);
         if iVol == 1
-            firstStack = int16(read_tif(fullfile(dirPath,stacks(iVol).name)));                  % --> [y, x, plane, volume, channel]
-            summedStacks = int16(firstStack);                                                   % --> [y, x, plane, volume, channel]
+            firstStack = double(read_tif(fullfile(dirPath,stacks(iVol).name)));                  % --> [y, x, plane, volume, channel]
+            summedStacks = double(firstStack);                                                   % --> [y, x, plane, volume, channel]
         else
-            summedStacks = summedStacks + int16(read_tif(fullfile(dirPath,stacks(iVol).name))); % --> [y, x, plane, volume, channel]
+            summedStacks = summedStacks + double(read_tif(fullfile(dirPath,stacks(iVol).name))); % --> [y, x, plane, volume, channel]
         end
     end
 

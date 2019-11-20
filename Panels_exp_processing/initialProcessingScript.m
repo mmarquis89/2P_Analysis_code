@@ -1,6 +1,6 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191113-1_38A11-ChR-6m';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-2_38A11_ChR_60D05_7f';
 outputDir = fullfile(parentDir, 'ProcessedData');
 
 if ~isdir(outputDir)
@@ -8,7 +8,7 @@ if ~isdir(outputDir)
 end
 
 %% Make anatomy stack
-create_anatomy_stack(parentDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
+create_anatomy_stack(parentDir, 'FileString', 'Stack2_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
         'OutputDir', outputDir);
     
     
@@ -144,7 +144,7 @@ save(fullfile(outputDir, 'FicTracData.mat'), 'ftData', '-v7.3');
 
 % Identify imaging data files
 imgDataFiles = dir(fullfile(parentDir, '*trial*.tif'));
-for iFile = 2:numel(imgDataFiles)
+for iFile = 1:numel(imgDataFiles)
 
     disp(['Processing file #', num2str(iFile), ' of ', num2str(numel(imgDataFiles))]);
     
@@ -218,7 +218,7 @@ for iFile = 2:numel(imgDataFiles)
     % Save registered imaging data
     disp('Saving registered data...');
     save(fullfile(outputDir, ['imagingData_reg_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
-            '.mat']), 'imgDataReg', '-v7.3')
+            '.mat']), 'imgData', '-v7.3')
     
     % Save registered data reference images
     refImages = mean(imgData, 4);    % --> [y, x, plane]
@@ -234,7 +234,7 @@ end%iFile
 % Save the imaging metadata
 save(fullfile(outputDir, 'imagingMetadata.mat'), 'imagingMetadata', '-v7.3');
 
-
+disp('Processing complete')
 
 
 

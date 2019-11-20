@@ -1,6 +1,6 @@
 
-parentDir = 'C:\Users\mmarq\Dropbox (HMS)\2P Data\Imaging Data\20191113-1_38A11-ChR-6m\ProcessedData';
-roiDefFileStr = 'roiDefs*trial*.mat';
+parentDir = 'D:\Dropbox (HMS)\2P Data\20191107-1_38A11-Chrimson_60D05-7f\ProcessedData';
+roiDefFileStr = 'roiDefs_*trial*.mat';
 imgFileStr = 'imagingData_reg*trial*.mat';
 saveFileStr = 'roiData_reg'; 
 
@@ -28,7 +28,7 @@ for iFile = 1:numel(allROIData)
     load(fullfile(parentDir, currImgDataFile.name)); % --> 'imageData' [y, x, plane, volume]
     allROIData(iFile).imgDataFile = currImgDataFile.name;
     
-imgData = imgDataReg; clear imgDataReg;
+% imgData = imgDataReg; clear imgDataReg;
     
     % Reshape into 1D frames
     sz = size(imgData);
