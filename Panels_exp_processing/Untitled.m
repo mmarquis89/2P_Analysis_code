@@ -1,5 +1,5 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\20191107-1_38A11-Chrimson_60D05-7f\ProcessedData';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-2_38A11_ChR_60D05_7f\ProcessedData';
 
 % Load ROI data
 load(fullfile(parentDir, 'roiData_reg.mat'), 'allROIData');
@@ -63,9 +63,9 @@ end
 
 %% Plot entire trial's data for each ROI
 
-currTrial = 4;
+currTrial = 1;
 smWin = 2;
-nReps = 15;
+nReps = 10;
 
 currTrialInd = find([allROIData.trialNum] == currTrial);
 currROIData = allROIData(currTrialInd).roiDefs;
@@ -84,14 +84,14 @@ end
 
 %% Plot averaged responses to opto stims throughout trial
 
-currTrial = 4;
+currTrial = 3;
 smWin = 2;
 nReps = 15;
 
 % yL = [75 120];
 
-baselineDur = 6;
-postStimDur = 6;
+baselineDur = 0.5;
+postStimDur = 0.5;
 
 currTrialInd = find([allROIData.trialNum] == currTrial);
 currROIData = allROIData(currTrialInd).roiDefs;
@@ -189,63 +189,19 @@ title('Trial 4 - normalized raw F around opto stim');
 
 %%
 
-allTrialNums = unique([[allROIData.trialNum], [expDaqData.trialNum], [expMetadata.trialNum], ...
-        [imagingMetadata.trialNum], [ftData.trialNum]]); 
+posFunTimes = (1:1:(120*50)) / 50;
+posFunRep = repmat(posFun, 1, ceil(120/(numel(posFun)/50)));
+
+posFunTrial = posFunRep(1:numel(posFunTimes));
 
 
-    
-    
-mD = [];
-for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
-    
-    tid = allTrialNums(iTrial);
-    
-    mD(iTrial).trialNum = tid;
-    
-    
-    % Imaging metadata
-    if sum([imagingMetadata.trialNum] == tid)
-        mD(iTrial).SI = imagingMetadata([imagingMetadata.trialNum] == tid).SI;
-    end
-    
-    % DAQ data
-    if sum([expDaqData.trialNum] == tid)
-        mD(iTrial).daqData = expDaqData([expDaqData.trialNum] == tid);
-    end
-    
-    % FicTrac data
-    if sum([ftData.trialNum] == tid)
-        mD(iTrial).ftData = ftData([ftData.trialNum] == tid).trialData;
-    end
-    
-    % ROI data
-    if sum([allROIData.trialNum] == tid)
-        mD(iTrial).roiData = allROIData([allROIData.trialNum] == tid).roiDefs;
-    end
-    
-    % Experiment parameters
-    if sum([expMetadata.trialNum] == tid)
-        allFieldNames = fieldnames(expMetadata);
-        for iField = 1:numel(allFieldNames)
-            
-            % Put frequently used parameters at the top level
-            topFields = {};
-            if ismember(allFieldNames{iField}, topFields)
-            
-            
-            else
-            % Put the rest down a level in a separate struct 
-            
-            end
-        end
-    end
-    
-    
-    
-    
-    
-end
+xPosTimes = (1/(numel(xPos)/120)):(1/(numel(xPos)/120)):trialDuration;
 
+xPos = xPos - min(xPos);
+
+figure(1);clf;hold on;
+plot(posFunTimes, posFunTrial);
+plot(xPosTimes, xPos * 10)
 
 
 

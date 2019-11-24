@@ -1,6 +1,6 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\20191107-1_38A11-Chrimson_60D05-7f\ProcessedData';
-roiDefFileStr = 'roiDefs_*trial*.mat';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-2_38A11_ChR_60D05_7f\ProcessedData';
+roiDefFileStr = 'roiDefs_trial*.mat';
 imgFileStr = 'imagingData_reg*trial*.mat';
 saveFileStr = 'roiData_reg'; 
 
@@ -27,9 +27,7 @@ for iFile = 1:numel(allROIData)
     currImgDataFile = imgDataFiles(imgDataTrialNums == allROIData(iFile).trialNum);
     load(fullfile(parentDir, currImgDataFile.name)); % --> 'imageData' [y, x, plane, volume]
     allROIData(iFile).imgDataFile = currImgDataFile.name;
-    
-% imgData = imgDataReg; clear imgDataReg;
-    
+        
     % Reshape into 1D frames
     sz = size(imgData);
     nVolumes = sz(4);
@@ -49,7 +47,16 @@ for iFile = 1:numel(allROIData)
         end
         
         % Average data across pixels and subROIs
-        allROIData(iFile).roiDefs(iROI).data = mean(currRoiData, 1); % --> [volume]
+        roiDataAvg = mean(currRoiData, 1);
+        allROIData(iFile).roiDefs(iROI).rawData = roiDataAvg; % --> [volume]
+        
+        % Calculate and save dF/F
+        roiDataSorted = sort(roiDataAvg);
+        baselineF = median(roiDataSorted(1:round(numel(roiDataSorted) * 0.05))); % Bottom 5% as baseline
+        allROIData(iFile).roiDefs(iROI).dffData = (roiDataAvg - baselineF) ./ baselineF;
+        
+        % Get z-scored data
+        allROIData(iFile).roiDefs(iROI).zscoreData = zscore((roiDataAvg - baselineF) ./ baselineF);
         
     end%iROI
     

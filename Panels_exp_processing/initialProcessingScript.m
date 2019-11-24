@@ -1,6 +1,6 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-2_38A11_ChR_60D05_7f';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-1_38A11_ChR_60D05_7f';
 outputDir = fullfile(parentDir, 'ProcessedData');
 
 if ~isdir(outputDir)
@@ -124,6 +124,8 @@ for iFile = 1:numel(ftVidFiles)
     % Write video data from within the trial period to a new file
     vidData = vidData(:, :, startVidFrame:endVidFrame);
     trialVid = VideoWriter(fullfile(outputDir, ['FicTrac_video_trial_', trialNumStr]), 'MPEG-4');
+    frameDurs = ftData(iFile).trialData(:, 24) ./ 1e9; % Inter-frame-interval in seconds
+    trialVid.FrameRate = round( mean(1 ./ frameDurs));
     open(trialVid)
     for iFrame = 1:size(vidData, 3)
         if ~mod(iFrame, 500)
