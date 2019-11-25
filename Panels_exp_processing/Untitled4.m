@@ -1,52 +1,9 @@
 
-
 currTrial = 6;
-
 td = mD([mD.trialNum] == currTrial);
 
-nROIs = numel(td.roiData);
 
-
-% Create matrix of dF/F data for all ROIs in the current trial
-dffMat = []; roiInds = [];
-roiNames = {td.roiData.name};
-for iGlom = 1:16
-    % Rearrange the ROIs if necessary to make sure they're in the right order 
-    if iGlom <= 8
-        glomName = ['L', num2str(iGlom)];
-    else
-        glomName = ['R', num2str(16 - iGlom + 1)];
-    end
-    glomInd = find(ismember(roiNames, glomName));
-    if isempty(glomInd)
-        dffMat(:, end + 1) = nan(td.nVolumes, 1);
-    else
-        dffMat(:, end + 1) = td.roiData(glomInd).dffData;
-    end
-end
-
-% Average across the two sides of the PB
-wedgeDffMat = sum(cat(3, dffMat(:, 1:8), dffMat(:, 9:16)), 3, 'omitnan') ./ 2;
-
-% Calculate the population vector average and the amplitude of the summed population vector
-% (AKA 'PVA strength') for each volume
-meanMat = wedgeDffMat; 
-
-
-% meanMat(:, 8) = mean([meanMat(:,1), meanMat(:, 7)], 2); % Temp
-% meanMat(:, 8) = 0;
-
-angleMat = repmat((-7 * pi/8):pi/4:(7 * pi/8), td.nVolumes, 1);
-[x, y] = pol2cart(angleMat, meanMat); % Convert to cartesian coordinates to add vectors
-[theta, rho] = cart2pol(sum(x, 2), sum(y, 2));
-theta = -theta; % Inverting polarity so it matches other data in plots
-dffVectStrength = rho;
-dffVectAvgRad = theta; 
-dffVectAvgWedge = (theta/pi * 4 + 4.5);
-
-
-
-% PLOT DATA THROUGHOUT TRIAL
+%% PLOT DATA THROUGHOUT TRIAL
 
 figure(1);clf;
 clear allAx
@@ -54,7 +11,7 @@ clear allAx
 subplot(511)
 allAx(1) = gca;
 % dF/F population vector strength
-plot(td.volTimes, dffVectStrength, 'color', rgb('darkgreen'), 'linewidth', 1.5);
+plot(td.volTimes, td.dffVectStrength, 'color', rgb('darkgreen'), 'linewidth', 1.5);
 if td.usingOptoStim
    hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
 end
@@ -64,9 +21,9 @@ ylim([0 10]);
 subplot(512)
 allAx(2) = gca;
 % Mean dF/F data for each glomerulus
-imagesc([0, td.trialDuration], [1, 8], wedgeDffMat');%colorbar
+imagesc([0, td.trialDuration], [1, 8], td.wedgeDffMat');%colorbar
 hold on; % Overlay the dF/F population vector average
-plot(td.volTimes, max(dffVectAvgWedge) - dffVectAvgWedge, ... % Inverting because of imagesc axes
+plot(td.volTimes, max(td.dffVectAvgWedge) - td.dffVectAvgWedge, ... % Inverting because of imagesc axes
         'color', 'r', 'linewidth', 1.25);
 ylabel('dF/F and PVA');
     
@@ -88,7 +45,7 @@ allAx(4) = gca;
 HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
 plot(td.ftFrameTimes, mod(HD, 2*pi), 'color', rgb('purple'));
 % hold on
-% uwVectAvgRad = unwrap(dffVectAvgRad + pi);
+% uwVectAvgRad = unwrap(td.dffVectAvgRad + pi);
 % uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
 % plot(td.volTimes, mod(uwVectAvgRad, 2*pi));
 if td.usingOptoStim
@@ -122,10 +79,64 @@ xlim([0 td.trialDuration])
 
 
 %% Calculate average responses to each opto stim period
+baselineDur = 1;
+postStimDur = 1;
+
+if td.usingOptoStim
+   
+    stimWinDffData = [];
+    baselineVols = floor(baselineDur * td.volumeRate);
+    postStimVols = floor(postStimDur * td.volumeRate);
+    for iStim = 1:numel(td.optoStimOnsetTimes)
+        
+        [~, onsetVol] = min(abs(td.volTimes - td.optoStimOnsetTimes(iStim)));
+        stimDurVols = floor((td.optoStimOffsetTimes(iStim) - td.optoStimOnsetTimes(iStim)) ...
+                * td.volumeRate);
+        
+        % Separate data around stim times
+        startVol = onsetVol - baselineVols;
+        endVol = onsetVol + stimDurVols + postStimVols;
+        if startVol > 0 && endVol < td.trialDuration
+            stimWinDffData(:, :, iStim) = td.wedgeDffMat(startVol:endVol, :); % --> [volume, wedge, stim]
+        end
+        stimWinDffAvg = mean(stimWinDffData, 3); % --> [volume, wedge];
+        
+    end
+    plotTimes = td.volTimes(1:size(stimWinDffAvg, 1)) - td.volTimes(baselineVols + 1);
+    
+    figure(1);clf; 
+    plot(plotTimes, smoothdata(stimWinDffAvg, 1, 'gaussian', 3)); 
+    hold on; 
+    plot_stim_shading([0 (td.optoStimOffsetTimes(1) - td.optoStimOnsetTimes(1))])
+end
 
 
 %% Calculate average responses at each bar position
+panelsPosVols = [];
+for iVol = 1:size(td.wedgeDffMat, 1)
+    [~, currVol] = min(abs(td.panelsFrameTimes - td.volTimes(iVol)));
+    panelsPosVols(iVol) = td.panelsPosX(currVol);
+end
+meanDff = [];
+for iPos = 1:numel(unique(td.panelsPosX))
+    meanDff(iPos, :) = mean(td.wedgeDffMat(panelsPosVols == (iPos - 1), :), 1); % --> [barPos, wedge]    
+end
 
+% Shift so that the center position is directly in front of the fly
+meanDffShift = [meanDff(92:96, :); meanDff(1:91, :)];
+figure(1); clf;
+imagesc([-180:3.75:(180 - 3.75)], [1 8], smoothdata(meanDffShift, 1, 'gaussian', 3)');
+hold on; plot([0 0], [0 9], 'color', 'r', 'linewidth', 2)
+ylim([0.5 8.5])
+xlabel('Bar position (degrees from front of fly)');
+ylabel('EB wedge');
+
+%% Average fly movement at each bar position
+panelsPosVols = [];
+for iVol = 1:size(td.wedgeDffMat, 1)
+    [~, currVol] = min(abs(td.panelsFrameTimes - td.volTimes(iVol)));
+    panelsPosVols(iVol) = td.panelsPosX(currVol);
+end
 
 
 
