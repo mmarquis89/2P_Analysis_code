@@ -1,5 +1,5 @@
 
-parentDir = 'C:\Users\mmarq\Dropbox (HMS)\2P Data\Imaging Data\20191119-1_38A11_ChR_60D05_7f\ProcessedData';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-2_38A11_ChR_60D05_7f\ProcessedData';
 
 % Load ROI data
 disp('Loading data...')
@@ -67,7 +67,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
         mD(iTrial).roiData = mD(iTrial).roiData(sortIdx);
         
         % Create matrix of mean dF/F and zscored data for each EB wedge
-        mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = []; roiInds = [];
+        mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = []; mD(iTrial).rawFlMat = []; roiInds = [];
         roiNames = {mD(iTrial).roiData.name};
         for iGlom = 1:16
             % Rearrange the ROIs if necessary to make sure they're in the right order
@@ -80,9 +80,11 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
             if isempty(glomInd)
                 mD(iTrial).dffMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
                 mD(iTrial).zscoreMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
+                mD(iTrial).rawFlMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
             else
                 mD(iTrial).dffMat(:, end + 1) = mD(iTrial).roiData(glomInd).dffData;
                 mD(iTrial).zscoreMat(:, end + 1) = mD(iTrial).roiData(glomInd).zscoreData;
+                mD(iTrial).rawFlMat(:, end + 1) = mD(iTrial).roiData(glomInd).rawData;
             end
         end
         
@@ -90,7 +92,8 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
         mD(iTrial).wedgeDffMat = sum(cat(3, mD(iTrial).dffMat(:, 1:8), mD(iTrial).dffMat(:, 9:16)), ...
                 3, 'omitnan') ./ 2; % --> [volume, wedge]
         mD(iTrial).wedgeZscoreMat = zscore(mD(iTrial).wedgeDffMat);
-            
+        mD(iTrial).wedgeRawFlMat = sum(cat(3, mD(iTrial).rawFlMat(:, 1:8), mD(iTrial).rawFlMat(:, 9:16)), ...
+                3, 'omitnan') ./ 2; % --> [volume, wedge]
             
         % Calculate the population vector average and the amplitude of the summed population vector
         % (AKA 'PVA strength') for each volume        
