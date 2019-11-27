@@ -1,6 +1,6 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-1_38A11_ChR_60D05_7f';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191126-2_38A11_ChR_60D05_7f';
 outputDir = fullfile(parentDir, 'ProcessedData');
 
 if ~isdir(outputDir)
@@ -8,7 +8,7 @@ if ~isdir(outputDir)
 end
 
 %% Make anatomy stack
-create_anatomy_stack(parentDir, 'FileString', 'Stack2_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
+create_anatomy_stack(parentDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
         'OutputDir', outputDir);
     
     
@@ -62,7 +62,7 @@ end%iFile
 save(fullfile(outputDir, 'metadata.mat'), 'expMetadata', '-v7.3');
 save(fullfile(outputDir, 'daqData.mat'), 'expDaqData', '-v7.3');
 
-%% PROCESS FICTRAC DATA
+% PROCESS FICTRAC DATA
 
 ftDir = fullfile(parentDir, 'FicTracData');
 
@@ -77,8 +77,8 @@ if numel(unique([numel(ftVidFiles), numel(ftDataFiles), numel(ftFrameLogFiles)])
 end
 
 % Process each trial
-currFtData = [];
-for iFile = 1:numel(ftVidFiles)
+currFtData = []; ftData = [];
+for iFile = 4:numel(ftVidFiles)
     
     % Get current trial number
     trialNumStr = regexp(ftVidFiles(iFile).name, '(?<=trial_)...', 'match', 'once');
@@ -110,9 +110,37 @@ for iFile = 1:numel(ftVidFiles)
     startFtFrame = frameLog(startVidFrame) + 1; % Adding one because original is zero-indexed
     endFtFrame = frameLog(endVidFrame) + 1;
     
-    % Load main FicTrac data file and pull out data from within the trial period
+    % Load main FicTrac data file and 
     rawFtData = csvread(fullfile(ftDir, ftDataFiles(iFile).name));
-    currFtData = rawFtData(startFtFrame:endFtFrame, :);
+    
+    % Deal with dropped frames
+    for iFrame = 2:(size(rawFtData, 1) - 1)
+        if rawFtData(iFrame, 1) ~= (rawFtData(iFrame - 1, 1) + 1)
+            
+            % Integrated XY position
+            rawFtData(iFrame, 15:16) = rawFtData(iFrame + 1, 15:16); 
+            rawFtData(iFrame:end, 15:16) = rawFtData(iFrame:end, 15:16) + ...
+                    rawFtData(iFrame - 1, 15:16);
+                
+            % Heading direction
+            rawFtData(iFrame, 17) = rawFtData(iFrame + 1, 17);
+            rawFtData(iFrame:end, 17) = mod(rawFtData(iFrame:end, 17) + ...
+                    rawFtData(iFrame - 1, 17), 2 * pi);
+            
+            % Movement speed
+            rawFtData(iFrame, 19) = rawFtData(iFrame + 1, 19);
+%             
+%             % Frame counter
+%             missedFrames = rawFtData(iFrame, 1) - rawFtData(iFrame - 1, 1);
+%             rawFtData(iFrame:end, 1) = rawFtData(iFrame:end, 1) - missedFrames + 1;
+            
+            
+        end
+    end
+    
+    % Pull out data from within the trial period
+    ftTrialFrames = rawFtData(:, 1) >= startFtFrame & rawFtData(:, 1) <= endFtFrame;
+    currFtData = rawFtData(ftTrialFrames, :);%rawFtData(startFtFrame:endFtFrame, :);
     currFtData(1, :) = currFtData(1,:) - min(currFtData(1, :)); % Align FrameCount to trial start
     
     % Save processed data files along with luminance values and frame log
@@ -122,10 +150,11 @@ for iFile = 1:numel(ftVidFiles)
     ftData(iFile).medLum = medLum;
     
     % Write video data from within the trial period to a new file
-    vidData = vidData(:, :, startVidFrame:endVidFrame);
+    trialVidFrames = frameLog >= startVidFrame & frameLog <= endVidFrame;
+    vidData = vidData(:, :, trialVidFrames);
     trialVid = VideoWriter(fullfile(outputDir, ['FicTrac_video_trial_', trialNumStr]), 'MPEG-4');
     frameDurs = ftData(iFile).trialData(:, 24) ./ 1e9; % Inter-frame-interval in seconds
-    trialVid.FrameRate = round( mean(1 ./ frameDurs));
+    trialVid.FrameRate = round(mean(1 ./ frameDurs));
     open(trialVid)
     for iFrame = 1:size(vidData, 3)
         if ~mod(iFrame, 500)
