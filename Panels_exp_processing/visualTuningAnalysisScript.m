@@ -1,7 +1,11 @@
 
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-1_38A11_ChR_60D05_7f\ProcessedData';
+analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
+load(fullfile(parentDir, 'analysis_data.mat'));
+
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:19];
+blTrials = [1:17];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -88,8 +92,9 @@ end
 bl = orderfields(bl);
 
 
+%% ===================================================================================================
 %% Plot tuning curves for each wedge across trials
-
+%===================================================================================================
 
 % sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
@@ -105,7 +110,8 @@ for iVol = 1:size(sourceData, 1)
 end
 meanData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
-    meanData(iPos, :, :) = mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+    meanData(iPos, :, :) = ...
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
 end
 meanDataSmooth = smoothdata(meanData, 1, 'gaussian', 3);
 
@@ -156,9 +162,9 @@ end
 suptitle({'Visual tuning of EB wedges throughout experiment', ...
         'Green line  =  trial with opto + visual stim', ...
         '  Red line  = trial with opto stim only'})
-    
+%% ===================================================================================================    
 %% Plot as lines instead of using imagesc
-
+% ===================================================================================================
 saveFig = 0;
 smWin = 2;
 % sourceData = bl.wedgeRawFlArr;
@@ -174,7 +180,8 @@ for iVol = 1:size(sourceData, 1)
 end
 plotData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
-    plotData(iPos, :, :) = mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+    plotData(iPos, :, :) = ...
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
 end
 
 % Shift data so center of plot is directly in front of the fly
@@ -257,13 +264,34 @@ if saveFig
     
 end
 
+%% ===================================================================================================
 %% Plot min and max values from the tuning curves
+%===================================================================================================
+
+saveFig = 1;
 
 smWin = 2;
-% sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
-% sourceData = bl.wedgeZscoreArr;
 
+sourceData = bl.wedgeRawFlArr;
+sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeZscoreArr;
+    
+figSize = [];
+figSize = [400 925];
+
+% Generate figure labels and save file name
+if isequal(sourceData, bl.wedgeDffArr)
+    figTitleText = 'dF/F';
+    saveFileName = 'dff_tuning_curve_amplitudes';
+elseif isequal(sourceData, bl.wedgeRawFlArr)
+    figTitleText = 'Raw F';
+    saveFileName = 'rawF_tuning_curve_amplitudes';
+elseif isequal(sourceData, bl.wedgeZscoreArr)
+    figTitleText = 'Z-scored dF/F';
+    saveFileName = 'zscored-dff_tuning_curve_amplitudes';
+else
+    errordlg('Error: sourceData mismatch');
+end
 
 % Get mean panels pos data
 panelsPosVols = [];
@@ -273,7 +301,8 @@ for iVol = 1:size(bl.wedgeDffArr, 1)
 end
 tuningData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
-    tuningData(iPos, :, :) = mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+    tuningData(iPos, :, :) = ...
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
 end
 
 % Smooth data, then find the max and min for each trial and wedge
@@ -300,8 +329,11 @@ tuningAmp = maxVals - minVals;          % --> [wedge, trial]
 % Plot change in min and max over time, omitting opto stim trials
 f = figure(2);clf;
 f.Color = [1 1 1];
+if ~isempty(figSize)
+   f.Position(3:4) = figSize; 
+end
 for iPlot = 1:nPlots
-    ax = subaxis(nPlots, 1, iPlot, 'mt', 0.05, 'mb', 0.06, 'sv', 0.03);
+    ax = subaxis(nPlots, 1, iPlot, 'mt', 0.06, 'mb', 0.06, 'sv', 0.03, 'mr', 0.03, 'ml', 0.08);
     hold on;
 %     plot(1:size(minVals, 2), minVals(iPlot, :), 'o', 'color', 'b')
 %     plot(1:size(maxVals, 2), maxVals(iPlot, :), 'o', 'color', 'm')
@@ -318,17 +350,31 @@ for iPlot = 1:nPlots
             'linewidth', 1.5)
     end
     if iPlot == nPlots
-       xlabel('Trial', 'fontsize', 14) 
+        xlabel('Trial number', 'fontsize', 13)
+    else
+        ax.XTickLabel = [];
     end
     xL = xlim;
     xlim([0, xL(2) + 1])
-    ylabel('dF/F')
+%     ylabel(num2str(iPlot))
 end
-suptitle({'EB wedge visual tuning curve amplitude', ...
-        'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'})
 
+% Plot title at top of figure
+h = suptitle({[bl.expID, ' - EB wedge visual tuning'], ...
+        [figTitleText, '  (max - min)'], ... 
+        'Green line  =  trial with opto + visual stim', ...
+        '  Red line  = trial with opto stim only'});
+h.FontSize = 13;
+
+% Save figure
+if saveFig
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, saveFileName);
+end
+
+%% ===================================================================================================
 %% Plot behavior as a function of bar position
+%===================================================================================================
 
 smReps = 6;
 smWin = 5;
@@ -342,9 +388,12 @@ for iFrame = 1:numel(bl.ftFrameTimes)
 end
 meanSpeed = []; meanYawSpeed = []; meanYawVel = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
-    meanSpeed(iPos, :) = mean(bl.ftData.moveSpeed(panelsPosFrames == (iPos - 1), :), 1);        % --> [barPos, trial]    
-    meanYawVel(iPos, :) = mean(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :), 1);        % --> [barPos, trial] 
-    meanYawSpeed(iPos, :) = mean(abs(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :)), 1); % --> [barPos, trial]
+    meanSpeed(iPos, :) = ...
+            mean(bl.ftData.moveSpeed(panelsPosFrames == (iPos - 1), :), 1);    % --> [barPos, trial]    
+    meanYawVel(iPos, :) = ...
+            mean(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :), 1);     % --> [barPos, trial] 
+    meanYawSpeed(iPos, :) = ...
+            mean(abs(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :)), 1);% --> [barPos, trial]
 end
 
 

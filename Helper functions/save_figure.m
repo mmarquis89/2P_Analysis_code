@@ -33,7 +33,7 @@ end
 
 % Save figure files
 if overwrite
-    export_fig(fullfile(saveDir, fileName), '-png', figHandle);
+    export_fig(fullfile(saveDir, fileName), '-png', '-pdf', '-nocrop', figHandle);
     if ~isdir(fullfile(saveDir, 'figFiles'))
         mkdir(fullfile(saveDir, 'figFiles'))
     end
