@@ -1,5 +1,5 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-2_38A11_ChR_60D05_7f\ProcessedData';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191203-1_38A11_ChR_60D05_7f\ProcessedData';
 
 % Load ROI data
 disp('Loading data...')

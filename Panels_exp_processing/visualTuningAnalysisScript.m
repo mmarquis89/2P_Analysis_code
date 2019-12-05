@@ -1,7 +1,7 @@
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:16];
+blTrials = [1:19];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -66,7 +66,7 @@ for iTrial = 1:numel(bD)
     bl.usingPanels(iTrial) = bD(iTrial).usingPanels;                    % --> [trial]
     
     % Trim FicTrac frames if necessary 
-    targetFrames = mode(cellfun(@numel, {bD.ftFrameTimes}));
+    targetFrames = min(cellfun(@numel, {bD.ftFrameTimes}));
     if numel(bD(iTrial).ftFrameTimes) == targetFrames
        bl.ftFrameTimes = bD(iTrial).ftFrameTimes; 
     end
@@ -191,6 +191,8 @@ for iTrial = 1:size(shiftDataSm, 3)
 end
 
 % Find max and min values 
+% yMax = max(shiftDataOffset(800:end));
+% yMin = min(shiftDataOffset(800:end));
 yMax = max(shiftDataOffset(:));
 yMin = min(shiftDataOffset(:));
 range = max(abs([yMax, yMin])) *  2.5;
@@ -351,7 +353,8 @@ meanSpeed = [meanSpeed(92:96, :); meanSpeed(1:91, :)];
 meanYawVel = [meanYawVel(92:96, :); meanYawVel(1:91, :)];
 meanYawSpeed = [meanYawSpeed(92:96, :); meanYawSpeed(1:91, :)];
 
-plotVar = meanSpeed;
+plotVar = meanYawSpeed;
+plotVar(meanYawSpeed > 0.8) = 0.8;
 plotX = -180:3.75:(180 - 3.75);
 
 figure(1);clf;

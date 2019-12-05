@@ -1,6 +1,6 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191126-2_38A11_ChR_60D05_7f';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191203-1_38A11_ChR_60D05_7f';
 outputDir = fullfile(parentDir, 'ProcessedData');
 
 if ~isdir(outputDir)
@@ -8,7 +8,7 @@ if ~isdir(outputDir)
 end
 
 %% Make anatomy stack
-create_anatomy_stack(parentDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
+create_anatomy_stack(parentDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack2', ...
         'OutputDir', outputDir);
     
     
@@ -62,7 +62,7 @@ end%iFile
 save(fullfile(outputDir, 'metadata.mat'), 'expMetadata', '-v7.3');
 save(fullfile(outputDir, 'daqData.mat'), 'expDaqData', '-v7.3');
 
-% PROCESS FICTRAC DATA
+%% PROCESS FICTRAC DATA
 
 ftDir = fullfile(parentDir, 'FicTracData');
 
@@ -78,7 +78,7 @@ end
 
 % Process each trial
 currFtData = []; ftData = [];
-for iFile = 4:numel(ftVidFiles)
+for iFile = 1:numel(ftVidFiles)
     
     % Get current trial number
     trialNumStr = regexp(ftVidFiles(iFile).name, '(?<=trial_)...', 'match', 'once');

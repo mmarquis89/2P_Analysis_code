@@ -6,26 +6,25 @@ function save_figure(figHandle, saveDir, fileName)
 %
 % INPUTS:
 %
-%       figHandle
+%       figHandle   = handle to the figure to be saved
 %
 %       saveDir     = directory where you want the .png files saved
 %
-%       fileName    
+%       fileName    = output file name
 %
 %===================================================================================================
-
 
 % Create save directory if necessary
 if ~isdir(saveDir)
     mkdir(saveDir);
 end
 
-
 % Warn user and offer to cancel save if this will overwrite existing files
 overwrite = 1;
 if exist(fullfile(saveDir, [fileName, '.fig']), 'file') ~= 0 || ...
         exist(fullfile(saveDir, [fileName, '.png']), 'file') ~= 0
-    dlgAns = questdlg('Saving this figure will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
+    dlgAns = questdlg(['Saving this figure will overwrite one or more existing files in this ', ...
+            'directory...are you sure you want to do this?'], 'Warning', 'Yes', 'No', 'No');
     if strcmp(dlgAns, 'No')
         overwrite = 0;
         disp('Saving cancelled')
