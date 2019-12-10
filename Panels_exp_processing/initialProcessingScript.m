@@ -1,28 +1,30 @@
 
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191203-1_38A11_ChR_60D05_7f';
-outputDir = fullfile(parentDir, 'ProcessedData');
+expDir = uigetdir(startDir, 'Select an experiment directory');
+outputDir = fullfile(expDir, 'ProcessedData');
 
 if ~isdir(outputDir)
     mkdir(outputDir)
 end
 
 %% Make anatomy stack
-create_anatomy_stack(parentDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack2', ...
+create_anatomy_stack(expDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack2', ...
         'OutputDir', outputDir);
     
     
 %% CONSOLIDATE METADATA AND DAQ DATA FOR ALL TRIALS
 
 % Process metadata files
-mdFiles = dir(fullfile(parentDir, '*metadata*trial*.mat'));
+mdFiles = dir(fullfile(expDir, '*metadata*trial*.mat'));
 expMetadata = [];
+disp('Processing metadata and DAQ data...');
 for iFile = 1:numel(mdFiles)
        
     % Load the file 
     % Contains struct "mD" with fields [trialSettings], [expID], [expDirName], [expDir], 
     % [trialNum], and [SAMPLING_RATE])
-    load(fullfile(parentDir, mdFiles(iFile).name)); 
+    load(fullfile(expDir, mdFiles(iFile).name)); 
         
     % Flatten structure so the contents of trialSettings are at the root level
     mD = rmfield(setstructfields(mD, mD.trialSettings), 'trialSettings');
@@ -37,13 +39,13 @@ for iFile = 1:numel(mdFiles)
 end%iFile
 
 % Process DAQ data files
-daqDataFiles = dir(fullfile(parentDir, '*daqData*trial*.mat'));
+daqDataFiles = dir(fullfile(expDir, '*daqData*trial*.mat'));
 % expDaqData = struct();
 for iFile = 1:numel(daqDataFiles)
        
     % Load the file 
     % Contains variabls "outputData", "trialData", and "ColumnLabels"
-    currData = load(fullfile(parentDir, daqDataFiles(iFile).name)); 
+    currData = load(fullfile(expDir, daqDataFiles(iFile).name)); 
     
     % Get the trial number of the current file
     currData.trialNum = str2double(regexp(daqDataFiles(iFile).name, '(?<=trial_)...(?=.mat)', ...
@@ -61,10 +63,11 @@ end%iFile
 % Save in processed data directory
 save(fullfile(outputDir, 'metadata.mat'), 'expMetadata', '-v7.3');
 save(fullfile(outputDir, 'daqData.mat'), 'expDaqData', '-v7.3');
+disp('Processing complete.');
 
 %% PROCESS FICTRAC DATA
 
-ftDir = fullfile(parentDir, 'FicTracData');
+ftDir = fullfile(expDir, 'FicTracData');
 
 % Identify all FicTrac output files
 ftVidFiles = dir(fullfile(ftDir, '*trial*.mp4'));
@@ -92,7 +95,7 @@ for iFile = 1:numel(ftVidFiles)
     frameCount = 0;
     while hasFrame(currVid)
         frameCount = frameCount + 1;
-        if ~mod(frameCount, 500)
+        if ~mod(frameCount, 1000)
             disp(['Reading frame ', num2str(frameCount), '...'])
         end
         currFrame = uint16(readFrame(currVid));
@@ -157,7 +160,7 @@ for iFile = 1:numel(ftVidFiles)
     trialVid.FrameRate = round(mean(1 ./ frameDurs));
     open(trialVid)
     for iFrame = 1:size(vidData, 3)
-        if ~mod(iFrame, 500)
+        if ~mod(iFrame, 1000)
             disp(['Writing frame ', num2str(iFrame), '...'])
         end
         writeVideo(trialVid, uint8(vidData(:,:, iFrame)));
@@ -174,7 +177,7 @@ save(fullfile(outputDir, 'FicTracData.mat'), 'ftData', '-v7.3');
 %% PROCESS IMAGING DATA AND METADATA
 
 % Identify imaging data files
-imgDataFiles = dir(fullfile(parentDir, '*trial*.tif'));
+imgDataFiles = dir(fullfile(expDir, '*trial*.tif'));
 for iFile = 1:numel(imgDataFiles)
 
     disp(['Processing file #', num2str(iFile), ' of ', num2str(numel(imgDataFiles))]);
@@ -184,7 +187,7 @@ for iFile = 1:numel(imgDataFiles)
             'match', 'once'));
         
     % Load the current file
-    [imgData, tifMetadata] = read_tif(fullfile(parentDir, imgDataFiles(iFile).name));
+    [imgData, tifMetadata] = read_tif(fullfile(expDir, imgDataFiles(iFile).name));
     
     % Parse ScanImage metadata
     siMetadata = parse_scanimage_metadata(tifMetadata);

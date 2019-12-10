@@ -1,11 +1,11 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191119-1_38A11_ChR_60D05_7f\ProcessedData';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191205-2_38A11_ChR_60D05_7f\ProcessedData';
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
 load(fullfile(parentDir, 'analysis_data.mat'));
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:17];
+blTrials = [1:24];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -96,9 +96,30 @@ bl = orderfields(bl);
 %% Plot tuning curves for each wedge across trials
 %===================================================================================================
 
-% sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
+
+saveFig = 1;
+
+sourceData = bl.wedgeRawFlArr;
+% sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
+
+showStimTrials = 1;
+
+
+
+% Generate figure labels and save file name
+if isequal(sourceData, bl.wedgeDffArr)
+    figTitleText = 'dF/F';
+    saveFileName = '2D_tuning_curves_dff';
+elseif isequal(sourceData, bl.wedgeRawFlArr)
+    figTitleText = 'raw F';
+    saveFileName = '2D_tuning_curves_rawF';
+elseif isequal(sourceData, bl.wedgeZscoreArr)
+    figTitleText = 'Z-scored dF/F';
+    saveFileName = '2D_tuning_curves_zscored-dff';
+else
+    errordlg('Error: sourceData mismatch');
+end
 
 nTrials = numel(bl);
 
@@ -130,7 +151,9 @@ for iPlot = 1:nPlots
     subaxis(plotPos(1), plotPos(2), iPlot, 'ml', 0.05, 'mr', 0.05);
     
     currData = squeeze(meanDataSmooth(:, iPlot, :)); % --> [barPos, trial]
-    currData = currData(:, ~[bl.usingOptoStim]);
+    if ~showStimTrials
+        currData = currData(:, ~[bl.usingOptoStim]);
+    end
     currDataShift = [currData(92:96, :); currData(1:91, :)];
     
     % Plot data
@@ -143,34 +166,91 @@ for iPlot = 1:nPlots
     xlabel('Bar position (degrees from front of fly)');
     ylabel('Trial');
     
-    % Indicate missing opto stim trials
-    skippedTrials = 0;
-    optoStimTrials = find([mD.usingOptoStim]);
-    for iTrial = 1:numel(optoStimTrials)
-        plotY = optoStimTrials(iTrial) - skippedTrials - 0.5;
-        skippedTrials = skippedTrials + 1;
-        if mD(optoStimTrials(iTrial)).usingPanels
-            lineColor = 'green';
-        else
-            lineColor = 'red';
+    if showStimTrials
+        % Label opto stim trials
+        optoStimTrials = find([bl.usingOptoStim]);
+        for iTrial = 1:numel(optoStimTrials)
+            if bl.usingPanels(optoStimTrials(iTrial))
+                lineColor = 'green';
+            else
+                lineColor = 'red';
+            end
+            xL = xlim() + [2 -2];
+            plotX = [xL(1), xL(2), xL(2), xL(1), xL(1)];
+            plotY = [-0.5 -0.5 0.5 0.5 -0.5] + optoStimTrials(iTrial);
+            plot(plotX, plotY, 'color', lineColor, 'linewidth', 1.5)
+            
         end
-        xL = xlim;
-        plot(xL, [plotY, plotY], 'color', lineColor, 'linewidth', 2);
-    end
+        
+        % Add Y tick labels
+        ax = gca;
+        ax.YTick = 1:size(currData, 2);
+        ax.YTickLabels = blTrials;
+        
+    else
+        % Indicate missing opto stim trials
+            skippedTrials = 0;
+            optoStimTrials = find([mD.usingOptoStim]);
+            for iTrial = 1:numel(optoStimTrials)
+                plotY = optoStimTrials(iTrial) - skippedTrials - 0.5;
+                skippedTrials = skippedTrials + 1;
+                if mD(optoStimTrials(iTrial)).usingPanels
+                    lineColor = 'green';
+                else
+                    lineColor = 'red';
+                end
+                xL = xlim;
+                plot(xL, [plotY, plotY], 'color', lineColor, 'linewidth', 2);
+            end
+            
+            % Skip omitted trial numbers in Y tick labels
+            ax = gca();
+            ax.YTick = 1:numel(bl.usingOptoStim);
+            yTickLabel = blTrials;
+            ax.YTickLabel = yTickLabel(~bl.usingOptoStim);
+            
+    end%if
+end%iPlot
+
+% Add figure title
+h = suptitle({[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
+        'Green line  =  trial with opto + visual stim', ...
+        '  Red line  = trial with opto stim only'});
+h.FontSize = 14;
+    
+% Save figure
+if saveFig
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, saveFileName);
 end
 
-suptitle({'Visual tuning of EB wedges throughout experiment', ...
-        'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'})
 %% ===================================================================================================    
 %% Plot as lines instead of using imagesc
 % ===================================================================================================
-saveFig = 0;
+
+saveFig = 1;
+
 smWin = 2;
-% sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeRawFlArr;
+% sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 
+figSize = [];
+figSize = [1250 980];
+
+% Generate figure labels and save file name
+if isequal(sourceData, bl.wedgeDffArr)
+    figTitleText = 'dF/F';
+    saveFileName = 'tuning_curves_dff';
+elseif isequal(sourceData, bl.wedgeRawFlArr)
+    figTitleText = 'raw F';
+    saveFileName = 'tuning_curves_rawF';
+elseif isequal(sourceData, bl.wedgeZscoreArr)
+    figTitleText = 'Z-scored dF/F';
+    saveFileName = 'tuning_curves_zscored-dff';
+else
+    errordlg('Error: sourceData mismatch');
+end
 
 % Get mean panels pos data
 panelsPosVols = [];
@@ -207,8 +287,11 @@ range = max(abs([yMax, yMin])) *  2.5;
 % Create figure and plots
 f = figure(1);clf;
 f.Color = [1 1 1];
+if ~isempty(figSize)
+   f.Position(3:4) = figSize; 
+end
 for iPlot = 1:nPlots
-    ax = subaxis(1, nPlots, iPlot, 'mt', 0.01, 'ml', 0.04, 'mr', 0.02, 'mb', 0.08, 'sh', 0.05);
+    ax = subaxis(1, nPlots, iPlot, 'mt', 0, 'ml', 0.05, 'mr', 0.03, 'mb', 0.08, 'sh', 0.05);
     hold on;
     currData = squeeze(shiftDataOffset(:, iPlot, :)); % --> [barPos, trial]
     currData = currData(:, ~[bl.usingOptoStim]);
@@ -256,12 +339,17 @@ for iPlot = 1:nPlots
     end
     
 end
-suptitle({[bl.expID, '  -  Visual tuning of EB wedges throughout experiment'], ...
+
+% Add figure title
+h = suptitle({[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
         'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'})
+        '  Red line  = trial with opto stim only'});
+h.FontSize = 14;
     
+% Save figure
 if saveFig
-    
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, saveFileName);
 end
 
 %% ===================================================================================================
@@ -273,8 +361,8 @@ saveFig = 1;
 smWin = 2;
 
 sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
-sourceData = bl.wedgeZscoreArr;
+% sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeZscoreArr;
     
 figSize = [];
 figSize = [400 925];
@@ -282,13 +370,13 @@ figSize = [400 925];
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
     figTitleText = 'dF/F';
-    saveFileName = 'dff_tuning_curve_amplitudes';
+    saveFileName = 'tuning_curve_amplitudes_dff';
 elseif isequal(sourceData, bl.wedgeRawFlArr)
     figTitleText = 'Raw F';
-    saveFileName = 'rawF_tuning_curve_amplitudes';
+    saveFileName = 'tuning_curve_amplitudes_rawF';
 elseif isequal(sourceData, bl.wedgeZscoreArr)
     figTitleText = 'Z-scored dF/F';
-    saveFileName = 'zscored-dff_tuning_curve_amplitudes';
+    saveFileName = 'tuning_curve_amplitudes_zscored-dff';
 else
     errordlg('Error: sourceData mismatch');
 end
@@ -332,6 +420,7 @@ f.Color = [1 1 1];
 if ~isempty(figSize)
    f.Position(3:4) = figSize; 
 end
+globalMax = 0;
 for iPlot = 1:nPlots
     ax = subaxis(nPlots, 1, iPlot, 'mt', 0.06, 'mb', 0.06, 'sv', 0.03, 'mr', 0.03, 'ml', 0.08);
     hold on;
@@ -348,6 +437,7 @@ for iPlot = 1:nPlots
         yL = ylim();
         plot([iTrial - 0.5, iTrial - 0.5], yL, '-', 'color', lineColor, ...
             'linewidth', 1.5)
+        globalMax = max([globalMax, yL(2)]);
     end
     if iPlot == nPlots
         xlabel('Trial number', 'fontsize', 13)
@@ -359,12 +449,18 @@ for iPlot = 1:nPlots
 %     ylabel(num2str(iPlot))
 end
 
+% for iAx = 1:numel(f.Children)
+%    if strcmp(f.Children(iAx).Tag, 'subaxis')
+%        f.Children(iAx).YLim = [0 globalMax]
+%    end
+% end
+
 % Plot title at top of figure
 h = suptitle({[bl.expID, ' - EB wedge visual tuning'], ...
         [figTitleText, '  (max - min)'], ... 
         'Green line  =  trial with opto + visual stim', ...
         '  Red line  = trial with opto stim only'});
-h.FontSize = 13;
+h.FontSize = 12;
 
 % Save figure
 if saveFig
@@ -402,8 +498,9 @@ meanSpeed = [meanSpeed(92:96, :); meanSpeed(1:91, :)];
 meanYawVel = [meanYawVel(92:96, :); meanYawVel(1:91, :)];
 meanYawSpeed = [meanYawSpeed(92:96, :); meanYawSpeed(1:91, :)];
 
+% plotVar = meanSpeed;
 plotVar = meanYawSpeed;
-plotVar(meanYawSpeed > 0.8) = 0.8;
+plotVar(plotVar > 0.8) = 0.8;
 plotX = -180:3.75:(180 - 3.75);
 
 figure(1);clf;

@@ -45,7 +45,11 @@ outputDir = p.Results.OutputDir;
 % %------------------------------------------
 
 % Create output directory if necessary
-if ~isdir(outputDir)
+if ~isdir(outputDir)% Parse optional arguments
+p = inputParser;
+addParameter(p, 'OutputDir', vidSaveDir);
+parse(p, varargin{:});
+outputDir = p.Results.OutputDir;
     mkdir(outputDir)
 end
 disp(outputDir)
@@ -90,7 +94,8 @@ end
 maxFlowMag = max(meanFlowMag(2:end)); % First frame is artificially high so don't count that
 
 % Save optic flow data
-save(fullfile(outputDir, ['sid_', num2str(sid), '_tid_', pad(num2str(tid), 3, 'left', '0'), '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
+save(fullfile(outputDir, ['sid_', num2str(sid), '_tid_', pad(num2str(tid), 3, 'left', '0'), ...
+        '_optic_flow_data.mat']), 'meanFlowMag', 'maxFlowMag', '-v7.3');
 
 % %------------------------------------------
 % fprintf(myFile, [datestr(datetime), ' Optic flow data saved', '\r\n']);

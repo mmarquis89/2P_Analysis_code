@@ -1,8 +1,11 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191203-1_38A11_ChR_60D05_7f\ProcessedData';
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+
 roiDefFileStr = 'roiDefs_trial*.mat';
 imgFileStr = 'imagingData_reg*trial*.mat';
 saveFileStr = 'roiData_reg'; 
+
+parentDir = uigetdir(startDir, 'Select an experiment directory');
 
 % Identify imaging data files and their trial numbers
 imgDataFiles = dir(fullfile(parentDir, imgFileStr));
@@ -21,7 +24,7 @@ end
 % Extract ROI data
 for iFile = 1:numel(allROIData)
     
-    disp(['Processing ROI #', num2str(allROIData(iFile).trialNum), '...']);
+    disp(['Processing Trial #', num2str(allROIData(iFile).trialNum), '...']);
     
     % Load current trial's imaging data
     currImgDataFile = imgDataFiles(imgDataTrialNums == allROIData(iFile).trialNum);

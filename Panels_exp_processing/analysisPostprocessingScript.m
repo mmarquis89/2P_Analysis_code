@@ -1,6 +1,7 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191203-1_38A11_ChR_60D05_7f\ProcessedData';
-
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+parentDir = uigetdir(startDir, 'Select a data directory');
+    
 % Load ROI data
 disp('Loading data...')
 load(fullfile(parentDir, 'roiData_reg.mat'), 'allROIData');
@@ -24,31 +25,32 @@ allTrialNums = unique([[allROIData.trialNum], [expDaqData.trialNum], [expMetadat
 
 mD = [];
 for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
-    
+
     disp(iTrial);
-    
+
     tid = allTrialNums(iTrial);
     mD(iTrial).trialNum = tid;
-    
+
     % Imaging metadata
     if sum([imagingMetadata.trialNum] == tid)
         mD(iTrial).SI = imagingMetadata([imagingMetadata.trialNum] == tid).SI;
     else
         mD(iTrial).SI = [];
     end
-    
+
     % Recorded panels position data
     if sum([expDaqData.trialNum] == tid)
-        mD(iTrial).panelsPosData = expDaqData([expDaqData.trialNum] == tid).trialData(:, 1:2); % --> [sample, dim]
+        mD(iTrial).panelsPosData = ...
+                expDaqData([expDaqData.trialNum] == tid).trialData(:, 1:2); % --> [sample, dim]
     else
         mD(iTrial).panelsPosData = [];
     end
-    
+
     % ROI data
     if sum([allROIData.trialNum] == tid)
         currROIData = allROIData([allROIData.trialNum] == tid).roiDefs;
         for iROI = 1:numel(currROIData)
-            
+
             % Extract just the most useful components of each ROI
             mD(iTrial).roiData(iROI).name = currROIData(iROI).name;
             mD(iTrial).roiData(iROI).color = currROIData(iROI).color;
@@ -61,13 +63,14 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
             mD(iTrial).roiData(iROI).dffData = currROIData(iROI).dffData;
             mD(iTrial).roiData(iROI).zscoreData = currROIData(iROI).zscoreData;
         end
-        
+
         % Sort ROIs alphabetically by name
         [~, sortIdx] = sort({mD(iTrial).roiData.name});
         mD(iTrial).roiData = mD(iTrial).roiData(sortIdx);
-        
+
         % Create matrix of mean dF/F and zscored data for each EB wedge
-        mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = []; mD(iTrial).rawFlMat = []; roiInds = [];
+        mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = []; 
+        mD(iTrial).rawFlMat = []; roiInds = [];
         roiNames = {mD(iTrial).roiData.name};
         for iGlom = 1:16
             % Rearrange the ROIs if necessary to make sure they're in the right order
@@ -87,16 +90,16 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
                 mD(iTrial).rawFlMat(:, end + 1) = mD(iTrial).roiData(glomInd).rawData;
             end
         end
-        
+
         % Average across the two sides of the PB
-        mD(iTrial).wedgeDffMat = sum(cat(3, mD(iTrial).dffMat(:, 1:8), mD(iTrial).dffMat(:, 9:16)), ...
-                3, 'omitnan') ./ 2; % --> [volume, wedge]
+        mD(iTrial).wedgeDffMat = sum(cat(3, mD(iTrial).dffMat(:, 1:8), ...
+                mD(iTrial).dffMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]
         mD(iTrial).wedgeZscoreMat = zscore(mD(iTrial).wedgeDffMat);
-        mD(iTrial).wedgeRawFlMat = sum(cat(3, mD(iTrial).rawFlMat(:, 1:8), mD(iTrial).rawFlMat(:, 9:16)), ...
-                3, 'omitnan') ./ 2; % --> [volume, wedge]
-            
-        % Calculate the population vector average and the amplitude of the summed population vector
-        % (AKA 'PVA strength') for each volume        
+        mD(iTrial).wedgeRawFlMat = sum(cat(3, mD(iTrial).rawFlMat(:, 1:8), ...
+                mD(iTrial).rawFlMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]
+
+        % Calculate the population vector average and the amplitude of the summed population 
+        % vector (AKA 'PVA strength') for each volume        
         angleMat = repmat((-7 * pi/8):pi/4:(7 * pi/8), mD(iTrial).SI.hFastZ.numVolumes, 1);
         [x, y] = pol2cart(angleMat, mD(iTrial).wedgeDffMat); % Convert to cartesian coordinates to add vectors
         [theta, rho] = cart2pol(sum(x, 2), sum(y, 2));
@@ -107,7 +110,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     else
         mD(iTrial).roiData = [];
     end
-    
+
     % Reference images
     currFile = refImgFiles(refImgFileNums == tid);
     if ~isempty(currFile)
@@ -116,14 +119,14 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     else
         mD(iTrial).refImages = [];
     end
-    
+
     % FicTrac data
     if sum([ftData.trialNum] == tid)
         currFtData = ftData([ftData.trialNum] == tid).trialData;
-        
+
         % Get frame times relative to start of trial (column 24 is nanosec since previous frame)
         mD(iTrial).ftFrameTimes = cumsum(currFtData(:, 24)) ./ 1e9;
-        
+
         % Copy important variables, converting units as needed
         IFI = [mD(iTrial).ftFrameTimes(1); diff(mD(iTrial).ftFrameTimes)];
         mD(iTrial).ftData.intX = currFtData(:, 15) * 4.5;               % mm
@@ -132,7 +135,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
         mD(iTrial).ftData.moveSpeed = (currFtData(:, 19) * 4.5) ./ IFI; % mm/sec
         mD(iTrial).ftData.intFwMove = currFtData(:, 20) * 4.5;          % mm
         mD(iTrial).ftData.intSideMove = currFtData(:, 21) * 4.5;        % mm
-        
+
         % Calculate derived FicTrac variables
         mD(iTrial).ftData.yawSpeed = [0; diff(smoothdata(unwrap(currFtData(:, 17), [], 1), ...
                 1, 'gaussian', 7), 1)] ./ IFI;  % radians/sec
@@ -143,7 +146,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     else
         mD(iTrial).ftData = [];
     end
-    
+
     % Experiment parameters
     if sum([expMetadata.trialNum] == tid)
         allFieldNames = fieldnames(expMetadata);
@@ -161,7 +164,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
         end
         mD(iTrial).displayRate = double(mD(iTrial).displayRate);
     end
-    
+
     % Extracted size and timing values
     mD(iTrial).volumeRate =  mD(iTrial).SI.hRoiManager.scanVolumeRate;
     mD(iTrial).nVolumes = mD(iTrial).SI.hFastZ.numVolumes;
@@ -170,7 +173,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     mD(iTrial).nDaqSamples = size(mD(iTrial).panelsPosData, 1);
     daqSampDur = mD(iTrial).nDaqSamples / mD(iTrial).trialDuration;
     mD(iTrial).daqSampTimes = (1:1:mD(iTrial).nDaqSamples) / mD(iTrial).SAMPLING_RATE;
-    
+
     % Panels information
     xPosFunc = mD(iTrial).expMetadata.xDimPosFun.func;
     yPosFunc = mD(iTrial).expMetadata.yDimPosFun.func;
@@ -183,21 +186,21 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     mD(iTrial).panelsPosY = yPosRep(1:mD(iTrial).nPanelsFrames);
     mD(iTrial).panelsFrameTimes = (1:1:mD(iTrial).nPanelsFrames) / mD(iTrial).displayRate;
     mD(iTrial).panelsPattern = mD(iTrial).expMetadata.pattern.Pats; % --> [y, x, frame, dim]
-    
+
     % Opto stim timing
     if mD(iTrial).usingOptoStim
-        
+
         % Make a list of each stim onset and offset throughout the entire trial
         stimTimes = mD(iTrial).optoStimTiming;
-        mD(iTrial).optoStimOnsetTimes = (stimTimes(1):sum(stimTimes(2:3)):mD(iTrial).trialDuration ...
-                - stimTimes(2))';
+        mD(iTrial).optoStimOnsetTimes = ...
+                (stimTimes(1):sum(stimTimes(2:3)):mD(iTrial).trialDuration - stimTimes(2))';
         mD(iTrial).optoStimOffsetTimes = (sum(stimTimes(1:2)):sum(stimTimes(2:3)) ...
                 :mD(iTrial).trialDuration)';
     else
         mD(iTrial).optoStimOnsetTimes = [];
         mD(iTrial).optoStimOnsetTimes = [];
     end
-    
+
 end%iTrial
 
 % Rename a couple of fields
