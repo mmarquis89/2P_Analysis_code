@@ -5,7 +5,7 @@ load(fullfile(parentDir, 'analysis_data.mat'));
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:24];
+blTrials = [1:17];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -93,16 +93,16 @@ bl = orderfields(bl);
 
 
 %% ===================================================================================================
-%% Plot tuning curves for each wedge across trials
+%% Plot tuning heatmaps for each wedge across trials
 %===================================================================================================
 
 
-saveFig = 1;
+saveFig = 0;
 
 sourceData = bl.wedgeRawFlArr;
 % sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-
+% 
 showStimTrials = 1;
 
 
@@ -190,11 +190,11 @@ for iPlot = 1:nPlots
     else
         % Indicate missing opto stim trials
             skippedTrials = 0;
-            optoStimTrials = find([mD.usingOptoStim]);
+            optoStimTrials = find([bl.usingOptoStim]);
             for iTrial = 1:numel(optoStimTrials)
                 plotY = optoStimTrials(iTrial) - skippedTrials - 0.5;
                 skippedTrials = skippedTrials + 1;
-                if mD(optoStimTrials(iTrial)).usingPanels
+                if bl.usingPanels(optoStimTrials(iTrial))
                     lineColor = 'green';
                 else
                     lineColor = 'red';
@@ -228,11 +228,11 @@ end
 %% Plot as lines instead of using imagesc
 % ===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
-smWin = 2;
+smWin = 3;
 sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 
 figSize = [];
@@ -306,7 +306,7 @@ for iPlot = 1:nPlots
         currOffset = (range * (iTrial - 1));
         offsets(iTrial) = currOffset;
         currData(:, iTrial) = currData(:, iTrial) + currOffset;
-        plot([plotX(1), plotX(end)], [currOffset, currOffset], '--', 'color', 'b') % Plot zero lines
+%         plot([plotX(1), plotX(end)], [currOffset, currOffset], '--', 'color', 'b') % Plot zero lines
     end
     plot(plotX, currData, 'color', 'k', 'linewidth', 1.25);
     yL(1) = yMin * 1.25;
@@ -356,12 +356,12 @@ end
 %% Plot min and max values from the tuning curves
 %===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
-smWin = 2;
+smWin = 3;
 
 sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
     
 figSize = [];
@@ -418,9 +418,11 @@ tuningAmp = maxVals - minVals;          % --> [wedge, trial]
 f = figure(2);clf;
 f.Color = [1 1 1];
 if ~isempty(figSize)
+    f.Position(2) = 50;
    f.Position(3:4) = figSize; 
 end
 globalMax = 0;
+nPlots = size(sourceData, 2);
 for iPlot = 1:nPlots
     ax = subaxis(nPlots, 1, iPlot, 'mt', 0.06, 'mb', 0.06, 'sv', 0.03, 'mr', 0.03, 'ml', 0.08);
     hold on;
@@ -434,10 +436,9 @@ for iPlot = 1:nPlots
         else
             lineColor = 'red';
         end
-        yL = ylim();
+        yL = [0 ceil(max(tuningAmp(:)))];%ylim();
         plot([iTrial - 0.5, iTrial - 0.5], yL, '-', 'color', lineColor, ...
             'linewidth', 1.5)
-        globalMax = max([globalMax, yL(2)]);
     end
     if iPlot == nPlots
         xlabel('Trial number', 'fontsize', 13)
@@ -449,11 +450,11 @@ for iPlot = 1:nPlots
 %     ylabel(num2str(iPlot))
 end
 
-% for iAx = 1:numel(f.Children)
-%    if strcmp(f.Children(iAx).Tag, 'subaxis')
-%        f.Children(iAx).YLim = [0 globalMax]
-%    end
-% end
+for iAx = 1:numel(f.Children)
+   if strcmp(f.Children(iAx).Tag, 'subaxis')
+       f.Children(iAx).YLim = [0 ceil(max(tuningAmp(:)))];
+   end
+end
 
 % Plot title at top of figure
 h = suptitle({[bl.expID, ' - EB wedge visual tuning'], ...
@@ -469,59 +470,203 @@ if saveFig
 end
 
 %% ===================================================================================================
-%% Plot behavior as a function of bar position
+%% Plot summary of tuning curve amplitudes
 %===================================================================================================
 
-smReps = 6;
-smWin = 5;
+saveFig = 1;
 
+smWin = 3;
+
+% sourceData = bl.wedgeRawFlArr;
+sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeZscoreArr;
+
+
+% Generate figure labels and save file name
+if isequal(sourceData, bl.wedgeDffArr)
+    figTitleText = 'dF/F';
+    saveFileName = 'tuning_curve_amplitude_summary_dff';
+elseif isequal(sourceData, bl.wedgeRawFlArr)
+    figTitleText = 'Raw F';
+    saveFileName = 'tuning_curve_amplitude_summary_rawF';
+elseif isequal(sourceData, bl.wedgeZscoreArr)
+    figTitleText = 'Z-scored dF/F';
+    saveFileName = 'tuning_curve_amplitude_summary_zscored-dff';
+else
+    errordlg('Error: sourceData mismatch');
+end
 
 % Get mean panels pos data
 panelsPosVols = [];
-for iFrame = 1:numel(bl.ftFrameTimes)
-    [~, currFrame] = min(abs(bl.panelsFrameTimes - bl.ftFrameTimes(iFrame)));
-    panelsPosFrames(currFrame) = bl.panelsPosX(currFrame);
+for iVol = 1:size(bl.wedgeDffArr, 1)
+    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)));
+    panelsPosVols(iVol) = bl.panelsPosX(currVol);
 end
-meanSpeed = []; meanYawSpeed = []; meanYawVel = [];
+tuningData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
-    meanSpeed(iPos, :) = ...
-            mean(bl.ftData.moveSpeed(panelsPosFrames == (iPos - 1), :), 1);    % --> [barPos, trial]    
-    meanYawVel(iPos, :) = ...
-            mean(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :), 1);     % --> [barPos, trial] 
-    meanYawSpeed(iPos, :) = ...
-            mean(abs(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :)), 1);% --> [barPos, trial]
+    tuningData(iPos, :, :) = ...
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
 end
 
+% Get mean panels pos data
+panelsPosVols = [];
+for iVol = 1:size(bl.wedgeDffArr, 1)
+    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)));
+    panelsPosVols(iVol) = bl.panelsPosX(currVol);
+end
+tuningData = [];
+for iPos = 1:numel(unique(bl.panelsPosX))
+    tuningData(iPos, :, :) = ...
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+end
 
-% Shift to make center of plot directly in front of fly
-meanSpeed = [meanSpeed(92:96, :); meanSpeed(1:91, :)];
-meanYawVel = [meanYawVel(92:96, :); meanYawVel(1:91, :)];
-meanYawSpeed = [meanYawSpeed(92:96, :); meanYawSpeed(1:91, :)];
+% Smooth data, then find the max and min for each trial and wedge
+tuningDataSm = repeat_smooth(tuningData, 10, 'smWin', smWin);
+minVals = []; maxVals = [];
+for iTrial = 1:size(tuningDataSm, 3)
+    minVals(:, iTrial) = min(tuningDataSm(:, :, iTrial), [], 1); % --> [wedge, trial]
+    maxVals(:, iTrial) = max(tuningDataSm(:, :, iTrial), [], 1); % --> [wedge, trial]
+end
+xTickLabel = 1:size(minVals, 2);
 
-% plotVar = meanSpeed;
-plotVar = meanYawSpeed;
-plotVar(plotVar > 0.8) = 0.8;
-plotX = -180:3.75:(180 - 3.75);
+% Cut out opto stim trials
+optoStimTrials = [bl.usingOptoStim];
+postStimTrials = [0, optoStimTrials(1:end - 1)];
+postStimTrials = postStimTrials(~optoStimTrials);
+optoStimPanels = bl.usingPanels;
+prevStimPanels = [0, optoStimPanels(1:end - 1)];
+prevStimPanels = prevStimPanels(~optoStimTrials);
+xTickLabel = xTickLabel(~optoStimTrials);
+minVals = minVals(:, ~optoStimTrials);  % --> [wedge, trial]
+maxVals = maxVals(:, ~optoStimTrials);  % --> [wedge, trial]
+tuningAmp = maxVals - minVals;          % --> [wedge, trial]
 
-figure(1);clf;
-plotData = plotVar(:, ~[bl.usingOptoStim]);
-imagesc(plotX, [1 size(plotData, 2)], ...
-    repeat_smooth(plotData, smReps, 'smWin', smWin)');
-hold on; plot([0 0], [0 size(plotData, 2) + 1], 'color', 'k', 'linewidth', 2)
-ylim([0.5 size(plotData, 2) + 0.5])
-% colormap('bluewhitered')
 
-% Indicate missing opto stim trials
-skippedTrials = 0;
-optoStimTrials = find([bl.usingOptoStim]);
-for iTrial = 1:numel(optoStimTrials)
-    plotY = optoStimTrials(iTrial) - skippedTrials - 0.5;
-    skippedTrials = skippedTrials + 1;
-    if bl.usingPanels(optoStimTrials(iTrial))
-        lineColor = 'green';
+% Group by experiment epoch
+blockAmps = [];
+blockStartTrials = [1, find(postStimTrials)];
+for iBlock = 1:numel(blockStartTrials)
+    startTrial = blockStartTrials(iBlock);
+    if iBlock == numel(blockStartTrials)
+        endTrial = size(tuningAmp, 2);
     else
-        lineColor = 'red';
+        endTrial = blockStartTrials(iBlock + 1) - 1;
     end
-    xL = xlim;
-    plot(xL, [plotY, plotY], 'color', lineColor, 'linewidth', 2);
+    blockAmps(:, iBlock) = mean(tuningAmp(:, startTrial:endTrial), 2); % --> [wedge, block]
 end
+
+% Pull out the tuning curve amplitudes for trials before and after opto stims
+blockAmps = [];
+blockStartTrials = find(postStimTrials);
+for iTrial = 1:numel(blockStartTrials)
+   preStim = blockStartTrials(iTrial) - 1;
+   postStim = blockStartTrials(iTrial);
+   blockAmps(:, :, iTrial) = tuningAmp(:, [preStim, postStim]); % --> [wedge, trial, stim trial num]
+end
+blockAmps = permute(blockAmps, [2, 1 3]); % --> [trial, wedge, stim trial Num]
+
+% Create figure
+nStimTrials = size(blockAmps, 3);
+f = figure(1);clf;
+f.Color = [1 1 1];
+f.Position = [f.Position(1:2), nStimTrials * 300, 450];
+usingPanels = bl.usingPanels(logical(bl.usingOptoStim));
+optoStimTrials = bl.trialNum(logical(bl.usingOptoStim));
+for iTrial = 1:nStimTrials
+    subaxis(1, nStimTrials, iTrial, 'mr', 0.04, 'ml', 72 / f.Position(3), 'mt', 0.15, 'mb', 0.11); hold on; box off
+    plot(blockAmps(:, :, iTrial), 'o-')
+    ax = gca;
+    ax.XTick = [1 2];
+    ax.XTickLabel = {'Before', 'After'};
+    ax.FontSize = 12;
+    xlim([0.75 2.25]);
+    if usingPanels(iTrial)
+        title(['Opto + bar (trial ', num2str(optoStimTrials(iTrial)), ')'], 'FontSize', 12)
+    else
+        title(['Opto only (trial ', num2str(optoStimTrials(iTrial)), ')'], 'FontSize', 12)
+    end
+    
+    % Plot mean amplitude for each group
+    plot([mean(blockAmps(1, :, iTrial)), mean(blockAmps(2, :, iTrial))], ...
+            'o-', 'Color', 'k', 'linewidth', 5)
+    
+    % Track Y limits of each axis
+    if iTrial == 1
+       figYLims = ylim();
+       ylabel('Max - min tuning curve dF/F ', 'fontsize', 13) 
+    else
+       currYLims = ylim();
+       figYLims = [min([figYLims(1), currYLims(1)]), max([figYLims(2), currYLims(2)])];
+    end
+end
+% Make each plot use the same Y limits
+for iAx = 1:numel(f.Children)
+   f.Children(iAx).YLim = figYLims; 
+end
+suptitle(bl.expID)
+
+
+% Save figure
+if saveFig
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, saveFileName);
+end
+
+
+%% ===================================================================================================
+%% Plot behavior as a function of bar position
+%===================================================================================================
+% 
+% smReps = 6;
+% smWin = 5;
+% 
+% 
+% % Get mean panels pos data
+% panelsPosVols = [];
+% for iFrame = 1:numel(bl.ftFrameTimes)
+%     [~, currFrame] = min(abs(bl.panelsFrameTimes - bl.ftFrameTimes(iFrame)));
+%     panelsPosFrames(currFrame) = bl.panelsPosX(currFrame);
+% end
+% meanSpeed = []; meanYawSpeed = []; meanYawVel = [];
+% for iPos = 1:numel(unique(bl.panelsPosX))
+%     meanSpeed(iPos, :) = ...
+%             mean(bl.ftData.moveSpeed(panelsPosFrames == (iPos - 1), :), 1);    % --> [barPos, trial]    
+%     meanYawVel(iPos, :) = ...
+%             mean(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :), 1);     % --> [barPos, trial] 
+%     meanYawSpeed(iPos, :) = ...
+%             mean(abs(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :)), 1);% --> [barPos, trial]
+% end
+% 
+% 
+% % Shift to make center of plot directly in front of fly
+% meanSpeed = [meanSpeed(92:96, :); meanSpeed(1:91, :)];
+% meanYawVel = [meanYawVel(92:96, :); meanYawVel(1:91, :)];
+% meanYawSpeed = [meanYawSpeed(92:96, :); meanYawSpeed(1:91, :)];
+% 
+% % plotVar = meanSpeed;
+% plotVar = meanYawSpeed;
+% plotVar(plotVar > 0.8) = 0.8;
+% plotX = -180:3.75:(180 - 3.75);
+% 
+% figure(1);clf;
+% plotData = plotVar(:, ~[bl.usingOptoStim]);
+% imagesc(plotX, [1 size(plotData, 2)], ...
+%     repeat_smooth(plotData, smReps, 'smWin', smWin)');
+% hold on; plot([0 0], [0 size(plotData, 2) + 1], 'color', 'k', 'linewidth', 2)
+% ylim([0.5 size(plotData, 2) + 0.5])
+% % colormap('bluewhitered')
+% 
+% % Indicate missing opto stim trials
+% skippedTrials = 0;
+% optoStimTrials = find([bl.usingOptoStim]);
+% for iTrial = 1:numel(optoStimTrials)
+%     plotY = optoStimTrials(iTrial) - skippedTrials - 0.5;
+%     skippedTrials = skippedTrials + 1;
+%     if bl.usingPanels(optoStimTrials(iTrial))
+%         lineColor = 'green';
+%     else
+%         lineColor = 'red';
+%     end
+%     xL = xlim;
+%     plot(xL, [plotY, plotY], 'color', lineColor, 'linewidth', 2);
+% end

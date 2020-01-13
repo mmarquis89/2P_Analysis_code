@@ -166,14 +166,24 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     end
 
     % Extracted size and timing values
-    mD(iTrial).volumeRate =  mD(iTrial).SI.hRoiManager.scanVolumeRate;
-    mD(iTrial).nVolumes = mD(iTrial).SI.hFastZ.numVolumes;
-    mD(iTrial).nPlanes = size(mD(iTrial).refImages, 3);
-    mD(iTrial).volTimes = (1:1:mD(iTrial).nVolumes) / mD(iTrial).volumeRate;
-    mD(iTrial).nDaqSamples = size(mD(iTrial).panelsPosData, 1);
-    daqSampDur = mD(iTrial).nDaqSamples / mD(iTrial).trialDuration;
-    mD(iTrial).daqSampTimes = (1:1:mD(iTrial).nDaqSamples) / mD(iTrial).SAMPLING_RATE;
-
+    if sum([expMetadata.trialNum] == tid)
+        mD(iTrial).volumeRate =  mD(iTrial).SI.hRoiManager.scanVolumeRate;
+        mD(iTrial).nVolumes = mD(iTrial).SI.hFastZ.numVolumes;
+        mD(iTrial).nPlanes = size(mD(iTrial).refImages, 3);
+        mD(iTrial).volTimes = (1:1:mD(iTrial).nVolumes) / mD(iTrial).volumeRate;
+        mD(iTrial).nDaqSamples = size(mD(iTrial).panelsPosData, 1);
+        daqSampDur = mD(iTrial).nDaqSamples / mD(iTrial).trialDuration;
+        mD(iTrial).daqSampTimes = (1:1:mD(iTrial).nDaqSamples) / mD(iTrial).SAMPLING_RATE;
+    else
+        mD(iTrial).volumeRate =  [];
+        mD(iTrial).nVolumes = [];
+        mD(iTrial).nPlanes = [];
+        mD(iTrial).volTimes = [];
+        mD(iTrial).nDaqSamples = [];
+        daqSampDur = [];
+        mD(iTrial).daqSampTimes = [];
+    end
+        
     % Panels information
     xPosFunc = mD(iTrial).expMetadata.xDimPosFun.func;
     yPosFunc = mD(iTrial).expMetadata.yDimPosFun.func;

@@ -28,7 +28,7 @@ for iFile = 1:numel(allROIData)
     
     % Load current trial's imaging data
     currImgDataFile = imgDataFiles(imgDataTrialNums == allROIData(iFile).trialNum);
-    load(fullfile(parentDir, currImgDataFile.name)); % --> 'imageData' [y, x, plane, volume]
+    load(fullfile(parentDir, currImgDataFile.name)); % --> 'imgData' [y, x, plane, volume]
     allROIData(iFile).imgDataFile = currImgDataFile.name;
         
     % Reshape into 1D frames

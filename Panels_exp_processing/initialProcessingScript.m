@@ -9,11 +9,11 @@ if ~isdir(outputDir)
 end
 
 %% Make anatomy stack
-create_anatomy_stack(expDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack2', ...
+create_anatomy_stack(expDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
         'OutputDir', outputDir);
     
     
-%% CONSOLIDATE METADATA AND DAQ DATA FOR ALL TRIALS
+% CONSOLIDATE METADATA AND DAQ DATA FOR ALL TRIALS
 
 % Process metadata files
 mdFiles = dir(fullfile(expDir, '*metadata*trial*.mat'));
@@ -44,7 +44,7 @@ daqDataFiles = dir(fullfile(expDir, '*daqData*trial*.mat'));
 for iFile = 1:numel(daqDataFiles)
        
     % Load the file 
-    % Contains variabls "outputData", "trialData", and "ColumnLabels"
+    % Contains variables "outputData", "trialData", and "ColumnLabels"
     currData = load(fullfile(expDir, daqDataFiles(iFile).name)); 
     
     % Get the trial number of the current file
@@ -65,7 +65,7 @@ save(fullfile(outputDir, 'metadata.mat'), 'expMetadata', '-v7.3');
 save(fullfile(outputDir, 'daqData.mat'), 'expDaqData', '-v7.3');
 disp('Processing complete.');
 
-%% PROCESS FICTRAC DATA
+% PROCESS FICTRAC DATA
 
 ftDir = fullfile(expDir, 'FicTracData');
 
@@ -178,7 +178,7 @@ save(fullfile(outputDir, 'FicTracData.mat'), 'ftData', '-v7.3');
 
 % Identify imaging data files
 imgDataFiles = dir(fullfile(expDir, '*trial*.tif'));
-for iFile = 1:numel(imgDataFiles)
+for iFile = 2:numel(imgDataFiles)
 
     disp(['Processing file #', num2str(iFile), ' of ', num2str(numel(imgDataFiles))]);
     

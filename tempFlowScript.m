@@ -1,6 +1,6 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191211-2_38A11_ChR_60D05_7f\ProcessedData';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20200110-2_38A11_ChR_60D05_7f\ProcessedData';
 roiFile = 'Behavior_Vid_ROI_Data.mat';
 
 

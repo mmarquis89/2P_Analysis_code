@@ -13,8 +13,7 @@ load(fullfile(parentDir, 'analysis_data.mat'));
 %%
 
 
-currTrial = 5
-
+currTrial = 13
 td = mD([mD.trialNum] == currTrial);
 
 flData = td.wedgeDffMat;
@@ -23,6 +22,7 @@ flData = td.wedgeDffMat;
 
 % flData = td.dffMat;
 % flData = td.rawFlMat;
+% flData = td.zscoreMat;
 
 
 % Get mean panels pos data
@@ -125,6 +125,7 @@ allAx(end).YTickLabel = [];
 
 subaxis(5, 3, 10:12)
 allAx(end + 1) = gca;
+% 
 %         % Optic flow data to identify flailing
 %         flowThresh = 0.08;
 %         currFlow = meanFlowMags{[mD.trialNum] == currTrial};
