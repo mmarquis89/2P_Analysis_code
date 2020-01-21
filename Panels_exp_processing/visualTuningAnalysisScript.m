@@ -5,7 +5,7 @@ load(fullfile(parentDir, 'analysis_data.mat'));
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:17];
+blTrials = [1:12];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -97,13 +97,13 @@ bl = orderfields(bl);
 %===================================================================================================
 
 
-saveFig = 0;
+saveFig = 1;
 
-sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeRawFlArr;
+sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 % 
-showStimTrials = 1;
+showStimTrials =0;
 
 
 
@@ -228,7 +228,7 @@ end
 %% Plot as lines instead of using imagesc
 % ===================================================================================================
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 3;
 sourceData = bl.wedgeRawFlArr;
@@ -356,7 +356,7 @@ end
 %% Plot min and max values from the tuning curves
 %===================================================================================================
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 3;
 
@@ -452,7 +452,7 @@ end
 
 for iAx = 1:numel(f.Children)
    if strcmp(f.Children(iAx).Tag, 'subaxis')
-       f.Children(iAx).YLim = [0 ceil(max(tuningAmp(:)))];
+       f.Children(iAx).YLim = [0, 1.2 * max(tuningAmp(:))];
    end
 end
 
@@ -601,7 +601,10 @@ for iTrial = 1:nStimTrials
 end
 % Make each plot use the same Y limits
 for iAx = 1:numel(f.Children)
-   f.Children(iAx).YLim = figYLims; 
+    try
+        f.Children(iAx).YLim = figYLims;
+    catch
+    end
 end
 suptitle(bl.expID)
 

@@ -7,13 +7,13 @@ analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
 load(fullfile(parentDir, 'analysis_data.mat'));
 
 
-% load(fullfile(parentDir, 'flowMags.mat'));
+load(fullfile(parentDir, 'flowMags.mat'));
 
 
 %%
 
 
-currTrial = 13
+currTrial = 3
 td = mD([mD.trialNum] == currTrial);
 
 flData = td.wedgeDffMat;
@@ -126,40 +126,39 @@ allAx(end).YTickLabel = [];
 subaxis(5, 3, 10:12)
 allAx(end + 1) = gca;
 % 
-%         % Optic flow data to identify flailing
-%         flowThresh = 0.08;
-%         currFlow = meanFlowMags{[mD.trialNum] == currTrial};
-%         currFlow(end) = 0;
-%         plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
-%         plotData = plotData - min(plotData); 
-% %         plotData(plotData < flowThresh) = nan;
-% %         plotData(end) = nan;
-%         plot(td.ftFrameTimes(1:numel(plotData)), plotData, 'color', 'k');
-%         hold on;
-%         if td.usingOptoStim
-%            hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
-%         end
-%         plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [flowThresh, flowThresh],...
-%                 'linewidth', 1, 'color', 'r');
-%         ylim([0 0.5])
+        % Optic flow data to identify flailing
+        flowThresh = 0.08;
+        currFlow = meanFlowMags{[mD.trialNum] == currTrial};
+        currFlow(end) = 0;
+        plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
+        plotData = plotData - min(plotData); 
+%         plot(td.ftFrameTimes(1:numel(plotData)), plotData, 'color', 'k');+
+        plot(plotData, 'color', 'k');
+        hold on;
+        if td.usingOptoStim
+           hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
+        end
+        plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [flowThresh, flowThresh],...
+                'linewidth', 1, 'color', 'r');
+        ylim([0 0.5])
 
-
-% FicTrac heading overlaid with dF/F pva
-HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
-plot(td.ftFrameTimes, 2*pi - mod(HD, 2*pi), 'color', 'k');
-if td.usingOptoStim
-   hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
-end
-ylim([0 2*pi])
-ylabel('Fly heading (rad)')
-yyaxis('right')
-uwVectAvgRad = smoothdata(unwrap(td.dffVectAvgRad + pi), 1, 'gaussian', 3);
-uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
-plot(td.volTimes, mod(uwVectAvgRad, 2*pi), 'color', rgb('darkorange'));
-ylabel('PVA')
-ylim([0 2*pi])
-% plot(td.ftFrameTimes, repeat_smooth(td.ftData.moveSpeed, 15, 'smWin', 7), 'color', rgb('orange'));
-% ylabel('Move speed (mm/sec)')
+% 
+% % FicTrac heading overlaid with dF/F pva
+% HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
+% plot(td.ftFrameTimes, 2*pi - mod(HD, 2*pi), 'color', 'k');
+% if td.usingOptoStim
+%    hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
+% end
+% ylim([0 2*pi])
+% ylabel('Fly heading (rad)')
+% yyaxis('right')
+% uwVectAvgRad = smoothdata(unwrap(td.dffVectAvgRad + pi), 1, 'gaussian', 3);
+% uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
+% plot(td.volTimes, mod(uwVectAvgRad, 2*pi), 'color', rgb('darkorange'));
+% ylabel('PVA')
+% ylim([0 2*pi])
+% % plot(td.ftFrameTimes, repeat_smooth(td.ftData.moveSpeed, 15, 'smWin', 7), 'color', rgb('orange'));
+% % ylabel('Move speed (mm/sec)')
 
 subaxis(5, 3, 13:15)
 allAx(end + 1) = gca;
@@ -184,7 +183,8 @@ ylabel('Yaw speed (rad/sec)');
 xlabel('Time (s)');
 
 % Link the X-axis limits across all plots
-linkaxes(allAx(3:end), 'x');
+% linkaxes(allAx(3:end), 'x');
+linkaxes(allAx([4 5 7]), 'x');
 xlim([0 td.trialDuration])
 
 
@@ -214,8 +214,10 @@ if td.usingOptoStim
     end
     plotTimes = td.volTimes(1:size(stimWinDffAvg, 1)) - td.volTimes(baselineVols + 1);
     
-    figure(2);clf; 
-    plot(plotTimes, smoothdata(stimWinDffAvg, 1, 'gaussian', 3)); 
-    hold on; 
+    figure(2);clf;hold on;
+    for iWedge = 1:size(stimWinDffAvg, 2)
+        plot(plotTimes, smoothdata(stimWinDffAvg(:, iWedge), 1, 'gaussian', 3), ...
+                'color', cm(iWedge, :), 'linewidth', 2);
+    end
     plot_stim_shading([0 (td.optoStimOffsetTimes(1) - td.optoStimOnsetTimes(1))])
 end

@@ -3,6 +3,8 @@
 
 expDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select an imaging data directory');
 
+savePath = 'D:\Dropbox (HMS)\2P Data\Analysis\2019_06_06_exp_1'
+
 try
 if expDir == 0
     % Skip loading if user clicked "Cancel"
@@ -260,21 +262,21 @@ catch foldME; rethrow(foldME); end
 
 %% SET UP PLOTTING PARAMETERS
 try
-stimNames =  {'EtOH'};%{'EtOH', 'EtOH+LED', 'LEDOnly'}; %
-stimTrialGroups = [s.OdorA]; % [s.OdorA + 2*s.OdorAandLEDbackground + 3*s.LEDstim];%[ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
-stimGroupNames = {'OdorA'}; %{'OdorA', 'OdorA+LED', 'LED'};%{'OdorA', 'OdorB'}; %
+stimNames =  {'EtOH', 'OptoStim'};%{'EtOH', 'EtOH+LED', 'LEDOnly'}; %
+stimTrialGroups = [s.OdorA + 2*s.OptoStim];%[s.OdorA]; % [ones(1, 30), 2 * ones(1, 60)];%[s.OdorA + 2 * s.OdorB]; % 
+stimGroupNames = {'OdorA', 'OptoStim'}; %{'OdorA', 'OdorA+LED', 'LED'};%{'OdorA', 'OdorB'}; %
 
-stimEpochs = [10 11]; % [4 6; 2 8];%[reshape(2:2:20, 2, 5)']% reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% 
-stimShadingColors = {'red'};%repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % 
+stimEpochs = [10 15; 10 10.1]; % [4 6; 2 8];%[reshape(2:2:20, 2, 5)']% reshape(1:20, 2, 10)'% [11 12]; ;%[10 13];%[6 7;10 13];%[6 7; 8 11; 10 11];% 
+stimShadingColors = {'red', 'red'};%repmat({'red'}, 1, size(stimEpochs, 1));%{'red'}; %{'red', 'green', 'red'}; % 
 % stimShadingColors{3} = 'green';
-stimEpochNames = {'Odor-1', 'Odor-2'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
+stimEpochNames = {'Odor-1', 'OptoStim'};% {'Laser', 'Odor', 'Laser'}; %{'Laser', 'Odor'};%
 
 %     groupBounds = [1:40:nTrials]; groupBounds(2:end) = groupBounds(2:end) - 1;
 % groupBounds = [1, 40:60:nTrials-1]; groupBounds(2:end) = groupBounds(2:end) -1;
 groupBounds = [0 cumsum([infoStruct.blockData.nTrials])];
 groupBounds(1) = 0;
 
-blockNames = {'Odor-1', 'Odor-2'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
+blockNames = {'Odor-1', 'OptoStim'};%{'Baseline', 'Photostim', 'OdorOnly'};%{'OdorOnly', 'BW', 'OdorOnly2', 'FW', 'OdorOnly3', 'BW2'}; %{'Odor Only', 'Photostim'}; %{'OdorOnly', 'FW', 'OdorOnly2', 'BW', 'OdorOnly3', 'FW2'};
 blockShading = {1 , 1}% {[1 2] [1 2] [1 2]}'%repmat({1,2}, 1, 5);%{2, [1 2], 2};%{2, [1 2], 2, [2 3], 2, [1 2]}; %{2, [2 3], 2, [1 2], 2, [2 3]};
 
 
@@ -579,7 +581,7 @@ fontSize = 14;
 sepBlockStims = 0; sepGroupStims = 0;
 
 % ftVarName = 'moveSpeed'; % 'moveSpeed', 'fwSpeed', 'yawSpeed', 'yawVel'
-ftVarName =  'yawVel' %'fwSpeed'%;%              'yawSpeed'%  'fwSpeed'% 
+ftVarName =  'moveSpeed' %'fwSpeed'%;%              'yawSpeed'%  'fwSpeed'% 
 sdCap = 4.5;
 smWin = 4;
 cmName = @parula;
@@ -593,26 +595,26 @@ figTitle = [regexprep(expDate, '_', '\\_'), '  —  FicTrac ', ftVarName];
 % 
 % plotTitleSuffix = ['  —  sid\_', num2str(sid)];
 % 
-% GROUP CHRONOLOGICALLY BY BLOCKS
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = iBound + 1;
-trialGroups = trialGroups .* goodTrials;
-plotTitleSuffix = '';
-fileNameSuffix = '_Blocks_Separated'; 
-if ~isempty(blockShading)
-    sepBlockStims = 1;
-end
-
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups; 
+% % GROUP CHRONOLOGICALLY BY BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end)+1:end) = iBound + 1;
 % trialGroups = trialGroups .* goodTrials;
-% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-% sepGroupStims = 1;
-% % trialGroups(1:240) = 0;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated'; 
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;
+% end
+
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups; 
+trialGroups = trialGroups .* goodTrials;
+plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+sepGroupStims = 1;
+% trialGroups(1:240) = 0;
 
 % % % 
 % % GROUP BY ALTERNATING TRIALS
@@ -768,10 +770,10 @@ cm = [];
 % figTitle = [figTitle, '  —  sid_', num2str(sid)];
 
 % % % % % % 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups .* goodTrials; 
-% fileNameSuffix = [fileNameSuffix, 'StimTypeComparison_LED-100']; 
-% groupNames = stimNames;
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* goodTrials; 
+fileNameSuffix = [fileNameSuffix, 'StimTypeComparison_LED-100']; 
+groupNames = stimNames;
 % trialGroups([121:end]) = 0;
 
 % % % 
@@ -1178,7 +1180,7 @@ try
     
     % Calculate absolute max dF/F value across all planes and stim types
     currConds = [1 4 2 5];
-    makeVid = 1;
+    makeVid = 0;
     sigma = [0.6];   
     rangeType = 'Max';
     rangeScalar = 0.4;
@@ -1267,16 +1269,16 @@ catch foldME; rethrow(foldME); end
     %% LOAD ROI DATA AND PLOT ROIs
 try
 activeROIs = [];
-expDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
-metaDataFileName = 'ROI_metadata.mat';
-dffDataFileName = 'ROI_Data_Avg.mat';
+expDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\2019 Mar-Apr\', expDate, '\sid_', num2str(sid)];
+metaDataFileName = 'ROI_metadata_LH.mat';
+dffDataFileName = 'ROI_Data_Avg_LH.mat';
 
 
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "L-ANT", "R-ANT","Bi-ANT", "Control"];
 % ROInames = ["SLP", "ANT", "PPL1", "Control"];
-ROInames = ["WholeLH", "ALTs", "dLH", "midLH", "v-midLH", "vLH"];
-% ROInames = ["SLP", "ANT", "LH", "PPM2", "VLP", "SMP", "Control"];
+% ROInames = ["WholeLH", "ALTs", "dLH", "midLH", "v-midLH", "vLH"];
+ROInames = ["SLP", "ANT", "LH", "PPM2", "Control"];
 % ROInames = ["L-SLP", "R-SLP", "Bi-ANT", "Control"];
 % metaDataFileName = 'ROI_metadata_SLP_comparison.mat';
 % dffDataFileName = 'ROI_Data_Avg_SLP_comparison.mat';
@@ -1360,10 +1362,10 @@ saveDir = uigetdir(savePath, 'Select a save directory');
 sepBlockStims = 0; sepGroupStims = 0; clear minMax;
 fontSize = 14;
 
-useDff = 0;
+useDff = 1;
 subtractBaseline = 0;
 colorbarOn = 1;
-% minMax = [-0.12 1.5; -0.12 1; -0.12 0.8; -0.12 2.5; 0 1]; % [ROI, min-max]
+minMax = [0 1.5; -0.12 1; -0.12 0.8; -0.12 2.5; 0 1]; % [ROI, min-max]
 % minMax = [110 270; 300 750; 150 1000; 75 425; 0 600; 50 700]; % [ROI, min-max]
 % % % 
 
@@ -1373,24 +1375,24 @@ colorbarOn = 1;
 % 
 % % % % % % % % % % % % plotTitleSuffix = ['sid\_', num2str(sid)]
 
-% % GROUP BY STIM TYPE
-% trialGroups = stimTrialGroups; 
-% plotTitleSuffix = make_plotTitleSuffix(stimNames); %
-% fileNameSuffix = make_fileNameSuffix(stimGroupNames);
-% sepGroupStims = 1;
+% GROUP BY STIM TYPE
+trialGroups = stimTrialGroups .* s.OdorA; 
+plotTitleSuffix = make_plotTitleSuffix(stimNames); %
+fileNameSuffix = make_fileNameSuffix(stimGroupNames);
+sepGroupStims = 1;
 
-% GROUP CHRONOLOGICALLY BY BLOCKS
-trialGroups = zeros(1, nTrials);
-for iBound = 1:numel(groupBounds)-1
-   trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-end
-trialGroups(groupBounds(end)+1:end) = iBound + 1;
-trialGroups = trialGroups .* goodTrials;
-plotTitleSuffix = '';
-fileNameSuffix = '_Blocks_Separated';
-if ~isempty(blockShading)
-    sepBlockStims = 1;
-end
+% % GROUP CHRONOLOGICALLY BY BLOCKS
+% trialGroups = zeros(1, nTrials);
+% for iBound = 1:numel(groupBounds)-1
+%    trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+% end
+% trialGroups(groupBounds(end)+1:end) = iBound + 1;
+% trialGroups = trialGroups .* goodTrials;
+% plotTitleSuffix = '';
+% fileNameSuffix = '_Blocks_Separated';
+% if ~isempty(blockShading)
+%     sepBlockStims = 1;
+% end
 
 
 %---------------------------------------------------------------------------------------------------
@@ -1815,35 +1817,35 @@ try
     saveDir = uigetdir(savePath, 'Select a save directory');
     trialGroups = goodTrials;
     cm = []; fileNameSuffix = '';
-    figPos = [ -1450 50 800 900];%[-1450 50 1000 900] 
+    figPos = [ -1450 50 1000 900];%[-1450 50 1000 900] 
     
-    useDff = 0;
+    useDff = 1;
     subtractBaseline = 0;
     
     smWin = 3;
     singleTrials = 0;
     singleTrialAlpha = 0.3;
-    stdDevShading = 0;
+    stdDevShading = 1;
     outlierSD = 5;
 
-%     % GROUP BY STIM TYPE
-%     trialGroups = stimTrialGroups .* goodTrials;
-%     fileNameSuffix = '_StimTypeComparison';
-%     binNames = stimGroupNames;
+    % GROUP BY STIM TYPE
+    trialGroups = stimTrialGroups .* goodTrials .* s.OdorA;
+    fileNameSuffix = '_StimTypeComparison';
+    groupNames = stimGroupNames;
 
-    % GROUP CHRONOLOGICALLY BY BLOCKS
-    trialGroups = zeros(1, nTrials);
-    for iBound = 1:numel(groupBounds)-1
-        trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
-    end
-    trialGroups(groupBounds(end)+1:end) = iBound + 1;
-    trialGroups = trialGroups .* goodTrials;
-    plotTitleSuffix = '';
-    fileNameSuffix = '_Blocks_Separated';
-    if ~isempty(blockShading)
-        sepBlockStims = 1;
-    end
-    binNames = blockNames;
+%     % GROUP CHRONOLOGICALLY BY BLOCKS
+%     trialGroups = zeros(1, nTrials);
+%     for iBound = 1:numel(groupBounds)-1
+%         trialGroups(groupBounds(iBound)+1:groupBounds(iBound + 1)) = iBound;
+%     end
+%     trialGroups(groupBounds(end)+1:end) = iBound + 1;
+%     trialGroups = trialGroups .* goodTrials;
+%     plotTitleSuffix = '';
+%     fileNameSuffix = '_Blocks_Separated';
+%     if ~isempty(blockShading)
+%         sepBlockStims = 1;
+%     end
+%     binNames = blockNames;
     
 %         % Skip first block
 %         trialGroups = trialGroups - 1;
@@ -1915,7 +1917,8 @@ try
         yData = ROImetadata{iROI}(1).yi;
         subaxis(2, 3, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
         hold on
-        imshow(infoStruct.refImg(:, :, currPlane), [0 infoStruct.MAX_INTENSITY]);
+%         imshow(infoStruct.refImg(:, :, currPlane), [0 infoStruct.MAX_INTENSITY]);
+        imshow(infoStruct.refImg{currPlane}, [0 infoStruct.MAX_INTENSITY]);
         plot(xData, yData, 'Color', 'g');
         title(ROInames{iROI})
         
@@ -3255,7 +3258,7 @@ catch foldME; rethrow(foldME); end
     %% PCA
 try
 % Pull out data for one plane
-planeNum = 4;
+planeNum = 8;
 planeData = pcaData(:,:,:,planeNum);
 
 figure(2); clf;

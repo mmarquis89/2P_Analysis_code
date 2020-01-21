@@ -26,9 +26,10 @@ ROIDataAvg = [];
 ROIDataSum = zeros(nROIs, nVolumes * nTrials);
 ROIDataCount = zeros(nROIs, nVolumes * nTrials);
 for iPlane = 1:nPlanes
-
+    disp(iPlane)
     load(fullfile(parentDir, ['rigid_reg_sid_', num2str(analysisMetadata.sid), '_chan_1_plane_', num2str(iPlane), ...
-        '_sessionFile.mat'])); % --> 'sessionFile', [y, x, volume]
+        '_sessionFile.mat'])); % --> 'sessionData', [y, x, volume]
+    sessionData = sessionFile;
     sz = size(sessionData);
     nPixels = sz(1) * sz(2);
     sessionData = reshape(sessionData, [nPixels, (nVolumes * nTrials)]); % --> [Pixel, volume]
