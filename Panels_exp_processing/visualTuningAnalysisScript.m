@@ -1,11 +1,11 @@
-
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191205-2_38A11_ChR_60D05_7f\ProcessedData';
-analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
-load(fullfile(parentDir, 'analysis_data.mat'));
+% 
+% parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191205-2_38A11_ChR_60D05_7f\ProcessedData';
+% analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
+% load(fullfile(parentDir, 'analysis_data.mat'));
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:12];
+blTrials = [1:15];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -56,6 +56,9 @@ bl.trialNum = []; bl.usingPanels = []; bl.wedgeRawFlArr = [];
 for iTrial = 1:numel(bD)
     bl.dffArr(:, :, iTrial) = bD(iTrial).dffMat;                        % --> [volume, glom, trial]
     bl.rawFlArr(:, :, iTrial) = bD(iTrial).rawFlMat;                    % --> [volume, glom, trial]
+    try
+    bl.expDffArr(:, :, iTrial) = bD(iTrial).expDffMat;
+    catch; end
     bl.dffVectAvgRad(:, iTrial) = bD(iTrial).dffVectAvgRad;             % --> [volume, trial]
     bl.dffVectAvgWedge(:, iTrial) = bD(iTrial).dffVectAvgWedge;         % --> [volume, trial]        
     bl.dffVectStrength(:, iTrial) = bD(iTrial).dffVectStrength;         % --> [volume, trial]
@@ -65,6 +68,9 @@ for iTrial = 1:numel(bD)
     bl.wedgeRawFlArr(:, :, iTrial) = bD(iTrial).wedgeRawFlMat;          % --> [volume, wedge, trial]
     bl.wedgeDffArr(:, :, iTrial) = bD(iTrial).wedgeDffMat;              % --> [volume, wedge, trial]
     bl.wedgeZscoreArr(:, :, iTrial) = bD(iTrial).wedgeZscoreMat;        % --> [volume, wedge, trial]
+    try
+        bl.wedgeExpDffArr(:, :, iTrial) = bD(iTrial).wedgeExpDffMat;    % --> [volume, wedge, trial]
+    catch; end
     bl.zscoreArr(:, :, iTrial) = bD(iTrial).zscoreMat;                  % --> [volume, glom, trial]
     bl.trialNum(iTrial) = bD(iTrial).trialNum;                          % --> [trial]
     bl.usingPanels(iTrial) = bD(iTrial).usingPanels;                    % --> [trial]
@@ -97,13 +103,14 @@ bl = orderfields(bl);
 %===================================================================================================
 
 
-saveFig = 1;
+saveFig = 0;
 
-% sourceData = bl.wedgeRawFlArr;
+sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-% 
-showStimTrials =0;
+% sourceData = bl.wedgeExpDffArr;
+
+showStimTrials = 0;
 
 
 
@@ -117,6 +124,9 @@ elseif isequal(sourceData, bl.wedgeRawFlArr)
 elseif isequal(sourceData, bl.wedgeZscoreArr)
     figTitleText = 'Z-scored dF/F';
     saveFileName = '2D_tuning_curves_zscored-dff';
+elseif isequal(sourceData, bl.wedgeExpDffArr)
+    figTitleText = 'full exp dF/F';
+    saveFileName = '2D_tuning_curves_exp-dff';
 else
     errordlg('Error: sourceData mismatch');
 end
@@ -228,12 +238,13 @@ end
 %% Plot as lines instead of using imagesc
 % ===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 3;
 sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
+sourceData = bl.wedgeExpDffArr;
 
 figSize = [];
 figSize = [1250 980];
@@ -248,6 +259,9 @@ elseif isequal(sourceData, bl.wedgeRawFlArr)
 elseif isequal(sourceData, bl.wedgeZscoreArr)
     figTitleText = 'Z-scored dF/F';
     saveFileName = 'tuning_curves_zscored-dff';
+elseif isequal(sourceData, bl.wedgeExpDffArr)
+    figTitleText = 'full exp dF/F';
+    saveFileName = 'tuning_curves_exp-dff';
 else
     errordlg('Error: sourceData mismatch');
 end
@@ -356,14 +370,15 @@ end
 %% Plot min and max values from the tuning curves
 %===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 3;
 
 sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-    
+sourceData = bl.wedgeExpDffArr;
+
 figSize = [];
 figSize = [400 925];
 
@@ -377,6 +392,9 @@ elseif isequal(sourceData, bl.wedgeRawFlArr)
 elseif isequal(sourceData, bl.wedgeZscoreArr)
     figTitleText = 'Z-scored dF/F';
     saveFileName = 'tuning_curve_amplitudes_zscored-dff';
+elseif isequal(sourceData, bl.wedgeExpDffArr)
+    figTitleText = 'full exp dF/F';
+    saveFileName = 'tuning_curve_amplitudes_exp-dff';
 else
     errordlg('Error: sourceData mismatch');
 end
@@ -473,14 +491,14 @@ end
 %% Plot summary of tuning curve amplitudes
 %===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 3;
 
 % sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-
+sourceData = bl.wedgeExpDffArr;
 
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
@@ -492,6 +510,9 @@ elseif isequal(sourceData, bl.wedgeRawFlArr)
 elseif isequal(sourceData, bl.wedgeZscoreArr)
     figTitleText = 'Z-scored dF/F';
     saveFileName = 'tuning_curve_amplitude_summary_zscored-dff';
+elseif isequal(sourceData, bl.wedgeExpDffArr)
+    figTitleText = 'full exp dF/F';
+    saveFileName = 'tuning_curve_amplitude_summary_exp-dff';
 else
     errordlg('Error: sourceData mismatch');
 end
@@ -606,7 +627,7 @@ for iAx = 1:numel(f.Children)
     catch
     end
 end
-suptitle(bl.expID)
+suptitle([bl.expID, '  -   ', figTitleText])
 
 
 % Save figure

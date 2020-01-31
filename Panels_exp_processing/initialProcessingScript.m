@@ -9,9 +9,12 @@ if ~isdir(outputDir)
 end
 
 %% Make anatomy stack
+try
 create_anatomy_stack(expDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
         'OutputDir', outputDir);
-    
+catch
+   disp('Error: anatomy stack creation failed'); 
+end
     
 % CONSOLIDATE METADATA AND DAQ DATA FOR ALL TRIALS
 
@@ -144,7 +147,7 @@ for iFile = 1:numel(ftVidFiles)
     % Pull out data from within the trial period
     ftTrialFrames = rawFtData(:, 1) >= startFtFrame & rawFtData(:, 1) <= endFtFrame;
     currFtData = rawFtData(ftTrialFrames, :);%rawFtData(startFtFrame:endFtFrame, :);
-    currFtData(1, :) = currFtData(1,:) - min(currFtData(1, :)); % Align FrameCount to trial start
+    currFtData(:, 1) = currFtData(:,1) - startFtFrame; % Align FrameCount to trial start
     
     % Save processed data files along with luminance values and frame log
     ftData(iFile).trialNum = trialNum;
@@ -157,7 +160,7 @@ for iFile = 1:numel(ftVidFiles)
     vidData = vidData(:, :, trialVidFrames);
     trialVid = VideoWriter(fullfile(outputDir, ['FicTrac_video_trial_', trialNumStr]), 'MPEG-4');
     frameDurs = ftData(iFile).trialData(:, 24) ./ 1e9; % Inter-frame-interval in seconds
-    trialVid.FrameRate = round(mean(1 ./ frameDurs));
+    trialVid.FrameRate = round(median(1 ./ frameDurs));
     open(trialVid)
     for iFrame = 1:size(vidData, 3)
         if ~mod(iFrame, 1000)

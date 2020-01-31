@@ -16,29 +16,26 @@ load(fullfile(parentDir, 'flowMags.mat'));
 currTrial = 1
 td = mD([mD.trialNum] == currTrial);
 
-flData = td.wedgeDffMat;
-% flData = td.wedgeRawFlMat;
-% flData = td.wedgeZscoreMat;
-% flData = td.wedgeExpDffMat;
+plotROIs = [2];
 
 % flData = td.dffMat;
-% flData = td.rawFlMat;
+flData = td.rawFlMat;
 % flData = td.zscoreMat;
-% flData = td.expDffMat;
+flData = td.expDffMat;
 
-% Get mean panels pos data
-panelsPosVols = [];
-for iVol = 1:size(flData, 1)
-    [~, currVol] = min(abs(td.panelsFrameTimes - td.volTimes(iVol)));
-    panelsPosVols(iVol) = td.panelsPosX(currVol);
-end
-meanFlData = [];
-for iPos = 1:numel(unique(td.panelsPosX))
-    meanFlData(iPos, :) = ...
-            mean(flData(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]    
-end
-meanFlShift = cat(1, meanFlData(92:96, :), meanFlData(1:91, :));
-cm = hsv(size(meanFlShift, 2)) .* 0.9;
+% % Get mean panels pos data
+% panelsPosVols = [];
+% for iVol = 1:size(flData, 1)
+%     [~, currVol] = min(abs(td.panelsFrameTimes - td.volTimes(iVol)));
+%     panelsPosVols(iVol) = td.panelsPosX(currVol);
+% end
+% meanFlData = [];
+% for iPos = 1:numel(unique(td.panelsPosX))
+%     meanFlData(iPos, :) = ...
+%             mean(flData(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]    
+% end
+% meanFlShift = cat(1, meanFlData(92:96, :), meanFlData(1:91, :));
+% cm = hsv(size(meanFlShift, 2)) .* 0.9;
 
 % PLOT DATA THROUGHOUT TRIAL
 figure(1);clf;
@@ -46,63 +43,69 @@ clear allAx
 
 subaxis(5, 3, 1, 'mb', 0.05, 'mt', 0.03)
 allAx(1) = gca;
-% Heatmap of mean visual tuning
-plotX = -180:3.75:(180 - 3.75);
-imagesc(plotX, [1 size(meanFlShift, 2)], ...
-        smoothdata(meanFlShift, 1, 'gaussian', 3)');
-hold on; plot([0 0], [0 size(meanFlShift, 2) + 1], 'color', 'k', 'linewidth', 1)
-allAx(1).XTick = -180:45:180;
-ylim([0.5 size(meanFlShift, 2) + 0.5])
-% xlabel('Bar position (deg)', 'fontsize', 10)
-ylabel('Visual tuning')
-for iWedge = 1:size(cm, 1)
-   plot(plotX(1:6), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 3)
-   plot(plotX(end - 5:end), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 3) 
-end
+% % Heatmap of mean visual tuning
+% plotX = -180:3.75:(180 - 3.75);
+% imagesc(plotX, [1 size(meanFlShift, 2)], ...
+%         smoothdata(meanFlShift, 1, 'gaussian', 3)');
+% hold on; plot([0 0], [0 size(meanFlShift, 2) + 1], 'color', 'k', 'linewidth', 1)
+% allAx(1).XTick = -180:45:180;
+% ylim([0.5 size(meanFlShift, 2) + 0.5])
+% % xlabel('Bar position (deg)', 'fontsize', 10)
+% ylabel('Visual tuning')
+% for iWedge = 1:size(cm, 1)
+%    plot(plotX(1:6), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 3)
+%    plot(plotX(end - 5:end), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 3) 
+% end
 
 
 subaxis(5, 3, 2)
 allAx(2) = gca;
-% Plot of mean visual tuning
-hold on;
-plotX = -180:3.75:(180 - 3.75);
-for iWedge = 1:size(meanFlShift, 2)
-    plot(plotX, smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 3), 'color', cm(iWedge, :), ...
-            'linewidth', 1);
-end
-allAx(2).XTick = -180:45:180;
-plot([0 0], ylim(), 'color', 'k', 'linewidth', 2)
-xlim([plotX(1), plotX(end)]);
+% % Plot of mean visual tuning
+% hold on;
+% plotX = -180:3.75:(180 - 3.75);
+% for iWedge = 1:size(meanFlShift, 2)
+%     plot(plotX, smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 3), 'color', cm(iWedge, :), ...
+%             'linewidth', 1);
+% end
+% allAx(2).XTick = -180:45:180;
+% plot([0 0], ylim(), 'color', 'k', 'linewidth', 2)
+% xlim([plotX(1), plotX(end)]);
 
 
 subaxis(5, 3, 3)
 allAx(3) = gca;
-% Mean visual tuning in polar coordinates
-plotX = deg2rad(-180:3.75:(180 - 3.75));
-pax = polaraxes(); hold on
-pax.Position = allAx(3).Position;
-pax.Position = pax.Position - [0.04 0.025 0 0];
-pax.Position = pax.Position .* [1 1 1.2 1.2];
-allAx(3).Visible = 'off';
-for iWedge = 1:size(meanFlShift, 2)
-    plotData = smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 4);
-    polarplot(plotX, plotData, 'color', cm(iWedge, :), 'linewidth', 1);
-end
-pax.ThetaZeroLocation = 'top';
-pax.ThetaDir = 'clockwise';
-pax.ThetaTick = [0:45:179, 225:45:359];
-pax.ThetaTickLabel = {'0' '+45', '+90' '+135' '-135', '-90', '-45'};
-pax.RTick = [];
+% % Mean visual tuning in polar coordinates
+% plotX = deg2rad(-180:3.75:(180 - 3.75));
+% pax = polaraxes(); hold on
+% pax.Position = allAx(3).Position;
+% pax.Position = pax.Position - [0.04 0.025 0 0];
+% pax.Position = pax.Position .* [1 1 1.2 1.2];
+% allAx(3).Visible = 'off';
+% for iWedge = 1:size(meanFlShift, 2)
+%     plotData = smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 4);
+%     polarplot(plotX, plotData, 'color', cm(iWedge, :), 'linewidth', 1);
+% end
+% pax.ThetaZeroLocation = 'top';
+% pax.ThetaDir = 'clockwise';
+% pax.ThetaTick = [0:45:179, 225:45:359];
+% pax.ThetaTickLabel = {'0' '+45', '+90' '+135' '-135', '-90', '-45'};
+% pax.RTick = [];
 % pax.FontSize = 12;
 
 subaxis(5, 3, 4:6)
 allAx(end + 1) = gca;
-% Mean dF/F data for each glomerulus
-imagesc([0, td.trialDuration], [1, 8], smoothdata(flData, 1, 'gaussian', 3)');%colorbar
-hold on; % Overlay the dF/F population vector average
-plot(td.volTimes, 8.5 - td.dffVectAvgWedge, ... % Inverting because of imagesc axes
-        'color', 'r', 'linewidth', 1.25);
-ylabel('dF/F and PVA');
+% Mean dF/F data for each ROI
+if isempty(plotROIs)
+   plotROIs = 1:numel(td.roiData);    
+end
+% plotData = repeat_smooth(flData(:, plotROIs), 10, 'smwin', 3);
+plotData = smoothdata(squeeze(flData(:, plotROIs)), 1, 'gaussian', 3);
+plot(repmat(td.volTimes', 1, size(plotData, 2)), plotData, 'linewidth', 1); 
+ylim([min(plotData(:)) max(plotData(:))])
+xlim([0 td.trialDuration])
+roiNames = {td.roiData(plotROIs).name};
+legend(roiNames)
+ylabel('dF/F');
     
 subaxis(5, 3, 7:9)
 allAx(end + 1) = gca;
@@ -110,12 +113,6 @@ allAx(end + 1) = gca;
 if td.usingPanels
     plot(td.panelsFrameTimes, td.panelsPosX, 'linewidth', 1.5, 'color', 'b');%colorbar
     barCenteredFrames = find(td.panelsPosX == 44);
-    yL = ylim;
-    hold on;
-    plotX = td.panelsFrameTimes(barCenteredFrames);
-    plot([plotX; plotX], repmat(yL', 1, numel(barCenteredFrames)), 'color', ...
-            'r');
-%     ylim(yL);
 end
 if td.usingOptoStim
    hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
@@ -131,18 +128,19 @@ allAx(end + 1) = gca;
         flowThresh = 0.08;
         currFlow = meanFlowMags{[mD.trialNum] == currTrial};
         currFlow(end) = 0;
+        flowFrameDur = median(diff(td.ftFrameTimes));
+        flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur; % NOTE: this is only an approximation
         plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
         plotData = plotData - min(plotData); 
-%         plot(td.ftFrameTimes(1:numel(plotData)), plotData, 'color', 'k');+
-        plot(plotData, 'color', 'k');
+        plot(flowFrameTimes, plotData, 'color', 'k');
+%         plot(plotData, 'color', 'k');
         hold on;
         if td.usingOptoStim
            hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
         end
-        plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [flowThresh, flowThresh],...
-                'linewidth', 1, 'color', 'r');
-        ylim([0 0.5])
-
+%         plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [flowThresh, flowThresh],...
+%                 'linewidth', 1, 'color', 'r');
+        ylim([0 1.5])
 % 
 % % FicTrac heading overlaid with dF/F pva
 % HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
@@ -185,7 +183,7 @@ xlabel('Time (s)');
 
 % Link the X-axis limits across all plots
 % linkaxes(allAx(3:end), 'x');
-linkaxes(allAx([4 5 7]), 'x');
+linkaxes(allAx([4 5 6 7]), 'x');
 xlim([0 td.trialDuration])
 
 

@@ -24,7 +24,7 @@ allTrialNums = unique([[allROIData.trialNum], [expDaqData.trialNum], [expMetadat
         [imagingMetadata.trialNum], [ftData.trialNum]]);
 
 mD = [];
-for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
+for iTrial = 1:numel(allTrialNums)
 
     disp(iTrial);
 
@@ -47,10 +47,12 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     end
 
     % ROI data
+    mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = [];
+    mD(iTrial).rawFlMat = []; mD(iTrial).expDffMat = []; roiInds = [];
     if sum([allROIData.trialNum] == tid)
         currROIData = allROIData([allROIData.trialNum] == tid).roiDefs;
         for iROI = 1:numel(currROIData)
-
+            
             % Extract just the most useful components of each ROI
             mD(iTrial).roiData(iROI).name = currROIData(iROI).name;
             mD(iTrial).roiData(iROI).color = currROIData(iROI).color;
@@ -66,56 +68,16 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
                mD(iTrial).roiData(iROI).expDffData = currROIData(iROI).expDffData;
             else
                 mD(iTrial).roiData(iROI).expDffData = [];
-            end            
+            end  
+            
+            % Create matrix of mean dF/F and zscored data for each ROI
+            mD(iTrial).dffMat(:, end + 1) = mD(iTrial).roiData(iROI).dffData;
+            mD(iTrial).zscoreMat(:, end + 1) = mD(iTrial).roiData(iROI).zscoreData;
+            mD(iTrial).rawFlMat(:, end + 1) = mD(iTrial).roiData(iROI).rawData;
+            mD(iTrial).expDffMat(:, end + 1) = mD(iTrial).roiData(iROI).expDffData;
+            
         end
 
-        % Sort ROIs alphabetically by name
-        [~, sortIdx] = sort({mD(iTrial).roiData.name});
-        mD(iTrial).roiData = mD(iTrial).roiData(sortIdx);
-
-        % Create matrix of mean dF/F and zscored data for each EB wedge
-        mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = []; 
-        mD(iTrial).rawFlMat = []; mD(iTrial).expDffMat = []; roiInds = [];
-        roiNames = {mD(iTrial).roiData.name};
-        for iGlom = 1:16
-            % Rearrange the ROIs if necessary to make sure they're in the right order
-            if iGlom <= 8
-                glomName = ['L', num2str(iGlom)];
-            else
-                glomName = ['R', num2str(16 - iGlom + 1)];
-            end
-            glomInd = find(ismember(roiNames, glomName));
-            if isempty(glomInd)
-                mD(iTrial).dffMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-                mD(iTrial).zscoreMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-                mD(iTrial).rawFlMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-                mD(iTrial).expDffMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-            else
-                mD(iTrial).dffMat(:, end + 1) = mD(iTrial).roiData(glomInd).dffData;
-                mD(iTrial).zscoreMat(:, end + 1) = mD(iTrial).roiData(glomInd).zscoreData;
-                mD(iTrial).rawFlMat(:, end + 1) = mD(iTrial).roiData(glomInd).rawData;
-                mD(iTrial).expDffMat(:, end + 1) = mD(iTrial).roiData(glomInd).expDffData;
-            end
-        end
-
-        % Average across the two sides of the PB
-        mD(iTrial).wedgeDffMat = sum(cat(3, mD(iTrial).dffMat(:, 1:8), ...
-                mD(iTrial).dffMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]
-        mD(iTrial).wedgeZscoreMat = zscore(mD(iTrial).wedgeDffMat);
-        mD(iTrial).wedgeRawFlMat = sum(cat(3, mD(iTrial).rawFlMat(:, 1:8), ...
-                mD(iTrial).rawFlMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]
-        mD(iTrial).wedgeExpDffMat = sum(cat(3, mD(iTrial).expDffMat(:, 1:8), ...
-                mD(iTrial).expDffMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]
-
-        % Calculate the population vector average and the amplitude of the summed population 
-        % vector (AKA 'PVA strength') for each volume        
-        angleMat = repmat((-7 * pi/8):pi/4:(7 * pi/8), mD(iTrial).SI.hFastZ.numVolumes, 1);
-        [x, y] = pol2cart(angleMat, mD(iTrial).wedgeDffMat); % Convert to cartesian coordinates to add vectors
-        [theta, rho] = cart2pol(sum(x, 2), sum(y, 2));
-        theta = -theta; % Inverting polarity so it matches other data in plots
-        mD(iTrial).dffVectStrength = rho;
-        mD(iTrial).dffVectAvgRad = theta;
-        mD(iTrial).dffVectAvgWedge = (theta/pi * 4 + 4.5);      
     else
         mD(iTrial).roiData = [];
     end
@@ -206,7 +168,7 @@ for iTrial = 1:(max(allTrialNums) - min(allTrialNums) + 1)
     mD(iTrial).panelsFrameTimes = (1:1:mD(iTrial).nPanelsFrames) / mD(iTrial).displayRate;
     mD(iTrial).panelsPattern = mD(iTrial).expMetadata.pattern.Pats; % --> [y, x, frame, dim]
 
-    % Opto stim timing
+    % Opto sti`m timing
     if mD(iTrial).usingOptoStim
 
         % Make a list of each stim onset and offset throughout the entire trial
@@ -234,4 +196,5 @@ mD = orderfields(mD);
 disp('Saving file...')
 save(fullfile(parentDir, 'analysis_data.mat'), 'mD', '-v7.3');
 disp('Saving complete');
+
 

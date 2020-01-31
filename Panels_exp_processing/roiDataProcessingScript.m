@@ -53,7 +53,7 @@ for iFile = 1:numel(allROIData)
         roiDataAvg = mean(currRoiData, 1);
         allROIData(iFile).roiDefs(iROI).rawData = roiDataAvg; % --> [volume]
         
-        % Calculate and save dF/F
+        % Calculate and save trial-based dF/F
         roiDataSorted = sort(roiDataAvg);
         baselineF = median(roiDataSorted(1:round(numel(roiDataSorted) * 0.05))); % Bottom 5% as baseline
         allROIData(iFile).roiDefs(iROI).dffData = (roiDataAvg - baselineF) ./ baselineF;
@@ -68,10 +68,70 @@ for iFile = 1:numel(allROIData)
 end%iFile
 
 
+
+% Get average of bottom 5% of fluorescence values across experiment for each ROI
+
+% Get list of all unique ROI names in experiment
+allROINames = {};
+for iTrial = 1:numel(allROIData)
+    allROINames = [allROINames, {allROIData(iTrial).roiDefs.name}];
+end
+ROIList = unique(allROINames);
+
+
+% Extract and concatenate all fl data throughout experiment for each ROI
+rawROIData = repmat({[]}, 1, numel(ROIList)); stdDevs = [];
+for iROI = 1:numel(ROIList)
+    for iTrial = 1:numel(allROIData)
+        if sum(strcmp({allROIData(iTrial).roiDefs.name}, ROIList{iROI}))
+            
+            currROIData = allROIData(iTrial).roiDefs(strcmp({allROIData(iTrial).roiDefs.name}, ...
+                ROIList{iROI})).rawData;
+            
+            FL_THRESH = 8; % Hack to prevent the inclusion of trials when the PMT shutter was closed
+            stdDevs(iROI, iTrial) = std(currROIData);
+            if std(currROIData) > FL_THRESH
+                rawROIData{iROI} = [rawROIData{iROI}, currROIData];
+            end
+            
+        end
+    end
+end
+
+% Calculate a whole-experiment baseline F value for each ROI
+for iROI = 1:numel(ROIList)
+    currFlSorted = sort(rawROIData{iROI});
+    currROIBaseline = median(currFlSorted(1:round(numel(currFlSorted) * 0.05)));
+    
+    % Calculate experiment-wide dF/F for each trial
+    for iTrial = 1:numel(allROIData)
+         if sum(strcmp({allROIData(iTrial).roiDefs.name}, ROIList{iROI}))
+             expDffData = allROIData(iTrial).roiDefs(strcmp({allROIData(iTrial).roiDefs.name}, ...
+                    ROIList{iROI})).rawData ./ currROIBaseline;
+             allROIData(iTrial).roiDefs(strcmp({allROIData(iTrial).roiDefs.name}, ...
+                    ROIList{iROI})).expDffData = expDffData;
+         end
+    end    
+end
+
 % Save file with all ROI data
 disp('Saving data from all ROIs...')
 save(fullfile(parentDir, [saveFileStr, '.mat']), 'allROIData', '-v7.3');
 disp('Saving complete!')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
