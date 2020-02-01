@@ -5,7 +5,7 @@
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:15];
+blTrials = [1:24];
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -106,7 +106,7 @@ bl = orderfields(bl);
 saveFig = 0;
 
 sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 % sourceData = bl.wedgeExpDffArr;
 
@@ -375,7 +375,7 @@ saveFig = 0;
 smWin = 3;
 
 sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 % sourceData = bl.wedgeExpDffArr;
 
@@ -496,7 +496,7 @@ saveFig = 0;
 smWin = 3;
 
 % sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 % sourceData = bl.wedgeExpDffArr;
 

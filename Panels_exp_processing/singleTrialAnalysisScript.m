@@ -22,15 +22,19 @@ end
 
 
 currTrial = 1
-td = mD([mD.trialNum] == currTrial);
+
+currTrialInd = find([mD.trialNum] == currTrial);
+
+td = mD(currTrialInd);
 
 moveThresh = 0.03;
+flowSmWin = 30;
 omitMoveFrames = 0;
 
 flData = td.wedgeDffMat;
 % flData = td.wedgeRawFlMat;
 % flData = td.wedgeZscoreMat;
-flData = td.wedgeExpDffMat;
+% flData = td.wedgeExpDffMat;
 
 % flData = td.dffMat;
 % flData = td.rawFlMat;
@@ -39,8 +43,8 @@ flData = td.wedgeExpDffMat;
 
 
 % Identify epochs of quiescence vs. flailing
-currTrialFlow = meanFlowMags{[mD.trialNum] == currTrial};
-smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', 6);
+currTrialFlow = meanFlowMags{currTrialInd};
+smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', flowSmWin);
 smFlow = smFlow - min(smFlow(:));
 moveFrames = smFlow > moveThresh;
 
@@ -53,12 +57,13 @@ end
 
 % Convert to volumes
 volFrames = [];
-volTimes = mD([mD.trialNum] == currTrial).volTimes;
-frameTimes = mD([mD.trialNum] == currTrial).flowFrameTimes;
+volTimes = mD(currTrialInd).volTimes;
+frameTimes = mD(currTrialInd).flowFrameTimes;
 for iVol = 1:size(flData, 1) 
     [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
 end
 moveVolDist = moveFrameDist(volFrames) .* (numel(volTimes) / numel(frameTimes));
+moveVolDistTime  = moveVolDist ./ mD(currTrialInd).volumeRate;
 
 % Get mean panels pos data
 panelsPosVols = [];
@@ -167,15 +172,18 @@ allAx(end + 1) = gca;
 % 
         % Optic flow data to identify flailing
 
-        currFlow = meanFlowMags{[mD.trialNum] == currTrial};
+        currFlow = meanFlowMags{currTrialInd};
         currFlow(end) = 0;
-        plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
+        plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', flowSmWin);
+        plotData2 = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
         plotData = plotData - min(plotData); 
-        flowFrameDur = median(diff(mD([mD.trialNum] == currTrial).ftFrameTimes));
+        plotData2 = plotData2 - min(plotData2);
+        flowFrameDur = median(diff(mD(currTrialInd).ftFrameTimes));
         flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur; 
 %         plot(td.ftFrameTimes(1:numel(plotData)), plotData, 'color', 'k');+
-        plot(flowFrameTimes, plotData, 'color', 'k');
+        plot(flowFrameTimes, plotData, 'color', 'k', 'linewidth', 1);
         hold on;
+        plot(flowFrameTimes, plotData2, 'color', 'g');
         if td.usingOptoStim
            hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
         end
