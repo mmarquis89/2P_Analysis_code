@@ -10,21 +10,55 @@ load(fullfile(parentDir, 'analysis_data.mat'));
 load(fullfile(parentDir, 'flowMags.mat'));
 
 
+% Add optic flow info to mD struct
+for iTrial = 1:numel(mD)
+    mD(iTrial).flowFrameDur = median(diff(mD(iTrial).ftFrameTimes));
+    mD(iTrial).flowFrameTimes = (1:1:numel(meanFlowMags{iTrial})) * mD(iTrial).flowFrameDur;
+end
+
+
+
 %%
 
 
 currTrial = 1
 td = mD([mD.trialNum] == currTrial);
 
+moveThresh = 0.03;
+omitMoveFrames = 0;
+
 flData = td.wedgeDffMat;
 % flData = td.wedgeRawFlMat;
 % flData = td.wedgeZscoreMat;
-% flData = td.wedgeExpDffMat;
+flData = td.wedgeExpDffMat;
 
 % flData = td.dffMat;
 % flData = td.rawFlMat;
 % flData = td.zscoreMat;
 % flData = td.expDffMat;
+
+
+% Identify epochs of quiescence vs. flailing
+currTrialFlow = meanFlowMags{[mD.trialNum] == currTrial};
+smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', 6);
+smFlow = smFlow - min(smFlow(:));
+moveFrames = smFlow > moveThresh;
+
+% For each quiescence frame, find the distance to the nearest movement frame
+moveFrameDist = zeros(1, numel(moveFrames));
+moveFrameInds = find(moveFrames);
+for iFrame = 1:numel(moveFrames)
+    moveFrameDist(iFrame) = min(abs(moveFrameInds - iFrame));
+end
+
+% Convert to volumes
+volFrames = [];
+volTimes = mD([mD.trialNum] == currTrial).volTimes;
+frameTimes = mD([mD.trialNum] == currTrial).flowFrameTimes;
+for iVol = 1:size(flData, 1) 
+    [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
+end
+moveVolDist = moveFrameDist(volFrames) .* (numel(volTimes) / numel(frameTimes));
 
 % Get mean panels pos data
 panelsPosVols = [];
@@ -33,9 +67,13 @@ for iVol = 1:size(flData, 1)
     panelsPosVols(iVol) = td.panelsPosX(currVol);
 end
 meanFlData = [];
+flDataTemp = flData;
 for iPos = 1:numel(unique(td.panelsPosX))
+    if omitMoveFrames
+        
+    end
     meanFlData(iPos, :) = ...
-            mean(flData(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]    
+            mean(flDataTemp(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]    
 end
 meanFlShift = cat(1, meanFlData(92:96, :), meanFlData(1:91, :));
 cm = hsv(size(meanFlShift, 2)) .* 0.9;
@@ -128,19 +166,21 @@ subaxis(5, 3, 10:12)
 allAx(end + 1) = gca;
 % 
         % Optic flow data to identify flailing
-        flowThresh = 0.08;
+
         currFlow = meanFlowMags{[mD.trialNum] == currTrial};
         currFlow(end) = 0;
         plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
         plotData = plotData - min(plotData); 
+        flowFrameDur = median(diff(mD([mD.trialNum] == currTrial).ftFrameTimes));
+        flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur; 
 %         plot(td.ftFrameTimes(1:numel(plotData)), plotData, 'color', 'k');+
-        plot(plotData, 'color', 'k');
+        plot(flowFrameTimes, plotData, 'color', 'k');
         hold on;
         if td.usingOptoStim
            hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
         end
-        plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [flowThresh, flowThresh],...
-                'linewidth', 1, 'color', 'r');
+        plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [moveThresh, moveThresh],...
+                'linewidth', 0.5, 'color', 'r');
         ylim([0 0.5])
 
 % 
@@ -185,7 +225,7 @@ xlabel('Time (s)');
 
 % Link the X-axis limits across all plots
 % linkaxes(allAx(3:end), 'x');
-linkaxes(allAx([4 5 7]), 'x');
+linkaxes(allAx([4 5 6 7]), 'x');
 xlim([0 td.trialDuration])
 
 

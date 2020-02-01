@@ -244,7 +244,7 @@ smWin = 3;
 sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-sourceData = bl.wedgeExpDffArr;
+% sourceData = bl.wedgeExpDffArr;
 
 figSize = [];
 figSize = [1250 980];
@@ -377,7 +377,7 @@ smWin = 3;
 sourceData = bl.wedgeRawFlArr;
 % sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-sourceData = bl.wedgeExpDffArr;
+% sourceData = bl.wedgeExpDffArr;
 
 figSize = [];
 figSize = [400 925];
@@ -496,9 +496,9 @@ saveFig = 0;
 smWin = 3;
 
 % sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-sourceData = bl.wedgeExpDffArr;
+% sourceData = bl.wedgeExpDffArr;
 
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)

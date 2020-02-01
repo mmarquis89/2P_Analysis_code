@@ -1,7 +1,7 @@
 
 startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 parentDir = uigetdir(startDir, 'Select an experiment directory');
-roiFile = 'Behavior-_Vid_ROI_Data.mat';
+roiFile = 'Behavior_Vid_ROI_Data.mat';
 
 
 load(fullfile(parentDir, roiFile), 'roiData'); % --> [y, x]
