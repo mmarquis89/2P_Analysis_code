@@ -4,37 +4,38 @@ parentDir = uigetdir(startDir, 'Select an experiment directory');
 
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
 
+
 load(fullfile(parentDir, 'analysis_data.mat'));
 
 
-load(fullfile(parentDir, 'flowMags.mat'));
-
-
 % Add optic flow info to mD struct
+load(fullfile(parentDir, 'flowMags.mat'));
 for iTrial = 1:numel(mD)
+    mD(iTrial).flowData = meanFlowMags{iTrial};
     mD(iTrial).flowFrameDur = median(diff(mD(iTrial).ftFrameTimes));
     mD(iTrial).flowFrameTimes = (1:1:numel(meanFlowMags{iTrial})) * mD(iTrial).flowFrameDur;
 end
 
 
-
 %%
 
 
-currTrial = 1
+currTrial = 1;
 
 currTrialInd = find([mD.trialNum] == currTrial);
 
 td = mD(currTrialInd);
 
-moveThresh = 0.03;
 flowSmWin = 30;
-omitMoveFrames = 0;
+moveThresh = 0.08;
+omitMoveVols = 0;
+moveBufferDur = 5;
+showPVA = 0;
 
 flData = td.wedgeDffMat;
-% flData = td.wedgeRawFlMat;
-% flData = td.wedgeZscoreMat;
-% flData = td.wedgeExpDffMat;
+flData = td.wedgeRawFlMat;
+flData = td.wedgeZscoreMat;
+flData = td.wedgeExpDffMat;
 
 % flData = td.dffMat;
 % flData = td.rawFlMat;
@@ -43,7 +44,7 @@ flData = td.wedgeDffMat;
 
 
 % Identify epochs of quiescence vs. flailing
-currTrialFlow = meanFlowMags{currTrialInd};
+currTrialFlow = mD(currTrialInd).flowData;
 smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', flowSmWin);
 smFlow = smFlow - min(smFlow(:));
 moveFrames = smFlow > moveThresh;
@@ -63,7 +64,12 @@ for iVol = 1:size(flData, 1)
     [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
 end
 moveVolDist = moveFrameDist(volFrames) .* (numel(volTimes) / numel(frameTimes));
-moveVolDistTime  = moveVolDist ./ mD(currTrialInd).volumeRate;
+moveBufferDurVols = round(moveBufferDur * td.volumeRate);
+
+if omitMoveVols
+   flData(moveVolDist < moveBufferDurVols, :) = nan; 
+end
+
 
 % Get mean panels pos data
 panelsPosVols = [];
@@ -74,9 +80,6 @@ end
 meanFlData = [];
 flDataTemp = flData;
 for iPos = 1:numel(unique(td.panelsPosX))
-    if omitMoveFrames
-        
-    end
     meanFlData(iPos, :) = ...
             mean(flDataTemp(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]    
 end
@@ -87,7 +90,7 @@ cm = hsv(size(meanFlShift, 2)) .* 0.9;
 figure(1);clf;
 clear allAx
 
-subaxis(5, 3, 1, 'mb', 0.05, 'mt', 0.03)
+subaxis(5, 3, 1, 'mb', 0.05, 'mt', 0.03, 'ml', 0.08, 'mr', 0.03)
 allAx(1) = gca;
 % Heatmap of mean visual tuning
 plotX = -180:3.75:(180 - 3.75);
@@ -108,14 +111,15 @@ subaxis(5, 3, 2)
 allAx(2) = gca;
 % Plot of mean visual tuning
 hold on;
-plotX = -180:3.75:(180 - 3.75);
 for iWedge = 1:size(meanFlShift, 2)
-    plot(plotX, smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 3), 'color', cm(iWedge, :), ...
-            'linewidth', 1);
+    plotX = -180:3.75:(180 - 3.75);
+    plotX(isnan(meanFlShift(:, iWedge))) = nan;
+    plot(plotX, smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 4, 'omitnan'), ...
+            'color', cm(iWedge, :), 'linewidth', 1);
 end
 allAx(2).XTick = -180:45:180;
 plot([0 0], ylim(), 'color', 'k', 'linewidth', 2)
-xlim([plotX(1), plotX(end)]);
+xlim([-180, 180]);
 
 
 subaxis(5, 3, 3)
@@ -142,10 +146,14 @@ subaxis(5, 3, 4:6)
 allAx(end + 1) = gca;
 % Mean dF/F data for each glomerulus
 imagesc([0, td.trialDuration], [1, 8], smoothdata(flData, 1, 'gaussian', 3)');%colorbar
-hold on; % Overlay the dF/F population vector average
-plot(td.volTimes, 8.5 - td.dffVectAvgWedge, ... % Inverting because of imagesc axes
+hold on; 
+% Overlay the dF/F population vector average
+if showPVA
+    plot(td.volTimes, 8.5 - td.dffVectAvgWedge, ... % Inverting because of imagesc axes
         'color', 'r', 'linewidth', 1.25);
+end
 ylabel('dF/F and PVA');
+colorbar;
     
 subaxis(5, 3, 7:9)
 allAx(end + 1) = gca;
@@ -166,13 +174,15 @@ end
 ylabel('Bar position')
 allAx(end).YTickLabel = [];
 % allAx(end).XTickLabel = [];
+cb = colorbar; 
+cb.Visible = 'off';
 
 subaxis(5, 3, 10:12)
 allAx(end + 1) = gca;
 % 
         % Optic flow data to identify flailing
 
-        currFlow = meanFlowMags{currTrialInd};
+        currFlow = mD(currTrialInd).flowData;
         currFlow(end) = 0;
         plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', flowSmWin);
         plotData2 = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
@@ -190,7 +200,8 @@ allAx(end + 1) = gca;
         plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [moveThresh, moveThresh],...
                 'linewidth', 0.5, 'color', 'r');
         ylim([0 0.5])
-
+cb = colorbar; 
+cb.Visible = 'off';
 % 
 % % FicTrac heading overlaid with dF/F pva
 % HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
@@ -228,7 +239,8 @@ ylabel('Yaw speed (rad/sec)');
 % if td.usingOptoStim
 %    hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
 % end
-
+cb = colorbar; 
+cb.Visible = 'off';
 xlabel('Time (s)');
 
 % Link the X-axis limits across all plots

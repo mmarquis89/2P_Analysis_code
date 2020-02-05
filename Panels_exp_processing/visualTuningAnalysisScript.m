@@ -5,130 +5,245 @@
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:24];
-
-bD = mD(ismember([mD.trialNum], blTrials));
-
-% Check that have compatible values in scalar fields 
-if numel(unique([bD.daqSampRate])) > 1 || ...
-        numel(unique({bD.expID})) > 1 || ...
-        numel(unique([bD.nDaqSamples])) > 1 || ...
-        numel(unique([bD.nPlanes])) > 1 || ...
-        numel(unique([bD.nPanelsFrames])) > 1 || ...
-        numel(unique([bD.nVolumes])) > 1 || ...
-        numel(unique([bD.panelsDisplayRate])) > 1 || ...
-        numel(unique([bD.trialDuration])) > 1 || ...
-        numel(unique([bD.using2P])) > 1 || ...
-        numel(unique([bD.volumeRate])) > 1 || ...
-        numel(unique([bD.nVolumes])) > 1 || ...
-        numel(unique([bD.panelsCycleFrames])) > 1 || ...
-        numel(unique([bD.panelsCycleTime])) > 1
-    disp('Error: the specified trials are not compatible');
-end
-
-% Add data that applies to all trials
-bl = [];
-bl.daqSampRate = bD(1).daqSampRate;
-bl.daqSampTimes = bD(1).daqSampTimes;
-bl.expID = bD(1).expID;
-bl.nDaqSamples = bD(1).nDaqSamples;
-bl.nPanelsFrames = bD(1).nPanelsFrames;
-bl.nPlanes = bD(1).nPlanes;
-bl.nVolumes = bD(1).nVolumes;
-bl.optoStimTiming = bD(1).optoStimTiming;
-bl.panelsCycleFrames = bD(1).panelsCycleFrames;
-bl.panelsCycleTime = bD(1).panelsCycleTime;
-bl.panelsDisplayRate = bD(1).panelsDisplayRate;
-bl.panelsFrameTimes = bD(1).panelsFrameTimes;
-bl.panelsPattern = bD(1).panelsPattern;
-bl.panelsPosX = bD(1).panelsPosX;
-bl.panelsPosY = bD(1).panelsPosY;
-bl.refImages = bD(1).refImages;
-bl.trialDuration = bD(1).trialDuration;
-bl.volTimes = bD(1).volTimes;
+blTrials = [1:17];
 
 
-% Add compiled data
-bl.dffArr = []; bl.dffVectAvgRad = []; bl.dffVectAvgWedge = []; bl.dffVectStrength = [];
-bl.ftData = []; bl.optoStimOnsetTimes = []; bl.optoStimOffsetTimes = []; bl.rawFlArr = [];
-bl.wedgeDffArr = []; bl.wedgeZscoreArr = []; bl.zscoreArr = []; bl.usingOptoStim = [];
-bl.trialNum = []; bl.usingPanels = []; bl.wedgeRawFlArr = [];
-for iTrial = 1:numel(bD)
-    bl.dffArr(:, :, iTrial) = bD(iTrial).dffMat;                        % --> [volume, glom, trial]
-    bl.rawFlArr(:, :, iTrial) = bD(iTrial).rawFlMat;                    % --> [volume, glom, trial]
-    try
-    bl.expDffArr(:, :, iTrial) = bD(iTrial).expDffMat;
-    catch; end
-    bl.dffVectAvgRad(:, iTrial) = bD(iTrial).dffVectAvgRad;             % --> [volume, trial]
-    bl.dffVectAvgWedge(:, iTrial) = bD(iTrial).dffVectAvgWedge;         % --> [volume, trial]        
-    bl.dffVectStrength(:, iTrial) = bD(iTrial).dffVectStrength;         % --> [volume, trial]
-    bl.optoStimOnsetTimes{iTrial} = bD(iTrial).optoStimOnsetTimes;      % --> {trial}
-    bl.optoStimOffsetTimes{iTrial} = bD(iTrial).optoStimOffsetTimes;    % --> {trial}
-    bl.usingOptoStim(iTrial) = bD(iTrial).usingOptoStim;                % --> [trial]
-    bl.wedgeRawFlArr(:, :, iTrial) = bD(iTrial).wedgeRawFlMat;          % --> [volume, wedge, trial]
-    bl.wedgeDffArr(:, :, iTrial) = bD(iTrial).wedgeDffMat;              % --> [volume, wedge, trial]
-    bl.wedgeZscoreArr(:, :, iTrial) = bD(iTrial).wedgeZscoreMat;        % --> [volume, wedge, trial]
-    try
-        bl.wedgeExpDffArr(:, :, iTrial) = bD(iTrial).wedgeExpDffMat;    % --> [volume, wedge, trial]
-    catch; end
-    bl.zscoreArr(:, :, iTrial) = bD(iTrial).zscoreMat;                  % --> [volume, glom, trial]
-    bl.trialNum(iTrial) = bD(iTrial).trialNum;                          % --> [trial]
-    bl.usingPanels(iTrial) = bD(iTrial).usingPanels;                    % --> [trial]
-    
-    % Trim FicTrac frames if necessary 
-    targetFrames = min(cellfun(@numel, {bD.ftFrameTimes}));
-    if numel(bD(iTrial).ftFrameTimes) == targetFrames
-       bl.ftFrameTimes = bD(iTrial).ftFrameTimes; 
+flowOpts = [];
+
+flowOpts.flowSmWin = 30;
+flowOpts.moveThresh = 0.08;
+moveDistThresh = 2;
+
+bl = extract_block_data(mD, blTrials, flowOpts);
+
+%% PLOT SUMMARY OF MOVEMENT THROUGHOUT EXPERIMENT
+
+saveFig = 1;
+
+% Heatmap of slightly smoothed flow throughout experiment
+f = figure(1);clf;
+f.Color = [1 1 1];
+ax = gca;
+allFlow = bl.meanVolFlow;
+allFlow([1:5, size(allFlow, 1)-5:size(allFlow, 1)], :) = nan;
+allFlowSm = smoothdata(allFlow, 1, 'gaussian', 4, 'omitnan');
+allFlowSm = repeat_smooth(allFlow, 20, 'dim', 1, 'smwin', 5);
+imagesc([0, td.trialDuration], [1, numel(bl.trialNum)], allFlowSm')
+title('Optic flow')
+ax.YTick = 1:numel(bl.trialNum);
+xlabel('Time (sec)')
+ylabel('Trial')
+ax.FontSize = 12;
+
+% Plot avg flow value and percentage of movement vols for each trial
+f = figure(2); clf; hold on;
+f.Color = [1 1 1];
+f.Position(3:4) = [1200 400];
+ax = subaxis(1, 1, 1, 'mt', 0.1, 'mb', 0.16, 'ml', 0.08, 'mr', 0.08); hold on
+avgTrialFlow = mean(allFlow, 1, 'omitnan');
+plotX = 1:numel(avgTrialFlow);
+plot(plotX, avgTrialFlow, '-o', 'color', 'b', 'linewidth', 1, 'markersize', 8)
+ax.YColor = [0 0 1];
+stimTrials = find([bl.usingOptoStim]);
+for iStim = 1:numel(stimTrials)
+    currTrialInd = stimTrials(iStim);
+    if bl.usingPanels(currTrialInd)
+        shadeColor = [0 1 0];
+    else
+        shadeColor = [1 0 0];
     end
-    % All are --> [frame, trial]
-    bl.ftData.intX(:, iTrial) = bD(iTrial).ftData.intX(1:targetFrames);
-    bl.ftData.intY(:, iTrial) = bD(iTrial).ftData.intY(1:targetFrames);
-    bl.ftData.intHD(:, iTrial) = bD(iTrial).ftData.intHD(1:targetFrames);
-    bl.ftData.moveSpeed(:, iTrial) = bD(iTrial).ftData.moveSpeed(1:targetFrames);
-    bl.ftData.intFwMove(:, iTrial) = bD(iTrial).ftData.intFwMove(1:targetFrames);
-    bl.ftData.intSideMove(:, iTrial) = bD(iTrial).ftData.intSideMove(1:targetFrames);
-    bl.ftData.yawSpeed(:, iTrial) = bD(iTrial).ftData.yawSpeed(1:targetFrames);
-    bl.ftData.fwSpeed(:, iTrial) = bD(iTrial).ftData.fwSpeed(1:targetFrames);
-    bl.ftData.sideSpeed(:, iTrial) = bD(iTrial).ftData.sideSpeed(1:targetFrames);
-    
-    bl.ftData.moveSpeed(1,iTrial) = bl.ftData.moveSpeed(2,iTrial);
+    plot_stim_shading([currTrialInd - 0.5, currTrialInd + 0.5], 'color', shadeColor);
+end
+ax.FontSize = 12;
+xlabel('Trial', 'fontsize', 16)
+xlim([0 plotX(end) + 1])
+ax.XTick = 1:numel(bl.trialNum);
+ax.XTickLabel = [bl.trialNum];
+smFlow = repeat_smooth(allFlow, 20, 'dim', 1, 'smwin', flowOpts.flowSmWin);
+smFlow = smFlow - min(smFlow(:));
+moveVols = smFlow > flowOpts.moveThresh;
+trialMovePercent = (sum(moveVols) ./ size(moveVols, 1)) * 100;
+ylabel('Mean optic flow (AU)', 'fontsize', 16)
+
+% Plot proportion of volumes when fly was moving in each trial
+yyaxis('right');
+ax.YColor = [1 0 0];
+ylabel('% movement', 'fontsize', 16)
+plot(trialMovePercent, '-*', 'color', 'r', 'linewidth', 1, 'markersize', 10)
+ylim([0 100])
+yyaxis('left');
+ax.YColor = [0 0 1];
+
+% Add title
+figTitleStr = [bl.expID, '  -  Fly movement summary (green = opto + visual, red = opto only)'];
+t = title(figTitleStr);
+t.Position(2) = t.Position(2) * 1.02;
+
+% Save figure
+saveFileName = 'fly_movement_summary';
+if saveFig
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, saveFileName);
 end
 
-% Sort fields alphabetically
-bl = orderfields(bl);
-
-
-%% ===================================================================================================
-%% Plot tuning heatmaps for each wedge across trials
-%===================================================================================================
-
+%% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
 
 saveFig = 0;
 
+omitMoveVols = 1;
+
 sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-% sourceData = bl.wedgeExpDffArr;
-
-showStimTrials = 0;
-
+sourceData = bl.wedgeExpDffArr;
 
 
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
     figTitleText = 'dF/F';
-    saveFileName = '2D_tuning_curves_dff';
+    saveFileName = 'single_trial_heatmaps_dff';
 elseif isequal(sourceData, bl.wedgeRawFlArr)
     figTitleText = 'raw F';
-    saveFileName = '2D_tuning_curves_rawF';
+    saveFileName = 'single_trial_heatmaps_rawF';
 elseif isequal(sourceData, bl.wedgeZscoreArr)
     figTitleText = 'Z-scored dF/F';
-    saveFileName = '2D_tuning_curves_zscored-dff';
+    saveFileName = 'single_trial_heatmaps_zscored-dff';
 elseif isequal(sourceData, bl.wedgeExpDffArr)
     figTitleText = 'full exp dF/F';
-    saveFileName = '2D_tuning_curves_exp-dff';
+    saveFileName = 'single_trial_heatmaps_exp-dff';
 else
     errordlg('Error: sourceData mismatch');
+end
+
+% Replace volumes when fly was moving with nan if necessary
+if omitMoveVols
+   moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, 8), [1 3 2]);
+   sourceData(moveDistArr < moveDistThreshVols) = nan; 
+   saveFileName = [saveFileName, '_no-movement'];
+end
+
+nTrials = numel([bl.trialNum]);
+
+% To give all figures the same color scale
+sourceData(1, 1, :) = min(as_vector(sourceData(:, :, ~[bl.usingOptoStim])), [], 'omitnan');
+sourceData(end, end, :) = max(sourceData(:), [], 'omitnan');
+
+f = figure(10);clf;
+f.Color = [1 1 1];
+colormap('parula')
+for iTrial = 1:nTrials 
+    
+   subaxis(nTrials, 4, [1:3] + (4 * (iTrial - 1)), 'mt', 0, 'mb', 0.06, 'sv', 0.001, 'mr', 0.07);
+   
+   imagesc([0, bl.trialDuration], [1, 8], smoothdata(sourceData(:, :, iTrial), 1, 'gaussian', 3)');
+   
+   % Fill in opto stim trials with solid color
+   ax = gca;
+   ax.FontSize = 12;
+   if bl.usingOptoStim(iTrial) && bl.usingPanels(iTrial)
+       colormap(ax, [0 1 0])
+   elseif bl.usingOptoStim(iTrial)
+       colormap(ax, [1 0 0])
+   end
+   
+   % Label X axis on final trial
+   if iTrial < nTrials
+       ax.XTickLabel = [];
+   else
+       xlabel('Time (sec)', 'FontSize', 12);
+   end
+   
+   % Label each plot with trial number
+   ax.YTickLabel = [];
+   t = ylabel(num2str(bl.trialNum(iTrial)), 'rotation', 0, 'FontSize', 12);
+   t.HorizontalAlignment = 'right';
+   t.VerticalAlignment = 'middle';
+   t.Position(1) = t.Position(1) * 2;
+   
+   
+   % Add fly movement summary plot to the side of each trial
+   ax = subaxis(nTrials, 4, 4*iTrial);
+   normTrialFlow = avgTrialFlow ./ max(avgTrialFlow);
+%    b = barh([normTrialFlow(iTrial), trialMovePercent(iTrial) / 100; nan, nan]);
+   b = barh(2, trialMovePercent(iTrial) / 100, 'facecolor', [0.75 0.1 0.1]);
+   ax.YLim = [0.5 3.5];
+   ax.XLim = [0 1];
+   ax.YTickLabel = [];
+
+   if iTrial < nTrials
+       ax.XTickLabel = [];
+   else
+       ax.XTick = [0 1];
+       ax.XTickLabel = [0 100];
+       xlabel('% movement')
+   end
+   
+end
+
+% Add Y-axis label to entire figure
+tAx = axes(f, 'Position', [0 0 1 1]);
+t = text(tAx, 0.03, 0.5, 'Trial', 'units', 'normalized');
+t.Rotation = 90;
+t.FontSize = 14;
+tAx.Visible = 'off';
+
+% Add figure title
+figTitleStr = {[bl.expID, '  -  single trial ', figTitleText, ' across EB wedges'], ...
+        'green = opto + visual, red = opto only'};
+if omitMoveVols
+    figTitleStr = [figTitleStr(1), {['Excl. volumes within ', num2str(moveDistThresh), ...
+            ' sec of movement']}, figTitleStr{2}];
+end
+h = suptitle(figTitleStr);
+h.FontSize = 14;
+
+% Save figure
+if saveFig
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, saveFileName);
+end
+
+%% ===================================================================================================
+%% Plot tuning heatmaps for each wedge across trials
+%===================================================================================================
+% opts = [];
+
+saveFig = 1;
+
+omitMoveVols = 1;
+
+showStimTrials = 0;
+
+sourceData = bl.wedgeRawFlArr;
+sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeZscoreArr;
+sourceData = bl.wedgeExpDffArr;
+
+
+% Generate figure labels and save file name
+if isequal(sourceData, bl.wedgeDffArr)
+    figTitleText = 'dF/F';
+    saveFileName = '2D_tuning_dff';
+elseif isequal(sourceData, bl.wedgeRawFlArr)
+    figTitleText = 'raw F';
+    saveFileName = '2D_tuning_rawF';
+elseif isequal(sourceData, bl.wedgeZscoreArr)
+    figTitleText = 'Z-scored dF/F';
+    saveFileName = '2D_tuning_zscored-dff';
+elseif isequal(sourceData, bl.wedgeExpDffArr)
+    figTitleText = 'full exp dF/F';
+    saveFileName = '2D_tuning_exp-dff';
+else
+    errordlg('Error: sourceData mismatch');
+end
+
+% Replace volumes when fly was moving with nan if necessary
+if omitMoveVols
+   moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, 8), [1 3 2]);
+   sourceData(moveDistArr < moveDistThreshVols) = nan; 
+   saveFileName = [saveFileName, '_no-movement'];
 end
 
 nTrials = numel(bl);
@@ -142,9 +257,9 @@ end
 meanData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
     meanData(iPos, :, :) = ...
-            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1, 'omitnan'); % --> [barPos, wedge, trial]    
 end
-meanDataSmooth = smoothdata(meanData, 1, 'gaussian', 3);
+meanDataSmooth = smoothdata(meanData, 1, 'gaussian', 3, 'omitnan');
 
 % Determine subplot grid size
 nPlots = size(meanDataSmooth, 2);
@@ -223,9 +338,14 @@ for iPlot = 1:nPlots
 end%iPlot
 
 % Add figure title
-h = suptitle({[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
+figTitleStr = {[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
         'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'});
+        '  Red line  = trial with opto stim only'};
+if omitMoveVols
+    figTitleStr{1} = [figTitleStr{1}, '  -  excluding volumes within ', num2str(moveDistThresh), ...
+            ' sec of movement'];
+end
+h = suptitle(figTitleStr);
 h.FontSize = 14;
     
 % Save figure
@@ -238,13 +358,17 @@ end
 %% Plot as lines instead of using imagesc
 % ===================================================================================================
 
-saveFig = 0;
+saveFig = 1;
+
+omitMoveVols = 1;
 
 smWin = 3;
+
 sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 % sourceData = bl.wedgeExpDffArr;
+
 
 figSize = [];
 figSize = [1250 980];
@@ -266,6 +390,14 @@ else
     errordlg('Error: sourceData mismatch');
 end
 
+% Replace volumes when fly was moving with nan if necessary
+if omitMoveVols
+   moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, 8), [1 3 2]);
+   sourceData(moveDistArr < moveDistThreshVols) = nan; 
+   saveFileName = [saveFileName, '_no-movement'];
+end
+
 % Get mean panels pos data
 panelsPosVols = [];
 for iVol = 1:size(sourceData, 1)
@@ -275,7 +407,7 @@ end
 plotData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
     plotData(iPos, :, :) = ...
-            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1, 'omitnan'); % --> [barPos, wedge, trial]    
 end
 
 % Shift data so center of plot is directly in front of the fly
@@ -287,24 +419,24 @@ shiftDataOffset = [];
 for iTrial = 1:size(shiftDataSm, 3)
    for iWedge = 1:size(shiftDataSm, 2)
       currData = shiftDataSm(:, iWedge, iTrial); % --> [barPos]
-      shiftDataOffset(:, iWedge, iTrial) = currData - mean(currData);
+      shiftDataOffset(:, iWedge, iTrial) = currData - mean(currData, 'omitnan');
    end    
 end
 
 % Find max and min values 
 % yMax = max(shiftDataOffset(800:end));
 % yMin = min(shiftDataOffset(800:end));
-yMax = max(shiftDataOffset(:));
-yMin = min(shiftDataOffset(:));
-range = max(abs([yMax, yMin])) *  2.5;
+yMax = max(shiftDataOffset(:), [], 'omitnan');
+yMin = min(shiftDataOffset(:), [], 'omitnan');
+range = max(abs([yMax, yMin]), [], 'omitnan') *  2.5;
 
 % Create figure and plots
-f = figure(1);clf;
+f = figure(11);clf;
 f.Color = [1 1 1];
 if ~isempty(figSize)
    f.Position(3:4) = figSize; 
 end
-for iPlot = 1:nPlots
+for iPlot = 1:8
     ax = subaxis(1, nPlots, iPlot, 'mt', 0, 'ml', 0.05, 'mr', 0.03, 'mb', 0.08, 'sh', 0.05);
     hold on;
     currData = squeeze(shiftDataOffset(:, iPlot, :)); % --> [barPos, trial]
@@ -314,15 +446,17 @@ for iPlot = 1:nPlots
     plotX = -180:3.75:(180 - 3.75);
     
     % Separate data into distinct rows
-    offsets = [];
+    offsets = []; allPlotX = [];
     currData = fliplr(currData); % Flip so first trial is in the last column
     for iTrial = 1:size(currData, 2)
         currOffset = (range * (iTrial - 1));
         offsets(iTrial) = currOffset;
         currData(:, iTrial) = currData(:, iTrial) + currOffset;
+        allPlotX(:, iTrial) = plotX;
+        allPlotX(isnan(currData(:, iTrial)), iTrial) = nan;
 %         plot([plotX(1), plotX(end)], [currOffset, currOffset], '--', 'color', 'b') % Plot zero lines
     end
-    plot(plotX, currData, 'color', 'k', 'linewidth', 1.25);
+    plot(allPlotX, currData, 'color', 'k', 'linewidth', 1.25);
     yL(1) = yMin * 1.25;
     yL(2) = range * (size(currData, 2));
     hold on; plot([0 0], yL, 'color', 'b', 'linewidth', 1)
@@ -355,9 +489,14 @@ for iPlot = 1:nPlots
 end
 
 % Add figure title
-h = suptitle({[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
+figTitleStr = {[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
         'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'});
+        '  Red line  = trial with opto stim only'};
+if omitMoveVols
+    figTitleStr{1} = [figTitleStr{1}, '  -  excluding volumes within ', num2str(moveDistThresh), ...
+            ' sec of movement'];
+end
+h = suptitle(figTitleStr);
 h.FontSize = 14;
     
 % Save figure
@@ -370,14 +509,16 @@ end
 %% Plot min and max values from the tuning curves
 %===================================================================================================
 
-saveFig = 0;
+saveFig = 1;
+
+omitMoveVols = 1;
 
 smWin = 3;
 
 sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-% sourceData = bl.wedgeExpDffArr;
+sourceData = bl.wedgeExpDffArr;
 
 figSize = [];
 figSize = [400 925];
@@ -399,24 +540,32 @@ else
     errordlg('Error: sourceData mismatch');
 end
 
+% Replace volumes when fly was moving with nan if necessary
+if omitMoveVols
+   moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, 8), [1 3 2]);
+   sourceData(moveDistArr < moveDistThreshVols) = nan; 
+   saveFileName = [saveFileName, '_no-movement'];
+end
+
 % Get mean panels pos data
 panelsPosVols = [];
 for iVol = 1:size(bl.wedgeDffArr, 1)
-    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)));
+    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)), [], 'omitnan');
     panelsPosVols(iVol) = bl.panelsPosX(currVol);
 end
 tuningData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
     tuningData(iPos, :, :) = ...
-            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1, 'omitnan'); % --> [barPos, wedge, trial]    
 end
 
 % Smooth data, then find the max and min for each trial and wedge
 tuningDataSm = repeat_smooth(tuningData, 10, 'smWin', smWin);
 minVals = []; maxVals = [];
 for iTrial = 1:size(tuningDataSm, 3)
-    minVals(:, iTrial) = min(tuningDataSm(:, :, iTrial), [], 1); % --> [wedge, trial]
-    maxVals(:, iTrial) = max(tuningDataSm(:, :, iTrial), [], 1); % --> [wedge, trial]
+    minVals(:, iTrial) = min(tuningDataSm(:, :, iTrial), [], 1, 'omitnan'); % --> [wedge, trial]
+    maxVals(:, iTrial) = max(tuningDataSm(:, :, iTrial), [], 1, 'omitnan'); % --> [wedge, trial]
 end
 xTickLabel = 1:size(minVals, 2);
 
@@ -442,7 +591,7 @@ end
 globalMax = 0;
 nPlots = size(sourceData, 2);
 for iPlot = 1:nPlots
-    ax = subaxis(nPlots, 1, iPlot, 'mt', 0.06, 'mb', 0.06, 'sv', 0.03, 'mr', 0.03, 'ml', 0.08);
+    ax = subaxis(nPlots, 1, iPlot, 'mt', 0.08, 'mb', 0.06, 'sv', 0.03, 'mr', 0.03, 'ml', 0.08);
     hold on;
 %     plot(1:size(minVals, 2), minVals(iPlot, :), 'o', 'color', 'b')
 %     plot(1:size(maxVals, 2), maxVals(iPlot, :), 'o', 'color', 'm')
@@ -475,10 +624,14 @@ for iAx = 1:numel(f.Children)
 end
 
 % Plot title at top of figure
-h = suptitle({[bl.expID, ' - EB wedge visual tuning'], ...
+figTitleStr = {[bl.expID, ' - EB wedge visual tuning'], ...
         [figTitleText, '  (max - min)'], ... 
         'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'});
+        '  Red line  = trial with opto stim only'};
+if omitMoveVols
+    figTitleStr{2} = [figTitleStr{2}, '  -  excl. move.'];
+end
+h = suptitle(figTitleStr);
 h.FontSize = 12;
 
 % Save figure
@@ -491,14 +644,17 @@ end
 %% Plot summary of tuning curve amplitudes
 %===================================================================================================
 
-saveFig = 0;
+saveFig = 1;
+
+omitMoveVols = 1; 
 
 smWin = 3;
 
-% sourceData = bl.wedgeRawFlArr;
+sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-% sourceData = bl.wedgeExpDffArr;
+sourceData = bl.wedgeExpDffArr;
+
 
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
@@ -517,16 +673,25 @@ else
     errordlg('Error: sourceData mismatch');
 end
 
+
+% Replace volumes when fly was moving with nan if necessary
+if omitMoveVols
+   moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, 8), [1 3 2]);
+   sourceData(moveDistArr < moveDistThreshVols) = nan; 
+   saveFileName = [saveFileName, '_no-movement'];
+end
+
 % Get mean panels pos data
 panelsPosVols = [];
 for iVol = 1:size(bl.wedgeDffArr, 1)
-    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)));
+    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)), [], 'omitnan');
     panelsPosVols(iVol) = bl.panelsPosX(currVol);
 end
 tuningData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
     tuningData(iPos, :, :) = ...
-            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1, 'omitnan'); % --> [barPos, wedge, trial]    
 end
 
 % Get mean panels pos data
@@ -538,15 +703,15 @@ end
 tuningData = [];
 for iPos = 1:numel(unique(bl.panelsPosX))
     tuningData(iPos, :, :) = ...
-            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1, 'omitnan'); % --> [barPos, wedge, trial]    
 end
 
 % Smooth data, then find the max and min for each trial and wedge
 tuningDataSm = repeat_smooth(tuningData, 10, 'smWin', smWin);
 minVals = []; maxVals = [];
 for iTrial = 1:size(tuningDataSm, 3)
-    minVals(:, iTrial) = min(tuningDataSm(:, :, iTrial), [], 1); % --> [wedge, trial]
-    maxVals(:, iTrial) = max(tuningDataSm(:, :, iTrial), [], 1); % --> [wedge, trial]
+    minVals(:, iTrial) = min(tuningDataSm(:, :, iTrial), [], 1, 'omitnan'); % --> [wedge, trial]
+    maxVals(:, iTrial) = max(tuningDataSm(:, :, iTrial), [], 1, 'omitnan'); % --> [wedge, trial]
 end
 xTickLabel = 1:size(minVals, 2);
 
@@ -614,7 +779,7 @@ for iTrial = 1:nStimTrials
     % Track Y limits of each axis
     if iTrial == 1
        figYLims = ylim();
-       ylabel('Max - min tuning curve dF/F ', 'fontsize', 13) 
+       ylabel('Max - min tuning curve dF/F', 'fontsize', 13) 
     else
        currYLims = ylim();
        figYLims = [min([figYLims(1), currYLims(1)]), max([figYLims(2), currYLims(2)])];
@@ -627,7 +792,13 @@ for iAx = 1:numel(f.Children)
     catch
     end
 end
-suptitle([bl.expID, '  -   ', figTitleText])
+
+figTitleStr = ([bl.expID, '  -   ', figTitleText]);
+if omitMoveVols
+    figTitleStr = [figTitleStr, '  -  excl. vol. within ', num2str(moveDistThresh), ...
+            ' sec of movement'];
+end
+suptitle(figTitleStr)
 
 
 % Save figure
@@ -637,60 +808,3 @@ if saveFig
 end
 
 
-%% ===================================================================================================
-%% Plot behavior as a function of bar position
-%===================================================================================================
-% 
-% smReps = 6;
-% smWin = 5;
-% 
-% 
-% % Get mean panels pos data
-% panelsPosVols = [];
-% for iFrame = 1:numel(bl.ftFrameTimes)
-%     [~, currFrame] = min(abs(bl.panelsFrameTimes - bl.ftFrameTimes(iFrame)));
-%     panelsPosFrames(currFrame) = bl.panelsPosX(currFrame);
-% end
-% meanSpeed = []; meanYawSpeed = []; meanYawVel = [];
-% for iPos = 1:numel(unique(bl.panelsPosX))
-%     meanSpeed(iPos, :) = ...
-%             mean(bl.ftData.moveSpeed(panelsPosFrames == (iPos - 1), :), 1);    % --> [barPos, trial]    
-%     meanYawVel(iPos, :) = ...
-%             mean(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :), 1);     % --> [barPos, trial] 
-%     meanYawSpeed(iPos, :) = ...
-%             mean(abs(bl.ftData.yawSpeed(panelsPosFrames == (iPos - 1), :)), 1);% --> [barPos, trial]
-% end
-% 
-% 
-% % Shift to make center of plot directly in front of fly
-% meanSpeed = [meanSpeed(92:96, :); meanSpeed(1:91, :)];
-% meanYawVel = [meanYawVel(92:96, :); meanYawVel(1:91, :)];
-% meanYawSpeed = [meanYawSpeed(92:96, :); meanYawSpeed(1:91, :)];
-% 
-% % plotVar = meanSpeed;
-% plotVar = meanYawSpeed;
-% plotVar(plotVar > 0.8) = 0.8;
-% plotX = -180:3.75:(180 - 3.75);
-% 
-% figure(1);clf;
-% plotData = plotVar(:, ~[bl.usingOptoStim]);
-% imagesc(plotX, [1 size(plotData, 2)], ...
-%     repeat_smooth(plotData, smReps, 'smWin', smWin)');
-% hold on; plot([0 0], [0 size(plotData, 2) + 1], 'color', 'k', 'linewidth', 2)
-% ylim([0.5 size(plotData, 2) + 0.5])
-% % colormap('bluewhitered')
-% 
-% % Indicate missing opto stim trials
-% skippedTrials = 0;
-% optoStimTrials = find([bl.usingOptoStim]);
-% for iTrial = 1:numel(optoStimTrials)
-%     plotY = optoStimTrials(iTrial) - skippedTrials - 0.5;
-%     skippedTrials = skippedTrials + 1;
-%     if bl.usingPanels(optoStimTrials(iTrial))
-%         lineColor = 'green';
-%     else
-%         lineColor = 'red';
-%     end
-%     xL = xlim;
-%     plot(xL, [plotY, plotY], 'color', lineColor, 'linewidth', 2);
-% end

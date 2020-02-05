@@ -69,53 +69,17 @@ for iTrial = 1:numel(allTrialNums)
             end            
         end
 
-        % Sort ROIs alphabetically by name
-        [~, sortIdx] = sort({mD(iTrial).roiData.name});
-        mD(iTrial).roiData = mD(iTrial).roiData(sortIdx);
 
-        % Create matrix of mean dF/F and zscored data for each EB wedge
+        % Create matrix of mean dF/F and zscored data for each ROI
         mD(iTrial).dffMat = []; mD(iTrial).zscoreMat = []; 
         mD(iTrial).rawFlMat = []; mD(iTrial).expDffMat = []; roiInds = [];
         roiNames = {mD(iTrial).roiData.name};
-        for iGlom = 1:16
-            % Rearrange the ROIs if necessary to make sure they're in the right order
-            if iGlom <= 8
-                glomName = ['L', num2str(iGlom)];
-            else
-                glomName = ['R', num2str(16 - iGlom + 1)];
-            end
-            glomInd = find(ismember(roiNames, glomName));
-            if isempty(glomInd)
-                mD(iTrial).dffMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-                mD(iTrial).zscoreMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-                mD(iTrial).rawFlMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-                mD(iTrial).expDffMat(:, end + 1) = nan(mD(iTrial).SI.hFastZ.numVolumes, 1);
-            else
-                mD(iTrial).dffMat(:, end + 1) = mD(iTrial).roiData(glomInd).dffData;
-                mD(iTrial).zscoreMat(:, end + 1) = mD(iTrial).roiData(glomInd).zscoreData;
-                mD(iTrial).rawFlMat(:, end + 1) = mD(iTrial).roiData(glomInd).rawData;
-                mD(iTrial).expDffMat(:, end + 1) = mD(iTrial).roiData(glomInd).expDffData;
-            end
-        end
-
-        % Average across the two sides of the PB
-        mD(iTrial).wedgeDffMat = mean(cat(3, mD(iTrial).dffMat(:, 1:8), ...
-                mD(iTrial).dffMat(:, 9:16)), 3, 'omitnan'); % --> [volume, wedge]
-        mD(iTrial).wedgeZscoreMat = zscore(mD(iTrial).wedgeDffMat);
-        mD(iTrial).wedgeRawFlMat = mean(cat(3, mD(iTrial).rawFlMat(:, 1:8), ...
-                mD(iTrial).rawFlMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]
-        mD(iTrial).wedgeExpDffMat = mean(cat(3, mD(iTrial).expDffMat(:, 1:8), ...
-                mD(iTrial).expDffMat(:, 9:16)), 3, 'omitnan') ./ 2; % --> [volume, wedge]        
-
-        % Calculate the population vector average and the amplitude of the summed population 
-        % vector (AKA 'PVA strength') for each volume        
-        angleMat = repmat((-7 * pi/8):pi/4:(7 * pi/8), mD(iTrial).SI.hFastZ.numVolumes, 1);
-        [x, y] = pol2cart(angleMat, mD(iTrial).wedgeDffMat); % Convert to cartesian coordinates to add vectors
-        [theta, rho] = cart2pol(sum(x, 2), sum(y, 2));
-        theta = -theta; % Inverting polarity so it matches other data in plots
-        mD(iTrial).dffVectStrength = rho;
-        mD(iTrial).dffVectAvgRad = theta;
-        mD(iTrial).dffVectAvgWedge = (theta/pi * 4 + 4.5);      
+        for iROI = 1:numel(roiNames)
+            mD(iTrial).dffMat(:, end + 1) = mD(iTrial).roiData(iROI).dffData;
+            mD(iTrial).zscoreMat(:, end + 1) = mD(iTrial).roiData(iROI).zscoreData;
+            mD(iTrial).rawFlMat(:, end + 1) = mD(iTrial).roiData(iROI).rawData;
+            mD(iTrial).expDffMat(:, end + 1) = mD(iTrial).roiData(iROI).expDffData;
+        end 
     else
         mD(iTrial).roiData = [];
     end
