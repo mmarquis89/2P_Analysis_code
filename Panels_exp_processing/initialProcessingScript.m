@@ -177,7 +177,7 @@ disp('Video processing complete');
 save(fullfile(outputDir, 'FicTracData.mat'), 'ftData', '-v7.3');
 
 
-% PROCESS IMAGING DATA AND METADATA
+%% PROCESS IMAGING DATA AND METADATA
 
 % Identify imaging data files
 imgDataFiles = dir(fullfile(expDir, '*trial*.tif'));
@@ -206,8 +206,8 @@ for iFile = 1:numel(imgDataFiles)
     imgData(:, :, (end - (nFlybackFrames - 1)):end, :) = []; % --> [y, x, plane, volume]
     
     % Doing these next two steps because for some reason ScanImage offsets fluorescence data values 
-    % by some random amount in different individual .tif files...I've found that this approach fixes 
-    % that issue and makes the data directly comparable across trials
+    % by some random amount in different individual .tif files...I've found empirically that this 
+    % approach fixes that issue and makes the data directly comparable across trials
     
         % Clip bottom 5% of minimum pixel values per frame
         minFrameVals = sort(as_vector(min(min(imgData))));

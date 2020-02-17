@@ -1,5 +1,15 @@
-function bl = extract_block_data(mD, blTrials, flowOpts)
+function bl = extract_block_data(mD, blTrials, varargin)
 
+
+p = inputParser;
+addParameter(p, 'flowSmWin', 30);
+addParameter(p, 'MoveThresh', 0.05);
+addParameter(p, 'ExpType', 'PB');
+addParameter(p, 'NanFlag', 'omitnan');
+parse(p, varargin{:});
+flowSmWin = p.Results.flowSmWin;
+moveThresh = p.Results.MoveThresh;
+expType = p.Results.ExpType;
 
 bD = mD(ismember([mD.trialNum], blTrials));
 
@@ -48,26 +58,32 @@ bl.dffArr = []; bl.dffVectAvgRad = []; bl.dffVectAvgWedge = []; bl.dffVectStreng
 bl.ftData = []; bl.optoStimOnsetTimes = []; bl.optoStimOffsetTimes = []; bl.rawFlArr = [];
 bl.wedgeDffArr = []; bl.wedgeZscoreArr = []; bl.zscoreArr = []; bl.usingOptoStim = [];
 bl.trialNum = []; bl.usingPanels = []; bl.wedgeRawFlArr = []; bl.moveDistVols = []; ...
-bl.meanVolFlow = [];
+bl.meanVolFlow = []; bl.wedgeExpDffArr = [];
 for iTrial = 1:numel(bD)
     bl.dffArr(:, :, iTrial) = bD(iTrial).dffMat;                        % --> [volume, glom, trial]
     bl.rawFlArr(:, :, iTrial) = bD(iTrial).rawFlMat;                    % --> [volume, glom, trial]
-    try
-    bl.expDffArr(:, :, iTrial) = bD(iTrial).expDffMat;
-    catch; end
-    bl.dffVectAvgRad(:, iTrial) = bD(iTrial).dffVectAvgRad;             % --> [volume, trial]
-    bl.dffVectAvgWedge(:, iTrial) = bD(iTrial).dffVectAvgWedge;         % --> [volume, trial]        
-    bl.dffVectStrength(:, iTrial) = bD(iTrial).dffVectStrength;         % --> [volume, trial]
+    bl.zscoreArr(:, :, iTrial) = bD(iTrial).zscoreMat;                  % --> [volume, glom, trial]
+    try % Because some early experiments don't have this one
+        bl.expDffArr(:, :, iTrial) = bD(iTrial).expDffMat;              % --> [volume, glom, trial]
+    catch; end 
+    
     bl.optoStimOnsetTimes{iTrial} = bD(iTrial).optoStimOnsetTimes;      % --> {trial}
     bl.optoStimOffsetTimes{iTrial} = bD(iTrial).optoStimOffsetTimes;    % --> {trial}
     bl.usingOptoStim(iTrial) = bD(iTrial).usingOptoStim;                % --> [trial]
-    bl.wedgeRawFlArr(:, :, iTrial) = bD(iTrial).wedgeRawFlMat;          % --> [volume, wedge, trial]
-    bl.wedgeDffArr(:, :, iTrial) = bD(iTrial).wedgeDffMat;              % --> [volume, wedge, trial]
-    bl.wedgeZscoreArr(:, :, iTrial) = bD(iTrial).wedgeZscoreMat;        % --> [volume, wedge, trial]
-    try
-        bl.wedgeExpDffArr(:, :, iTrial) = bD(iTrial).wedgeExpDffMat;    % --> [volume, wedge, trial]
-    catch; end
-    bl.zscoreArr(:, :, iTrial) = bD(iTrial).zscoreMat;                  % --> [volume, glom, trial]
+    
+    if strcmp(expType, 'PB')
+        bl.dffVectAvgRad(:, iTrial) = bD(iTrial).dffVectAvgRad;             % --> [volume, trial]
+        bl.dffVectAvgWedge(:, iTrial) = bD(iTrial).dffVectAvgWedge;         % --> [volume, trial]
+        bl.dffVectStrength(:, iTrial) = bD(iTrial).dffVectStrength;         % --> [volume, trial]
+        bl.wedgeRawFlArr(:, :, iTrial) = bD(iTrial).wedgeRawFlMat;          % --> [volume, wedge, trial]
+        bl.wedgeDffArr(:, :, iTrial) = bD(iTrial).wedgeDffMat;              % --> [volume, wedge, trial]
+        bl.wedgeZscoreArr(:, :, iTrial) = bD(iTrial).wedgeZscoreMat;        % --> [volume, wedge, trial]
+        try
+            bl.wedgeExpDffArr(:, :, iTrial) = bD(iTrial).wedgeExpDffMat;    % --> [volume, wedge, trial]
+        catch; end
+        
+    end
+    
     bl.trialNum(iTrial) = bD(iTrial).trialNum;                          % --> [trial]
     bl.usingPanels(iTrial) = bD(iTrial).usingPanels;                    % --> [trial]
     
@@ -89,12 +105,11 @@ for iTrial = 1:numel(bD)
     
     bl.ftData.moveSpeed(1,iTrial) = bl.ftData.moveSpeed(2,iTrial);
     
-    
     % Use optic flow data to identify movement epochs
     currTrialFlow = bD(iTrial).flowData;
-    smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', flowOpts.flowSmWin);
+    smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', flowSmWin);
     smFlow = smFlow - min(smFlow(:));
-    moveFrames = smFlow > flowOpts.moveThresh;
+    moveFrames = smFlow > moveThresh;
    
     % For each quiescence frame, find the distance to the nearest movement frame
     moveFrameDist = zeros(1, numel(moveFrames));

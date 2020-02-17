@@ -181,7 +181,7 @@ for iTrial = 1:numel(allTrialNums)
                 :mD(iTrial).trialDuration)';
     else
         mD(iTrial).optoStimOnsetTimes = [];
-        mD(iTrial).optoStimOnsetTimes = [];
+        mD(iTrial).optoStimOffsetTimes = [];
     end
 
 end%iTrial

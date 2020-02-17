@@ -1,58 +1,47 @@
 
+smWin = 6;
 
-% sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
-% sourceData = bl.wedgeZscoreArr;
+moveCtrlDff = smoothdata(squeeze(bl.dffArr(:, end, :)), 'gaussian', smWin);
+moveCtrlRawFl = smoothdata(squeeze(bl.rawFlArr(:, end, :)), 'gaussian', smWin);
+moveCtrlZscore = smoothdata(squeeze(bl.zscoreArr(:, end, :)), 'gaussian', smWin);
 
-showStimTrials = 0;
+baseSubFl = moveCtrlRawFl - repmat(min(moveCtrlRawFl), size(moveCtrlRawFl, 1), 1); 
+
+flData = moveCtrlDff;
+% flData = moveCtrlRawFl;
+% flData = moveCtrlZscore;
+flData = baseSubFl;
 
 
-nTrials = numel(bl);
+% plot(sort(baseSubFl(:)));
 
-% Get mean panels pos data
-panelsPosVols = [];
-for iVol = 1:size(sourceData, 1)
-    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)));
-    panelsPosVols(iVol) = bl.panelsPosX(currVol);
+figure(3);clf;
+for iTrial = 1:size(moveCtrlDff, 2)
+   subaxis(3, 3, iTrial); hold on;
+   currData = flData(:, iTrial);
+   currDataBaseSub = currData - movmin(currData, 50);
+   plot(currData, 'linewidth', 1);
+   plot(currDataBaseSub, 'linewidth', 1);
 end
-meanData = [];
-for iPos = 1:numel(unique(bl.panelsPosX))
-    meanData(iPos, :, :) = ...
-            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1); % --> [barPos, wedge, trial]    
+
+figure(2);clf;
+for iTrial = 1:size(moveCtrlDff, 2)
+   subaxis(3, 3, iTrial); hold on;
+   currData = flData(:, iTrial);
+   currDataBaseSub = currData - movmin(currData, 50);
+%    histogram(currDataBaseSub, 50);
+   plot(sort(currDataBaseSub))
 end
-meanDataSmooth = smoothdata(meanData, 1, 'gaussian', 3);
-meanDataShift = cat(1, meanDataSmooth(92:96, :, :), meanDataSmooth(1:91, :, :));
-
-plotX = -180:3.75:(180 - 3.75);
-
-%%
-
-currTrial = 1;
 
 
+% manThresholds = [35 40 40 20 25 25 30 30]; % 2/6 Exp 1
+manThresholds = [20 30 20 25 40 30 30 30 30]; % 2/6 Exp 2
 
-currData = meanDataShift(:, :, currTrial);
-
-f = figure(2);clf;
-f.Color = [1 1 1];
-imagesc(plotX, [1 size(currData, 2)], ...
-        smoothdata(currData, 1, 'gaussian', 3)');
-hold on; plot([0 0], [0 size(currData, 2) + 1], 'color', 'k', 'linewidth', 2)
-ylim([0.5 size(currData, 2) + 0.5])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+goodVols = [];
+for iTrial = 1:size(moveCtrlDff, 2)
+    currData = flData(:, iTrial);
+    currDataBaseSub = currData - movmin(currData, 50);
+    goodVols(:, iTrial) = currDataBaseSub < manThresholds(iTrial);
+end
 
 

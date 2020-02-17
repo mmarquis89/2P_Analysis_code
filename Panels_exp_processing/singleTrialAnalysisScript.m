@@ -27,20 +27,25 @@ currTrialInd = find([mD.trialNum] == currTrial);
 td = mD(currTrialInd);
 
 flowSmWin = 30;
-moveThresh = 0.08;
+moveThresh = 0.05;
 omitMoveVols = 0;
-moveBufferDur = 5;
+moveBufferDur = 2;
 showPVA = 0;
 
-flData = td.wedgeDffMat;
-flData = td.wedgeRawFlMat;
-flData = td.wedgeZscoreMat;
-flData = td.wedgeExpDffMat;
+% flData = td.wedgeDffMat;
+% flData = td.wedgeRawFlMat;
+% flData = td.wedgeZscoreMat;
+% flData = td.wedgeExpDffMat;
 
-% flData = td.dffMat;
+flData = td.dffMat;
 % flData = td.rawFlMat;
 % flData = td.zscoreMat;
 % flData = td.expDffMat;
+
+
+% % 
+    currGoodVols = goodVols(:, currTrialInd);
+    flData(~currGoodVols, :) = nan;
 
 
 % Identify epochs of quiescence vs. flailing
@@ -123,6 +128,10 @@ xlim([-180, 180]);
 
 
 subaxis(5, 3, 3)
+
+% figure(3);clf;hold on
+% max(meanFlShift(:))
+
 allAx(3) = gca;
 % Mean visual tuning in polar coordinates
 plotX = deg2rad(-180:3.75:(180 - 3.75));
@@ -132,9 +141,12 @@ pax.Position = pax.Position - [0.04 0.025 0 0];
 pax.Position = pax.Position .* [1 1 1.2 1.2];
 allAx(3).Visible = 'off';
 for iWedge = 1:size(meanFlShift, 2)
-    plotData = smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 4);
+%     plotData = smoothdata(meanFlShift(:, iWedge)- mean(meanFlShift, 2), 1, 'gaussian', 6) ;
+    plotData = smoothdata(meanFlShift(:, iWedge), 1, 'gaussian', 6) ;
+    plotData = plotData - min(meanFlShift(:));
     polarplot(plotX, plotData, 'color', cm(iWedge, :), 'linewidth', 1);
 end
+% polarplot(plotX, smoothdata(mean(meanFlShift, 2)-min(meanFlShift(:)), 1, 'gaussian', 6), 'color', 'k', 'linewidth', 3);
 pax.ThetaZeroLocation = 'top';
 pax.ThetaDir = 'clockwise';
 pax.ThetaTick = [0:45:179, 225:45:359];

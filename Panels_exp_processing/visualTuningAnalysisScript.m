@@ -5,20 +5,21 @@
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:17];
+blTrials = [1:8];
 
 
-flowOpts = [];
-
-flowOpts.flowSmWin = 30;
-flowOpts.moveThresh = 0.08;
+flowSmWin = 30;
+moveThresh = 0.05;
 moveDistThresh = 2;
 
-bl = extract_block_data(mD, blTrials, flowOpts);
+expType = 'EB';%'PB';
+
+bl = extract_block_data(mD, blTrials, ...
+        'flowSmWin', flowSmWin, 'moveThresh', moveThresh, 'ExpType', expType);
 
 %% PLOT SUMMARY OF MOVEMENT THROUGHOUT EXPERIMENT
 
-saveFig = 1;
+saveFig = 0;
 
 % Heatmap of slightly smoothed flow throughout experiment
 f = figure(1);clf;
@@ -28,7 +29,7 @@ allFlow = bl.meanVolFlow;
 allFlow([1:5, size(allFlow, 1)-5:size(allFlow, 1)], :) = nan;
 allFlowSm = smoothdata(allFlow, 1, 'gaussian', 4, 'omitnan');
 allFlowSm = repeat_smooth(allFlow, 20, 'dim', 1, 'smwin', 5);
-imagesc([0, td.trialDuration], [1, numel(bl.trialNum)], allFlowSm')
+imagesc([0, bl.trialDuration], [1, numel(bl.trialNum)], allFlowSm')
 title('Optic flow')
 ax.YTick = 1:numel(bl.trialNum);
 xlabel('Time (sec)')
@@ -59,9 +60,9 @@ xlabel('Trial', 'fontsize', 16)
 xlim([0 plotX(end) + 1])
 ax.XTick = 1:numel(bl.trialNum);
 ax.XTickLabel = [bl.trialNum];
-smFlow = repeat_smooth(allFlow, 20, 'dim', 1, 'smwin', flowOpts.flowSmWin);
+smFlow = repeat_smooth(allFlow, 20, 'dim', 1, 'smwin', flowSmWin);
 smFlow = smFlow - min(smFlow(:));
-moveVols = smFlow > flowOpts.moveThresh;
+moveVols = smFlow > moveThresh;
 trialMovePercent = (sum(moveVols) ./ size(moveVols, 1)) * 100;
 ylabel('Mean optic flow (AU)', 'fontsize', 16)
 
@@ -90,35 +91,41 @@ end
 
 saveFig = 0;
 
-omitMoveVols = 1;
+omitMoveVols = 0;
 
-sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
-% sourceData = bl.wedgeZscoreArr;
-sourceData = bl.wedgeExpDffArr;
+% sourceData = bl.wedgeRawFlArr;
+% sourceData = bl.wedgeDffArr;
+% % sourceData = bl.wedgeZscoreArr;
+% sourceData = bl.wedgeExpDffArr;
 
+sourceData =  bl.dffArr;
+% sourceData =  bl.rawFlArr;
+sourceData =  bl.zscoreArr;
+% sourceData = bl.expDffArr;
 
 % Generate figure labels and save file name
-if isequal(sourceData, bl.wedgeDffArr)
+if isequal(sourceData, bl.wedgeDffArr) || isequal(sourceData, bl.dffArr)
     figTitleText = 'dF/F';
     saveFileName = 'single_trial_heatmaps_dff';
-elseif isequal(sourceData, bl.wedgeRawFlArr)
+elseif isequal(sourceData, bl.wedgeRawFlArr) || isequal(sourceData, bl.rawFlArr)
     figTitleText = 'raw F';
     saveFileName = 'single_trial_heatmaps_rawF';
-elseif isequal(sourceData, bl.wedgeZscoreArr)
+elseif isequal(sourceData, bl.wedgeZscoreArr) || isequal(sourceData, bl.zscoreArr)
     figTitleText = 'Z-scored dF/F';
     saveFileName = 'single_trial_heatmaps_zscored-dff';
-elseif isequal(sourceData, bl.wedgeExpDffArr)
+elseif isequal(sourceData, bl.wedgeExpDffArr)  || isequal(sourceData, bl.expDffArr)
     figTitleText = 'full exp dF/F';
     saveFileName = 'single_trial_heatmaps_exp-dff';
 else
-    errordlg('Error: sourceData mismatch');
+%     warndlg('Warning: sourceData mismatch');
+    figTitleText = '';
+    saveFileName = 'single_trial_heatmaps_unknown';
 end
 
 % Replace volumes when fly was moving with nan if necessary
 if omitMoveVols
    moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
-   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, 8), [1 3 2]);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, size(sourceData, 2)), [1 3 2]);
    sourceData(moveDistArr < moveDistThreshVols) = nan; 
    saveFileName = [saveFileName, '_no-movement'];
 end
@@ -209,7 +216,7 @@ end
 %===================================================================================================
 % opts = [];
 
-saveFig = 1;
+saveFig = 0;
 
 omitMoveVols = 1;
 
@@ -235,7 +242,9 @@ elseif isequal(sourceData, bl.wedgeExpDffArr)
     figTitleText = 'full exp dF/F';
     saveFileName = '2D_tuning_exp-dff';
 else
-    errordlg('Error: sourceData mismatch');
+    warndlg('Warning: sourceData mismatch');
+    figTitleText = '';
+    saveFileName = '2D_tuning_unknown';
 end
 
 % Replace volumes when fly was moving with nan if necessary
@@ -387,7 +396,9 @@ elseif isequal(sourceData, bl.wedgeExpDffArr)
     figTitleText = 'full exp dF/F';
     saveFileName = 'tuning_curves_exp-dff';
 else
-    errordlg('Error: sourceData mismatch');
+    warndlg('Warning: sourceData mismatch');
+    figTitleText = '';
+    saveFileName = 'tuning_curves_unknown';
 end
 
 % Replace volumes when fly was moving with nan if necessary
@@ -537,7 +548,9 @@ elseif isequal(sourceData, bl.wedgeExpDffArr)
     figTitleText = 'full exp dF/F';
     saveFileName = 'tuning_curve_amplitudes_exp-dff';
 else
-    errordlg('Error: sourceData mismatch');
+    warndlg('Warning: sourceData mismatch');
+    figTitleText = '';
+    saveFileName = 'tuning_curve_amplitudes_unknown';
 end
 
 % Replace volumes when fly was moving with nan if necessary
@@ -640,11 +653,11 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
-%% ===================================================================================================
+%% =================================================================================================
 %% Plot summary of tuning curve amplitudes
 %===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
 omitMoveVols = 1; 
 
@@ -670,7 +683,9 @@ elseif isequal(sourceData, bl.wedgeExpDffArr)
     figTitleText = 'full exp dF/F';
     saveFileName = 'tuning_curve_amplitude_summary_exp-dff';
 else
-    errordlg('Error: sourceData mismatch');
+    warndlg('Warning: sourceData mismatch');
+    figTitleText = '';
+    saveFileName = 'tuning_curve_amplitude_summary_unknown';
 end
 
 
@@ -806,5 +821,184 @@ if saveFig
    saveDir = fullfile(analysisDir, bl.expID);
    save_figure(f, saveDir, saveFileName);
 end
+
+%% =================================================================================================
+%% Plot average tuning curves for entire experiment
+%===================================================================================================
+
+
+saveFig = 1;
+
+omitMoveVols = 0;
+
+subtractMean = 0;
+
+smWin = 5;
+
+
+% sourceData = bl.wedgeRawFlArr;
+% sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeZscoreArr;
+% sourceData = bl.wedgeExpDffArr;
+
+sourceData =  bl.dffArr;
+% sourceData =  bl.rawFlArr;
+sourceData =  bl.zscoreArr;
+% sourceData = bl.expDffArr;
+
+roiNames = {mD(1).roiData.name};%{'Top', 'L1', 'L2', 'L3', 'Bottom', 'R1', 'R2', 'R3', 'Mean'};
+
+%     sourceData = permute(sourceData(:, 1:end-1, :), [1 3 2]);
+%     goodVolsRep = repmat(goodVols, 1, 1, size(sourceData, 3));
+%     sourceData(~goodVolsRep) = nan;
+%     sourceData = permute(sourceData, [1 3 2]);
+%     roiNames(end) = [];
+
+
+figSize = [];
+figSize = [1100 850];
+
+% Generate figure labels and save file name
+if isequal(sourceData, bl.wedgeDffArr) || isequal(sourceData, bl.dffArr)
+    figTitleText = 'dF/F';
+    saveFileName = 'avg_tuning_curves_dff';
+    yLabelText = 'dF/F';
+elseif isequal(sourceData, bl.wedgeRawFlArr) || isequal(sourceData, bl.rawFlArr)
+    figTitleText = 'raw F';
+    saveFileName = 'avg_tuning_curves_rawF';
+    yLabelText = 'Raw F';
+elseif isequal(sourceData, bl.wedgeZscoreArr) || isequal(sourceData, bl.zscoreArr)
+    figTitleText = 'Z-scored dF/F';
+    saveFileName = 'avg_tuning_curve_zscored-dff';
+    yLabelText = 'Z-scored dF/F';
+elseif isequal(sourceData, bl.wedgeExpDffArr) || isequal(sourceData, bl.expDffArr)
+    figTitleText = 'full exp dF/F';
+    saveFileName = 'avg_tuning_curves_exp-dff';
+    yLabelText = 'dF/F';
+else
+%     warndlg('Warning: sourceData mismatch');
+    figTitleText = '';
+    saveFileName = 'avg_tuning_curves_unknown';
+end
+
+%     figTitleText = 'Z-scored dF/F';
+%     saveFileName = 'avg_tuning_curve_zscored-dff';
+%     yLabelText = 'Z-scored dF/F';
+
+% Replace volumes when fly was moving with nan if necessary
+if omitMoveVols
+   moveDistThreshVols = round(moveDistThresh * bl.volumeRate);
+   moveDistArr = permute(repmat(bl.moveDistVols, 1, 1, size(sourceData, 2)), [1 3 2]);
+   sourceData(moveDistArr < moveDistThreshVols) = nan; 
+   saveFileName = [saveFileName, '_no-movement'];
+end
+
+% Get mean panels pos data
+panelsPosVols = [];
+for iVol = 1:size(sourceData, 1)
+    [~, currVol] = min(abs(bl.panelsFrameTimes - bl.volTimes(iVol)));
+    panelsPosVols(iVol) = bl.panelsPosX(currVol);
+end
+plotData = [];
+for iPos = 1:numel(unique(bl.panelsPosX))
+    plotData(iPos, :, :) = ...
+            mean(sourceData(panelsPosVols == (iPos - 1), :, :), 1, 'omitnan'); % --> [barPos, wedge, trial]    
+end
+
+% Shift data so center of plot is directly in front of the fly
+shiftData = cat(1, plotData(92:96, :, :), plotData(1:91, :, :));
+shiftDataSm = repeat_smooth(shiftData, 10, 'smWin', smWin);
+
+% Offset data so that each plot is centered at zero
+shiftDataOffset = [];
+for iTrial = 1:size(shiftDataSm, 3)
+   for iWedge = 1:size(shiftDataSm, 2)
+      currData = shiftDataSm(:, iWedge, iTrial); % --> [barPos]
+      shiftDataOffset(:, iWedge, iTrial) = currData - mean(currData, 'omitnan');
+   end    
+end
+
+% Find max and min values 
+% yMax = max(shiftDataOffset(800:end));
+% yMin = min(shiftDataOffset(800:end));
+yMax = max(shiftDataOffset(:), [], 'omitnan');
+yMin = min(shiftDataOffset(:), [], 'omitnan');
+range = max(abs([yMax, yMin]), [], 'omitnan') *  2.5;
+
+% Create figure and plots
+f = figure(11);clf;
+f.Color = [1 1 1];
+if ~isempty(figSize)
+   f.Position(3:4) = figSize; 
+end
+hold on;
+nROIs = size(shiftDataOffset, 2);
+cm = jet(nROIs);
+cm(end + 1, :) = 0;
+allROIMean = squeeze(mean(mean(shiftDataOffset, 3, 'omitnan'), 2, 'omitnan'));
+if subtractMean
+    n = nROIs;
+else
+    n = nROIs + 1;
+    roiNames{end + 1} = 'Mean';
+end
+for iROI = 1:n
+    
+    % Plot data
+    plotX = -180:3.75:(180 - 3.75);
+    if iROI <= nROIs
+        if subtractMean
+            plotData = squeeze(mean(shiftDataOffset(:, iROI, :), 3, 'omitnan')) - allROIMean;
+        else
+            plotData = squeeze(mean(shiftDataOffset(:, iROI, :), 3, 'omitnan'));
+        end
+    else
+        plotData = allROIMean;
+    end
+    plot(plotX, plotData, 'linewidth', 2, 'color', cm(iROI, :));
+    
+end
+legend(roiNames, 'location', 'eastoutside');
+xlabel('Bar position (degrees from front of fly)', 'fontsize', 14);
+ylabel(yLabelText, 'fontsize', 14);
+
+
+% Add figure title
+figTitleStr = {[bl.expID, '  -  Visual tuning (mean ', figTitleText, ')']};
+if subtractMean
+   figTitleStr{2} = 'Mean tuning curve of all ROIs subtracted'; 
+end
+if omitMoveVols
+    figTitleStr{1} = [figTitleStr{1}, '  -  excluding volumes within ', num2str(moveDistThresh), ...
+            ' sec of movement'];
+end
+h = suptitle(figTitleStr);
+h.FontSize = 14;
+
+
+% Save figure
+if saveFig
+    if subtractMean
+        saveFileName = [saveFileName, '_meanSub'];
+    end
+    saveDir = fullfile(analysisDir, bl.expID);
+    save_figure(f, saveDir, saveFileName);
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

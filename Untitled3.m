@@ -1,6 +1,6 @@
 
 % Identify epochs of quiescence vs. flailing
-moveThresh = 0.03;
+moveThresh = 0.08;
 
 for iTrial = 1:numel(mD)
 
@@ -25,9 +25,10 @@ end
 
 %% Extract fluorescence data for visual stim epochs only when fly is quiescent
 
-trialNums = [1:10];
-panelsStimPositions = 14;%[19 43 67]; % 
-quiescenceWinSec = [4 4];
+trialNums = [5:13];
+panelsStimPositions = 14;% [19 67 43]; %
+stimPosNames = {'full field flash'}; % {'left bar', 'right bar', 'center bar'}; %
+quiescenceWinSec = [6 6];
 
 stimWinFlData = struct();
 for iTrial = 1:numel(trialNums)
@@ -137,50 +138,133 @@ disp(' ')
 
 %%
 
-roiNum = 2;
-smWin = 3;
+saveFig = 0;
+
+roiNum = 1;
+smWin = 1;
 singleTrials = 1;
-skipTimes =[4.02 4.62];
+skipTimes =[-0.05 0.45];
+
+dataType = 'dff';
 
 
-for iPos = 1:numel(stimWinFlData)
-    test2 = squeeze(stimWinFlData(iPos).dff(:, roiNum, :));% - squeeze(stimWinFlData(iPos).rawFl(:, 3, :));
-%     test2 = repeat_smooth(test2, 10, 'smwin', 3);
-    plotTimes = ((1:size(test2, 1)) ./ mD(1).volumeRate) - (1/mD(1).volumeRate);
-    
-    if ~isempty(skipTimes)
-        test2(plotTimes > skipTimes(1) & plotTimes < skipTimes(2), :) = nan;
-        plotTimes(plotTimes > skipTimes(1) & plotTimes < skipTimes(2)) = nan;
-    end
-    
-    figure(iPos);clf
-    % Plot single trial data
-    if singleTrials
-        plot(plotTimes, smoothdata(test2, 'gaussian', smWin, 'omitnan'))
-    end
-    hold on
-    
-    sd = std(test2, [], 2, 'omitnan');
-    avg = mean(smoothdata(test2, 'gaussian', smWin, 'omitnan'), 2); 
-    sd = sd(~isnan(plotTimes));
-    avg = avg(~isnan(plotTimes));
-    sem = sd ./ (size(test2, 2)^0.5);
-    jbfill(plotTimes(~isnan(plotTimes)), [avg + sem]', [avg - sem]', 'k', 'k', 1, 0.2);
-    
-    plot(plotTimes, mean(smoothdata(test2, 'gaussian', smWin, 'omitnan'), 2), 'linewidth', 2, 'color', 'k')
-    hold on
-    stimDur = stimOffsetTimes(1) - stimOnsetTimes(1);
-    plot_stim_shading([quiescenceWinSec(1), quiescenceWinSec(1) + stimDur])
-%     xlim([plotTimes(1) + 2, plotTimes(end) - 2])
-    hold on;
-    
-
-    
-    
+% Adjust figure dimensions for number of subplots
+if numel(stimWinFlData) == 1
+   figDims = [800, 500];
+   mr = 0.05;
+   ml = 0.12;
+else
+   figDims = [numel(stimWinFlData) * 600, 500];
+   mr = 0.03;
+   ml = 0.06;
 end
 
+% Create figure
+f = figure(1);clf
+f.Color = [1 1 1];
+f.Position(3:4) = figDims;
+
+roiName = mD(trialNums(1)).roiData(roiNum).name;
+clear ax
+for iPos = 1:numel(stimWinFlData)
+    plotData = squeeze(stimWinFlData(iPos).(dataType)(:, roiNum, :));% - squeeze(stimWinFlData(iPos).rawFl(:, 3, :));
+    plotTimes = ((1:size(plotData, 1)) ./ mD(1).volumeRate) - (1/mD(1).volumeRate) ...
+            - quiescenceWinSec(1);
+
+    if ~isempty(skipTimes)
+        plotData(plotTimes > skipTimes(1) & plotTimes < skipTimes(2), :) = nan;
+        plotTimes(plotTimes > skipTimes(1) & plotTimes < skipTimes(2)) = nan;
+    end
+
+    ax(iPos) = subaxis(1, numel(stimWinFlData), iPos, ...
+            'mb', 0.14, 'mt', 0.15, 'mr', mr, 'ml', ml);
+    hold on
+    
+    % Plot single trial data
+    cm = jet(size(plotData, 2)) * 0.95;
+    if singleTrials
+        for iTrial = 1:size(plotData, 2)
+            plot(plotTimes, smoothdata(plotData(:, iTrial), 'gaussian', smWin, 'omitnan'), ...
+                    'color', cm(iTrial, :), 'linewidth', 1)
+        end
+    end
+    
+    % Shade +/- SEM
+    sd = std(plotData, [], 2, 'omitnan');
+    avg = mean(smoothdata(plotData, 'gaussian', smWin, 'omitnan'), 2); 
+    sd = sd(~isnan(plotTimes));
+    avg = avg(~isnan(plotTimes));
+    sem = sd ./ (size(plotData, 2)^0.5);
+    jbfill(plotTimes(~isnan(plotTimes)), [avg + sem]', [avg - sem]', 'k', 'k', 1, 0.2);
+    
+    % Plot mean
+    plot(plotTimes, mean(smoothdata(plotData, 'gaussian', smWin, 'omitnan'), 2), ...
+            'linewidth', 3, 'color', 'k')
+    hold on
+    
+    % Shade stim period
+    stimDur = stimOffsetTimes(1) - stimOnsetTimes(1);
+    plot_stim_shading([0 stimDur])
+    hold on;
+    
+    % Add labels to plot
+    xlim([plotTimes(1), plotTimes(end)]);
+    xlabel('Time from stim onset (s)');
+    ax(iPos).FontSize = 14;
+    if strcmp(dataType, 'expDff')
+        yLabStr = 'Full exp. dF/F';
+    elseif strcmp(dataType, 'dff')
+        yLabStr = 'Trial dF/F';
+    elseif strcmp(dataType, 'zscore')
+        yLabStr = 'z-scored dF/F';
+    elseif strcmp(dataType, 'rawFl')
+        yLabStr = 'Raw Fl';
+    else
+        ylabel('');
+    end
+    if iPos == 1
+       ylabel(yLabStr); 
+    end
+    
+%     title({[mD(1).expID, '  -  mean ', roiName, ' ', stimPosNames{iPos}, ' responses'], ...
+%         ' (no fly movement within plot epochs)'}, 'fontsize', 14)
+    title(stimPosNames{iPos}, 'fontsize', 14)
+end
+
+linkaxes(ax);
+
+suptitle([[mD(1).expID, '  -  mean ', roiName, ' visual stim responses'], ...
+    ' (no fly movement within plot epochs)']);
+
+%%
+
+winSize = 2;
 
 
+
+stimStartVol = find(isnan(plotTimes), 1, 'first');
+stimEndVol = find(isnan(plotTimes), 1, 'last');
+winSizeVols = round(winSize * mD(1).volumeRate);
+
+preStimVols = (stimStartVol - winSizeVols):(stimStartVol - 1);
+postStimVols = (stimEndVol + 1):(stimEndVol + winSizeVols);
+
+preStimMean = mean(plotData(preStimVols, :), 1);
+postStimMean = mean(plotData(postStimVols, :), 1);
+
+f = figure(2);clf; 
+f.Color = [1 1 1];
+hold on
+
+plot([ones(1, numel(preStimMean)); 2 * ones(1, numel(preStimMean))], ...
+         [preStimMean; postStimMean], '-o', ...
+         'linewidth', 1);
+xlim([0.5 2.5])
+
+plot([mean(preStimMean), mean(postStimMean)], '-s', 'linewidth', 3, ...
+        'markersize', 10, 'color', 'k', 'markerfacecolor', 'k')
+
+[~, p] = ttest(preStimMean, postStimMean)
 
 
 

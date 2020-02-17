@@ -17,14 +17,3 @@ for iTrial = 1:numel(ftVids)
 end
 
 save(fullfile(parentDir, 'flowMags'), 'meanFlowMags')
-
-
-%% Load and process optic flow data
-
-
-figure(1);clf;hold on
-for i=13%:numel(meanFlowMags)
-    plotData = repeat_smooth(meanFlowMags{i}, 20, 'dim', 2, 'smwin', 6);
-    plot(plotData - min(plotData));    
-end
-ylim([0 0.5])
