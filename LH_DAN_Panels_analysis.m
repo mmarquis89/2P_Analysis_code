@@ -13,7 +13,7 @@ load(fullfile(parentDir, 'flowMags.mat'));
 %%
 
 
-currTrial = 2;
+currTrial = 8;
 td = mD([mD.trialNum] == currTrial);
 
 plotROIs = [];
@@ -253,9 +253,9 @@ end
 %% Extract fluorescence data for visual stim epochs only when fly is quiescent
 
 trialNums = [1:4];
-panelsStimPositions = [19 67 43]; % 14;%
-stimPosNames = {'Left bar', 'Right bar', 'Center bar'}; %{'Full field flash'}; % 
-quiescenceWinSec = [6 6];
+panelsStimPositions = 14;%[19 67 43]; % 
+stimPosNames = {'Full field flash'}; % {'Left bar', 'Right bar', 'Center bar'}; %
+quiescenceWinSec = [8 8];
 
 try
 stimWinFlData = struct();
@@ -368,13 +368,13 @@ catch foldME; rethrow(foldME); end
 
 %%
 
-saveFig = 1;
+saveFig = 2;
 
 
-roiNum = 3;
+roiNum = 2;
 smWin = 3;
-singleTrials = 0;
-skipTimes =[-0.05 0.0];
+singleTrials = 1;
+skipTimes =[-0.05 0.38];
 avgWinSize = 1.5;
 
 dataType = 'dff';

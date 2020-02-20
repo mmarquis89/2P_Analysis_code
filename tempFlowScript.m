@@ -5,7 +5,8 @@ roiFile = 'Behavior_Vid_ROI_Data.mat';
 
 
 load(fullfile(parentDir, roiFile), 'roiData'); % --> [y, x]
-ftVids = dir(fullfile(parentDir, 'FicTrac_video_trial*.mp4'));
+% ftVids = dir(fullfile(parentDir, 'FicTrac_video_trial*.mp4'));
+ftVids = dir(fullfile(parentDir, '*.avi'));
 
 meanFlowMags = {};
 for iTrial = 1:numel(ftVids)

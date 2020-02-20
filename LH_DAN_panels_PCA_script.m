@@ -1,12 +1,13 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20200211-2_TH-C_op6s_7f\ProcessedData';
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+parentDir = uigetdir(startDir, 'Select an experiment directory');
 
 
 %% Run PCA on entire dataset
 
 
-trialNum = 4;
+trialNum = 7;
 
 load(fullfile(parentDir, ['imagingData_reg_trial_', ...
         pad(num2str(trialNum), 3, 'left', '0'), '.mat']), 'imgData')
@@ -25,7 +26,7 @@ save(fullfile(parentDir, fileName), 'pcaData')
 
 %%
 
-trialNum = 4;
+trialNum = 6;
 
 load(fullfile(parentDir, ['pcaData_trial_', pad(num2str(trialNum), 3, 'left', '0'), '.mat']), ...
         'pcaData')
@@ -35,7 +36,7 @@ load(fullfile(parentDir, ['refImages_reg_trial_', ...
     
 %% 
 
-nPCs = 9;
+nPCs = 7;
 offset = 0;
    
 nPlanes = size(pcaData, 3);
