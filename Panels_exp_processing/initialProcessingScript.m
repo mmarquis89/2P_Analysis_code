@@ -16,7 +16,7 @@ catch
    disp('Error: anatomy stack creation failed'); 
 end
     
-% CONSOLIDATE METADATA AND DAQ DATA FOR ALL TRIALS
+%% CONSOLIDATE METADATA AND DAQ DATA FOR ALL TRIALS
 
 % Process metadata files
 mdFiles = dir(fullfile(expDir, '*metadata*trial*.mat'));
@@ -68,7 +68,7 @@ save(fullfile(outputDir, 'metadata.mat'), 'expMetadata', '-v7.3');
 save(fullfile(outputDir, 'daqData.mat'), 'expDaqData', '-v7.3');
 disp('Processing complete.');
 
-% PROCESS FICTRAC DATA
+%% PROCESS FICTRAC DATA
 
 ftDir = fullfile(expDir, 'FicTracData');
 
@@ -105,7 +105,7 @@ for iFile = 1:numel(ftVidFiles)
         medLum(frameCount) = median(as_vector(currFrame(:,:,1)));
         vidData(:,:, frameCount) = currFrame(:,:,1);
     end
-    
+
     % Determine which video frames mark the beginning and end of the trial
     lumThresh = 0.9 * max(medLum);
     startVidFrame = find(medLum > lumThresh, 1); % Index of first frame with >90% of max luminance
@@ -201,6 +201,21 @@ for iFile = 1:numel(imgDataFiles)
         imagingMetadata(iFile) = siMetadata;
     end
     
+    % Detect number of channels
+    if numel(size(imgData)) == 5 
+        nChannels = 2;
+    else
+        nChannels = 1;
+    end
+    
+    % Process only one channel
+    fileSuffix = '';
+    if nChannels == 2
+        imgData = imgData(:, :, :, :, 1);
+%         imgData = imgData(:, :, :, :, 2);
+%         fileSuffix = '_cyRFP';
+    end
+    
     % Discard flyback frames from imaging data
     nFlybackFrames = siMetadata.SI.hFastZ.numDiscardFlybackFrames;
     imgData(:, :, (end - (nFlybackFrames - 1)):end, :) = []; % --> [y, x, plane, volume]
@@ -220,21 +235,34 @@ for iFile = 1:numel(imgDataFiles)
         
     % Save the raw normalized data in a .mat file
     disp('Saving processed data...')
-    save(fullfile(outputDir, ['imagingData_raw_trial_', pad(num2str(trialNum), 3, 'left', '0'), '.mat']), ...
-            'imgData', '-v7.3');
-            
+    save(fullfile(outputDir, ['imagingData_raw_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
+            fileSuffix, '.mat']), 'imgData', '-v7.3');
+        
+
     % Create and save a file containing reference images for each file
     refImages = mean(imgData, 4); % --> [y, x, plane]
-    save(fullfile(outputDir, ['refImages_raw_trial_' pad(num2str(trialNum), 3, 'left', '0'), '.mat']), ...
-            'refImages', '-v7.3');
+    save(fullfile(outputDir, ['refImages_raw_trial_' pad(num2str(trialNum), 3, 'left', '0'), ...
+            fileSuffix, '.mat']), 'refImages', '-v7.3');
     
         
     % ----- Plane-wise (2D) NoRMCorre motion correction -----
+    
     imgDataReg = zeros(size(imgData));
     regTemplates = [];
     for iPlane = 1:size(imgDataReg, 3)
         
         currData = squeeze(imgData(:,:, iPlane, :)); % --> [y, x, volume]
+                
+        % Clip highest 0.1% of values and smooth with 2D gaussian filter
+        srt = sort(currData(:));
+        capVal = srt(numel(srt) - round(numel(srt)/1000));
+        currData(currData > capVal) = capVal;
+        currDataSm = zeros(size(currData));
+        for iVol = 1:size(currData, 3)
+%             disp(iVol)
+            currDataSm(:, :, iVol) = imgaussfilt(currData(:, :, iVol), 0.5);
+        end
+        currData = currDataSm;
         
         % Set NoRMCorre options
         options_rigid = NoRMCorreSetParms('d1', size(currData, 1), 'd2', size(currData, 2), ...
@@ -256,16 +284,16 @@ for iFile = 1:numel(imgDataFiles)
     disp('Saving registered data...');
     imgData = imgDataReg;
     save(fullfile(outputDir, ['imagingData_reg_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
-            '.mat']), 'imgData', '-v7.3')
+            fileSuffix, '.mat']), 'imgData', '-v7.3')
     
     % Save registered data reference images
     refImages = mean(imgData, 4);    % --> [y, x, plane]
     sz = size(imgData);
     imgData = imgData(:, :, :, 1:(100 * floor(sz(4) / 100)));
-    imgDeata = reshape(imgData, sz(1), sz(2), sz(3), 100, []);
+    imgData = reshape(imgData, sz(1), sz(2), sz(3), 100, []);
     timePointRefImages = squeeze(mean(imgData, 4));  % --> [y, x, plane, section of volumes]
     save(fullfile(outputDir, ['refImages_reg_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
-        '.mat']), 'refImages', 'regTemplates', 'timePointRefImages', '-v7.3');
+            fileSuffix, '.mat']), 'refImages', 'regTemplates', 'timePointRefImages', '-v7.3');
     
 end%iFile
 

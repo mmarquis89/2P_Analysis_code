@@ -67,10 +67,15 @@ for iTrial = 1:numel(bD)
         bl.expDffArr(:, :, iTrial) = bD(iTrial).expDffMat;              % --> [volume, glom, trial]
     catch; end 
     
-    bl.optoStimOnsetTimes{iTrial} = bD(iTrial).optoStimOnsetTimes;      % --> {trial}
-    bl.optoStimOffsetTimes{iTrial} = bD(iTrial).optoStimOffsetTimes;    % --> {trial}
-    bl.usingOptoStim(iTrial) = bD(iTrial).usingOptoStim;                % --> [trial]
-    
+    if bD(iTrial).usingOptoStim
+        bl.optoStimOnsetTimes{iTrial} = bD(iTrial).optoStimOnsetTimes;      % --> {trial}
+        bl.optoStimOffsetTimes{iTrial} = bD(iTrial).optoStimOffsetTimes;    % --> {trial}
+        bl.usingOptoStim(iTrial) = bD(iTrial).usingOptoStim;                % --> [trial]
+    else
+       bl.optoStimOnsetTimes{iTrial} = [];
+       bl.optoStimOffsetTimes = {iTrial};
+       bl.usingOptoStim(iTrial) = 0; 
+    end
     if strcmp(expType, 'PB')
         bl.dffVectAvgRad(:, iTrial) = bD(iTrial).dffVectAvgRad;             % --> [volume, trial]
         bl.dffVectAvgWedge(:, iTrial) = bD(iTrial).dffVectAvgWedge;         % --> [volume, trial]
@@ -114,30 +119,30 @@ for iTrial = 1:numel(bD)
     % For each quiescence frame, find the distance to the nearest movement frame
     moveFrameDist = zeros(1, numel(moveFrames));
     moveFrameInds = find(moveFrames);
-    for iFrame = 1:numel(moveFrames)
-        moveFrameDist(iFrame) = min(abs(moveFrameInds - iFrame));
-    end
-    
-    % Convert to volumes
-    volFrames = [];
-    volTimes = bD(iTrial).volTimes;
-    frameTimes = bD(iTrial).flowFrameTimes;
-    for iVol = 1:numel(volTimes)
-        [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
-    end
-    bl.moveDistVols(:, iTrial) = moveFrameDist(volFrames) .* ...
-            (numel(volTimes) / numel(frameTimes));
-    
+    if ~isempty(moveFrameInds)
+        for iFrame = 1:numel(moveFrames)
+            moveFrameDist(iFrame) = min(abs(moveFrameInds - iFrame));
+        end
         
-    % Get mean flow data for each volume    
-    frameVols = [];
-    for iFrame = 1:numel(frameTimes)
-       [~, frameVols(iFrame)] = min(abs(frameTimes(iFrame) - volTimes));
+        % Convert to volumes
+        volFrames = [];
+        volTimes = bD(iTrial).volTimes;
+        frameTimes = bD(iTrial).flowFrameTimes;
+        for iVol = 1:numel(volTimes)
+            [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
+        end
+        bl.moveDistVols(:, iTrial) = moveFrameDist(volFrames) .* ...
+                (numel(volTimes) / numel(frameTimes));
+        
+        % Get mean flow data for each volume
+        frameVols = [];
+        for iFrame = 1:numel(frameTimes)
+            [~, frameVols(iFrame)] = min(abs(frameTimes(iFrame) - volTimes));
+        end
+        for iVol = 1:numel(volTimes)
+            bl.meanVolFlow(iVol, iTrial) = mean(bD(iTrial).flowData(frameVols == iVol));
+        end
     end
-    for iVol = 1:numel(volTimes)
-        bl.meanVolFlow(iVol, iTrial) = mean(bD(iTrial).flowData(frameVols == iVol));
-    end
-    
     
 end
 

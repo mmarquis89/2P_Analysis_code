@@ -9,71 +9,74 @@ load(fullfile(parentDir, 'analysis_data.mat'));
 
 
 % Add optic flow info to mD struct
-load(fullfile(parentDir, 'flowMags.mat'));
-for iTrial = 1:numel(mD)
-    mD(iTrial).flowData = meanFlowMags{iTrial};
-    mD(iTrial).flowFrameDur = median(diff(mD(iTrial).ftFrameTimes));
-    mD(iTrial).flowFrameTimes = (1:1:numel(meanFlowMags{iTrial})) * mD(iTrial).flowFrameDur;
+if exist(fullfile(parentDir, 'flowMags.mat'), 'file')
+    load(fullfile(parentDir, 'flowMags.mat'));
+    for iTrial = 1:numel(mD)
+        mD(iTrial).flowData = meanFlowMags{iTrial};
+        mD(iTrial).flowFrameDur = median(diff(mD(iTrial).ftFrameTimes));
+        mD(iTrial).flowFrameTimes = (1:1:numel(meanFlowMags{iTrial})) * mD(iTrial).flowFrameDur;
+    end
 end
-
 
 %%
 
 
-currTrial = 1;
+currTrial = 7;
 
 currTrialInd = find([mD.trialNum] == currTrial);
 
 td = mD(currTrialInd);
 
 flowSmWin = 30;
-moveThresh = 0.05;
+moveThresh = 0.04;
 omitMoveVols = 0;
 moveBufferDur = 2;
 showPVA = 0;
 
-% flData = td.wedgeDffMat;
+flData = td.wedgeDffMat;
 % flData = td.wedgeRawFlMat;
 % flData = td.wedgeZscoreMat;
-% flData = td.wedgeExpDffMat;
+flData = td.wedgeExpDffMat;
 
-flData = td.dffMat;
+% flData = td.dffMat;
 % flData = td.rawFlMat;
 % flData = td.zscoreMat;
 % flData = td.expDffMat;
+% 
+% flData = flData(:, [1:16]); 
 
 
 % % 
-    currGoodVols = goodVols(:, currTrialInd);
-    flData(~currGoodVols, :) = nan;
+%     currGoodVols = goodVols(:, currTrialInd);
+%     flData(~currGoodVols, :) = nan;
 
 
-% Identify epochs of quiescence vs. flailing
-currTrialFlow = mD(currTrialInd).flowData;
-smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', flowSmWin);
-smFlow = smFlow - min(smFlow(:));
-moveFrames = smFlow > moveThresh;
-
-% For each quiescence frame, find the distance to the nearest movement frame
-moveFrameDist = zeros(1, numel(moveFrames));
-moveFrameInds = find(moveFrames);
-for iFrame = 1:numel(moveFrames)
-    moveFrameDist(iFrame) = min(abs(moveFrameInds - iFrame));
-end
-
-% Convert to volumes
-volFrames = [];
-volTimes = mD(currTrialInd).volTimes;
-frameTimes = mD(currTrialInd).flowFrameTimes;
-for iVol = 1:size(flData, 1) 
-    [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
-end
-moveVolDist = moveFrameDist(volFrames) .* (numel(volTimes) / numel(frameTimes));
-moveBufferDurVols = round(moveBufferDur * td.volumeRate);
-
-if omitMoveVols
-   flData(moveVolDist < moveBufferDurVols, :) = nan; 
-end
+% % Identify epochs of quiescence vs. flailing
+% currTrialFlow = mD(currTrialInd).flowData;
+% smFlow = repeat_smooth(currTrialFlow, 20, 'dim', 2, 'smwin', flowSmWin);
+% smFlow = smFlow - min(smFlow(:));
+% moveFrames = smFlow > moveThresh;
+% 
+% % For each quiescence frame, find the distance to the nearest movement frame
+% moveFrameDist = zeros(1, numel(moveFrames));
+% moveFrameInds = find(moveFrames);
+% for iFrame = 1:numel(moveFrames)
+%     moveFrameDist(iFrame) = min(abs(moveFrameInds - iFrame));
+% end
+% 
+% % Convert to volumes
+% volFrames = [];
+% volTimes = mD(currTrialInd).volTimes;
+% frameTimes = mD(currTrialInd).flowFrameTimes;
+% for iVol = 1:size(flData, 1) 
+%     [~, volFrames(iVol)] = min(abs(volTimes(iVol) - frameTimes));
+% end
+% moveVolDist = moveFrameDist(volFrames) .* (numel(volTimes) / numel(frameTimes));
+% moveBufferDurVols = round(moveBufferDur * td.volumeRate);
+% 
+% if omitMoveVols
+%    flData(moveVolDist < moveBufferDurVols, :) = nan; 
+% end
 
 
 % Get mean panels pos data
@@ -94,6 +97,7 @@ cm = hsv(size(meanFlShift, 2)) .* 0.9;
 % PLOT DATA THROUGHOUT TRIAL
 figure(1);clf;
 clear allAx
+
 
 subaxis(5, 3, 1, 'mb', 0.05, 'mt', 0.03, 'ml', 0.08, 'mr', 0.03)
 allAx(1) = gca;
@@ -128,10 +132,6 @@ xlim([-180, 180]);
 
 
 subaxis(5, 3, 3)
-
-% figure(3);clf;hold on
-% max(meanFlShift(:))
-
 allAx(3) = gca;
 % Mean visual tuning in polar coordinates
 plotX = deg2rad(-180:3.75:(180 - 3.75));
@@ -154,6 +154,7 @@ pax.ThetaTickLabel = {'0' '+45', '+90' '+135' '-135', '-90', '-45'};
 pax.RTick = [];
 % pax.FontSize = 12;
 
+
 subaxis(5, 3, 4:6)
 allAx(end + 1) = gca;
 % Mean dF/F data for each glomerulus
@@ -166,7 +167,8 @@ if showPVA
 end
 ylabel('dF/F and PVA');
 colorbar;
-    
+ 
+
 subaxis(5, 3, 7:9)
 allAx(end + 1) = gca;
 % Panels bar position
@@ -189,11 +191,12 @@ allAx(end).YTickLabel = [];
 cb = colorbar; 
 cb.Visible = 'off';
 
+
 subaxis(5, 3, 10:12)
 allAx(end + 1) = gca;
-% 
+if exist(fullfile(parentDir, 'flowMags.mat'), 'file')
+    
         % Optic flow data to identify flailing
-
         currFlow = mD(currTrialInd).flowData;
         currFlow(end) = 0;
         plotData = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', flowSmWin);
@@ -202,7 +205,6 @@ allAx(end + 1) = gca;
         plotData2 = plotData2 - min(plotData2);
         flowFrameDur = median(diff(mD(currTrialInd).ftFrameTimes));
         flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur; 
-%         plot(td.ftFrameTimes(1:numel(plotData)), plotData, 'color', 'k');+
         plot(flowFrameTimes, plotData, 'color', 'k', 'linewidth', 1);
         hold on;
         plot(flowFrameTimes, plotData2, 'color', 'g');
@@ -212,25 +214,25 @@ allAx(end + 1) = gca;
         plot([td.ftFrameTimes(1), td.ftFrameTimes(end)], [moveThresh, moveThresh],...
                 'linewidth', 0.5, 'color', 'r');
         ylim([0 0.5])
+else
+    % FicTrac heading overlaid with dF/F pva
+    HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
+    plot(td.ftFrameTimes, 2*pi - mod(HD, 2*pi), 'color', 'k');
+    if td.usingOptoStim
+        hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
+    end
+    ylim([0 2*pi])
+    ylabel('Fly heading (rad)')
+    yyaxis('right')
+    uwVectAvgRad = smoothdata(unwrap(td.dffVectAvgRad + pi), 1, 'gaussian', 3);
+    uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
+    plot(td.volTimes, mod(uwVectAvgRad, 2*pi), 'color', rgb('darkorange'));
+    ylabel('PVA')
+    ylim([0 2*pi])
+end
 cb = colorbar; 
 cb.Visible = 'off';
-% 
-% % FicTrac heading overlaid with dF/F pva
-% HD = repeat_smooth(unwrap(td.ftData.intHD), 1, 'smWin', 1);
-% plot(td.ftFrameTimes, 2*pi - mod(HD, 2*pi), 'color', 'k');
-% if td.usingOptoStim
-%    hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
-% end
-% ylim([0 2*pi])
-% ylabel('Fly heading (rad)')
-% yyaxis('right')
-% uwVectAvgRad = smoothdata(unwrap(td.dffVectAvgRad + pi), 1, 'gaussian', 3);
-% uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
-% plot(td.volTimes, mod(uwVectAvgRad, 2*pi), 'color', rgb('darkorange'));
-% ylabel('PVA')
-% ylim([0 2*pi])
-% % plot(td.ftFrameTimes, repeat_smooth(td.ftData.moveSpeed, 15, 'smWin', 7), 'color', rgb('orange'));
-% % ylabel('Move speed (mm/sec)')
+
 
 subaxis(5, 3, 13:15)
 allAx(end + 1) = gca;
@@ -244,13 +246,6 @@ ylim([0 10])
 yyaxis('right')
 plot(td.ftFrameTimes, abs(repeat_smooth(td.ftData.yawSpeed, 15, 'smWin', 7)), 'color', rgb('orange'));
 ylabel('Yaw speed (rad/sec)');
-% subaxis(6, 1, 6)
-% allAx(6) = gca;
-% % FicTrac yaw velocity
-% plot(td.ftFrameTimes, repeat_smooth(td.ftData.yawSpeed, 1, 'smWin', 30), 'color', 'k');
-% if td.usingOptoStim
-%    hold on; plot_stim_shading([td.optoStimOnsetTimes, td.optoStimOffsetTimes])
-% end
 cb = colorbar; 
 cb.Visible = 'off';
 xlabel('Time (s)');
@@ -294,3 +289,45 @@ if td.usingOptoStim
     end
     plot_stim_shading([0 (td.optoStimOffsetTimes(1) - td.optoStimOnsetTimes(1))])
 end
+
+
+currFlData = flData;
+R = corrcoef(currFlData);
+% R = cov(currFlData);
+
+% LRCorrMat = R(1:8, 9:end);
+LRCorrMat = R(1:8, :);
+LRCorrMat = R;
+
+figure(2); clf; 
+imagesc(LRCorrMat); 
+axis equal
+ax = gca;
+colormap('bluewhitered')
+ax.YTick = 1:8;
+ax.XTick = 1:8;
+ax.YTickLabel = {td.roiData(1:8).name};
+ax.XTickLabel = {td.roiData(16:-1:9).name};
+% 
+% ax.YTick = 1:8;
+% ax.XTick = 1:16;
+% ax.YTickLabel = {td.roiData(1:8).name};
+% ax.XTickLabel = {td.roiData.name};
+% ax.Color = [0 0 0]
+% hold on
+% plot(ax, [8.5, 8.5], [8.5 0.5], 'linewidth', 5, 'color', 'k')
+% plot(ax, [0.5, 8.5], [0.5 8.5], 'linewidth', 5, 'color', 'g')
+% plot(ax, [8.5, 16.5], [0.5 8.5], 'linewidth', 5, 'color', 'g')
+
+% ax.YTick = 1:16;
+% ax.XTick = 1:16;
+% ax.YTickLabel = {td.roiData.name};
+% ax.XTickLabel = {td.roiData.name};
+% ax.Color = [0 0 0]
+% hold on
+% plot(ax, [8.5, 8.5], [16.5 0.5], 'linewidth', 5, 'color', 'k')
+% plot(ax, [0.5, 16.5], [8.5, 8.5], 'linewidth', 5, 'color', 'k')
+% plot(ax, [0.5, 16.5], [0.5 16.5], 'linewidth', 3, 'color', 'g')
+
+[~, test] = max(LRCorrMat')
+

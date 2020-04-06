@@ -1,21 +1,99 @@
-% 
-% parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20191205-2_38A11_ChR_60D05_7f\ProcessedData';
-% analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
-% load(fullfile(parentDir, 'analysis_data.mat'));
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+parentDir = uigetdir(startDir, 'Select an experiment directory');
+
+analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\Analysis';
+
+
+load(fullfile(parentDir, 'analysis_data.mat'));
+
+
+% Add optic flow info to mD struct
+if exist(fullfile(parentDir, 'flowMags.mat'), 'file')
+    load(fullfile(parentDir, 'flowMags.mat'));
+    for iTrial = 1:numel(mD)
+        mD(iTrial).flowData = meanFlowMags{iTrial};
+        mD(iTrial).flowFrameDur = median(diff(mD(iTrial).ftFrameTimes));
+        mD(iTrial).flowFrameTimes = (1:1:numel(meanFlowMags{iTrial})) * mD(iTrial).flowFrameDur;
+    end
+end
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:8];
+blTrials = [1:16];
 
 
 flowSmWin = 30;
 moveThresh = 0.05;
 moveDistThresh = 2;
 
-expType = 'EB';%'PB';
+
+sectionBreakTrials = [4 7];
+sectionColorLabels = {'100 uM DA', '250 uM DA', '500 uM DA', 'No visual stim', 'Back to visual stim'};
+sectionBreakColors = [1 2];
+fullColorList = [rgb('magenta'); rgb('green'); rgb('gold'); rgb('cyan') * 0.8; rgb('red') * 0.8];
+sectionBreakColorList = fullColorList(1:numel(sectionBreakTrials), :);
+
+
+expType = 'PB';%'EB';%
 
 bl = extract_block_data(mD, blTrials, ...
         'flowSmWin', flowSmWin, 'moveThresh', moveThresh, 'ExpType', expType);
+
+    
+    
+    
+    
+%% Compare correlations across the two halves of the PB
+
+flData = bl.expDffArr;
+flData = permute(flData, [2 1 3]);
+rsFlData = reshape(flData, size(flData, 1), [])';
+R = corrcoef(rsFlData);
+% R = cov(rsFlData);
+LRCorrMat = R(1:8, 9:end);
+% LRCorrMat = R;
+figure(3); clf; 
+imagesc(LRCorrMat); 
+axis square
+ax = gca;
+colormap('bluewhitered')
+
+ax.YTick = 1:8;
+ax.XTick = 1:8;
+ax.YTickLabel = {td.roiData(1:8).name};
+ax.XTickLabel = {td.roiData(16:-1:9).name};
+
+% ax.YTick = 1:16;
+% ax.XTick = 1:16;
+% ax.YTickLabel = {td.roiData([1:8, 16:-1:9]).name};
+% ax.XTickLabel = {td.roiData([1:8, 16:-1:9]).name};
+
+[~, test] = max(LRCorrMat')
+
+   
+% Plot boxes around midline squares
+xx = [repelem(0:7, 2), 8] + 0.5;
+yy = [0, repelem(1:8, 2)] + 0.5;
+hold on;
+plot(xx, yy, 'color', rgb('lawngreen'), 'linewidth', 3)
+plot(xx, yy - 1, 'color', rgb('lawngreen'), 'linewidth', 3)
+
+
+% Plot boxes around anticorrelate squares
+plot(xx(1:9), yy(9:end), 'color', 'k', 'linewidth', 3)
+plot(xx(9:end), yy(1:9), 'color', 'k', 'linewidth', 3)
+yy = yy - 1;
+plot(xx(2:10), [yy(10:end), 8.5], 'color', 'k', 'linewidth', 3)
+plot(xx(9:end), yy(1:9), 'color', 'k', 'linewidth', 3) 
+
+figure(4);clf
+shiftMat = LRCorrMat;
+for iCol = 1:size(shiftMat, 2)
+   shiftMat(:, iCol) = shiftMat([(iCol):end, 1:(iCol) - 1], iCol);
+end
+shiftMat = circshift(shiftMat, 3);
+imagesc(shiftMat);
+axis square
 
 %% PLOT SUMMARY OF MOVEMENT THROUGHOUT EXPERIMENT
 
@@ -55,6 +133,47 @@ for iStim = 1:numel(stimTrials)
     end
     plot_stim_shading([currTrialInd - 0.5, currTrialInd + 0.5], 'color', shadeColor);
 end
+
+% Indicate stim trials
+optoStimTrials = find([bl.usingOptoStim]);
+if ~isempty(optoStimTrials)
+    sectionBreakColorList = [rgb('green'); rgb('red')];
+    sectionColorLabels = {'Visual+opto', 'Opto-only'};
+    sectionBreakColors = [];
+    sectionBreakTrials = [];
+    for iTrial = 1:numel(optoStimTrials)
+        sectionBreakTrials(end + 1) = optoStimTrials(iTrial);
+        if bl.usingPanels(optoStimTrials(iTrial))
+            sectionBreakColors(end + 1) = 1;
+        else
+            sectionBreakColors(end + 1) = 2;
+        end
+    end%iTrial
+end%if
+    
+% Plot lines dividing sections if necessary
+yL = ylim();
+if ~isempty(sectionBreakTrials)
+    for iColor = 1:size(sectionBreakColorList, 1)
+        currColor = sectionBreakColorList(iColor, :);
+        currSectionBreaks = sectionBreakTrials(sectionBreakColors(iColor));
+        for iSection = 1:numel(currSectionBreaks)
+            currTrialNum = currSectionBreaks(iSection);
+            xx = [currTrialNum currTrialNum] - 0.5;
+            yy = yL + [-100 100];
+            if iColor == 1 && iSection == 1
+                plotLines = plot(xx, yy, 'color', currColor, 'linewidth', 2);
+            elseif iSection == 1
+                plotLines(end + 1) = plot(xx, yy, 'color', currColor, 'linewidth', 2);
+            else
+                plot(xx, yy, 'color', currColor, 'linewidth', 2);
+            end
+        end
+    end
+    legend(plotLines, sectionColorLabels, 'autoupdate', 'off', 'location', 'best')
+end
+ylim(yL)
+
 ax.FontSize = 12;
 xlabel('Trial', 'fontsize', 16)
 xlim([0 plotX(end) + 1])
@@ -89,19 +208,22 @@ end
 
 %% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
 
-saveFig = 0;
+saveFig =  0;
 
 omitMoveVols = 0;
 
 % sourceData = bl.wedgeRawFlArr;
-% sourceData = bl.wedgeDffArr;
+sourceData = bl.wedgeDffArr;
 % % sourceData = bl.wedgeZscoreArr;
-% sourceData = bl.wedgeExpDffArr;
+sourceData = bl.wedgeExpDffArr;
 
-sourceData =  bl.dffArr;
+% sourceData =  bl.dffArr;
 % sourceData =  bl.rawFlArr;
-sourceData =  bl.zscoreArr;
+% sourceData =  bl.zscoreArr;
 % sourceData = bl.expDffArr;
+
+figPos = [650 980];
+
 
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr) || isequal(sourceData, bl.dffArr)
@@ -138,12 +260,18 @@ sourceData(end, end, :) = max(sourceData(:), [], 'omitnan');
 
 f = figure(10);clf;
 f.Color = [1 1 1];
+if ~isempty(figPos)
+    f.Position(3:4) = figPos;
+end
 colormap('parula')
 for iTrial = 1:nTrials 
     
    subaxis(nTrials, 4, [1:3] + (4 * (iTrial - 1)), 'mt', 0, 'mb', 0.06, 'sv', 0.001, 'mr', 0.07);
    
    imagesc([0, bl.trialDuration], [1, 8], smoothdata(sourceData(:, :, iTrial), 1, 'gaussian', 3)');
+   hold on
+   invertedPhaseData = (-bl.dffVectAvgRad/pi) * 4 + 4.5;
+   plot(bl.volTimes, invertedPhaseData(:, iTrial), 'color', 'r')
    
    % Fill in opto stim trials with solid color
    ax = gca;
@@ -216,14 +344,14 @@ end
 %===================================================================================================
 % opts = [];
 
-saveFig = 0;
+saveFig = 1;
 
-omitMoveVols = 1;
+omitMoveVols = 0;
 
 showStimTrials = 0;
 
 sourceData = bl.wedgeRawFlArr;
-sourceData = bl.wedgeDffArr;
+% sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 sourceData = bl.wedgeExpDffArr;
 
@@ -369,14 +497,14 @@ end
 
 saveFig = 1;
 
-omitMoveVols = 1;
+omitMoveVols = 0;
 
 smWin = 3;
 
 sourceData = bl.wedgeRawFlArr;
 sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-% sourceData = bl.wedgeExpDffArr;
+sourceData = bl.wedgeExpDffArr;
 
 
 figSize = [];
@@ -447,8 +575,9 @@ f.Color = [1 1 1];
 if ~isempty(figSize)
    f.Position(3:4) = figSize; 
 end
+allAx = {}; plotLines = {};
 for iPlot = 1:8
-    ax = subaxis(1, nPlots, iPlot, 'mt', 0, 'ml', 0.05, 'mr', 0.03, 'mb', 0.08, 'sh', 0.05);
+    allAx{iPlot} = subaxis(1, nPlots, iPlot, 'mt', 0, 'ml', 0.05, 'mr', 0.03, 'mb', 0.08, 'sh', 0.05);
     hold on;
     currData = squeeze(shiftDataOffset(:, iPlot, :)); % --> [barPos, trial]
     currData = currData(:, ~[bl.usingOptoStim]);
@@ -477,39 +606,81 @@ for iPlot = 1:8
     if iPlot == 1
         ylabel('Trial', 'fontsize', 16);
     end
-    ax.YTick = offsets;
+    allAx{iPlot}.YTick = offsets;
     yTickLabel = size(shiftDataOffset, 3):-1:1;
-    ax.YTickLabel = yTickLabel(~bl.usingOptoStim);
+    allAx{iPlot}.YTickLabel = yTickLabel(~fliplr(bl.usingOptoStim));
     
     % Indicate missing opto stim trials
     skippedTrials = 0;
-    optoStimTrials = find([bl.usingOptoStim]);   
-    for iTrial = 1:numel(optoStimTrials)
-        offsetsRev = offsets(end:-1:1);
-        plotOffset = offsetsRev(optoStimTrials(iTrial) - skippedTrials - 1) - (range / 2);
-        skippedTrials = skippedTrials + 1;
-        if bl.usingPanels(optoStimTrials(iTrial))
-            lineColor = 'green';
-        else
-            lineColor = 'red';
-        end
-        plot([plotX(1), plotX(end)], [plotOffset, plotOffset], '-', 'color', lineColor, ...
-                'linewidth', 1.5)
-    end
+    optoStimTrials = find([bl.usingOptoStim]);
+    if ~isempty(optoStimTrials)
+        sectionBreakColorList = [rgb('green'); rgb('red')];
+        sectionColorLabels = {'Visual+opto', 'Opto-only'};
+        sectionBreakColors = [];
+        sectionBreakTrials = [];
+        for iTrial = 1:numel(optoStimTrials)
+            sectionBreakTrials(end + 1) = optoStimTrials(iTrial) - skippedTrials;
+            skippedTrials = skippedTrials + 1;
+            if bl.usingPanels(optoStimTrials(iTrial))
+                sectionBreakColors(end + 1) = 1;
+            else
+                sectionBreakColors(end + 1) = 2;
+            end
+        end%iTrial
+    end%if
     
-end
+    % Plot lines dividing sections if necessary
+    yL = ylim();
+    if ~isempty(sectionBreakTrials)
+        offsetsRev = offsets(end:-1:1);
+        for iColor = 1:size(sectionBreakColorList, 1)
+            currColor = sectionBreakColorList(iColor, :);
+            currSectionBreaks = sectionBreakTrials(sectionBreakColors == iColor);
+            for iSection = 1:numel(currSectionBreaks)
+                currTrialNum = currSectionBreaks(iSection);
+                plotOffset = offsetsRev(currTrialNum - 1) - (range/2);
+                xx = [plotX(1), plotX(end)];
+                yy = [plotOffset plotOffset];
+                if iColor == 1 && iSection == 1
+                    plotLines{iPlot} = plot(xx, yy, 'color', currColor, 'linewidth', 2);
+                elseif iSection == 1
+                    plotLines{iPlot}(end + 1) = plot(xx, yy, 'color', currColor, 'linewidth', 2);
+                else
+                    plot(xx, yy, 'color', currColor, 'linewidth', 2);
+                end
+            end%iSection
+        end%iColor 
+    
+    end%if 
+    
+end%iPlot
 
 % Add figure title
-figTitleStr = {[bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'], ...
-        'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'};
+figTitleStr = [bl.expID, '  -  Visual tuning of EB wedges (mean ', figTitleText, ')'];    
 if omitMoveVols
     figTitleStr{1} = [figTitleStr{1}, '  -  excluding volumes within ', num2str(moveDistThresh), ...
             ' sec of movement'];
 end
 h = suptitle(figTitleStr);
 h.FontSize = 14;
-    
+
+% Add legend for any opto stim trials or section breaks
+for iPlot = 1:8
+    clear lgd;
+    lgd = legend(allAx{iPlot}, plotLines{iPlot}, sectionColorLabels, 'location', 'none');
+    lgd.FontSize = 12;
+    lgd.Orientation = 'horizontal';
+    lgd.Box = 'off'; 
+    drawnow()
+    lgd.Position(3) = lgd.Position(3) * 1.2;
+    axPos = allAx{1}.Position;
+    lgd.Position(1) = axPos(1);
+    lgd.Position(2) = sum(axPos([2 4])) * 1.005;
+    if iPlot < 8
+        lgd.Visible = 'off';
+    end
+end
+
 % Save figure
 if saveFig
    saveDir = fullfile(analysisDir, bl.expID);
@@ -520,9 +691,9 @@ end
 %% Plot min and max values from the tuning curves
 %===================================================================================================
 
-saveFig = 1;
+saveFig = 0;
 
-omitMoveVols = 1;
+omitMoveVols = 0;
 
 smWin = 3;
 
@@ -609,24 +780,63 @@ for iPlot = 1:nPlots
 %     plot(1:size(minVals, 2), minVals(iPlot, :), 'o', 'color', 'b')
 %     plot(1:size(maxVals, 2), maxVals(iPlot, :), 'o', 'color', 'm')
     plot(1:size(tuningAmp, 2), tuningAmp(iPlot, :), 'o', 'color', 'k')
+    
+    % Indicate stim trials
     stimTrials = find(postStimTrials);
-    for iTrial = stimTrials
-        if prevStimPanels(iTrial)
-            lineColor = 'green';
-        else
-            lineColor = 'red';
+    skipTrials = 0;
+    if ~isempty(stimTrials)
+        sectionBreakColorList = [rgb('green'); rgb('red')];
+        sectionColorLabels = {'Visual+opto', 'Opto-only'};
+        sectionBreakColors = [];
+        sectionBreakTrials = [];
+        for iTrial = 1:numel(stimTrials)
+            sectionBreakTrials(end + 1) = stimTrials(iTrial) - skipTrials;
+            skipTrials = skipTrials + 1;
+            if bl.usingPanels(stimTrials(iTrial))
+                sectionBreakColors(end + 1) = 1;
+            else
+                sectionBreakColors(end + 1) = 2;
+            end
+        end%iTrial
+    end%if
+
+    % Plot lines dividing sections if necessary
+    yL = ylim();
+    if ~isempty(sectionBreakTrials)
+        for iColor = 1:size(sectionBreakColorList, 1)
+            currColor = sectionBreakColorList(iColor, :);
+            currSectionBreaks = sectionBreakTrials(sectionBreakColors(iColor));
+            for iSection = 1:numel(currSectionBreaks)
+                currTrialNum = currSectionBreaks(iSection);                
+                xx = [currTrialNum currTrialNum] - 0.5;
+                yy = [0 ceil(max(tuningAmp(:)))];
+                if iColor == 1 && iSection == 1
+                    plotLines = plot(xx, yy, 'color', currColor, 'linewidth', 1.5);
+                elseif iSection == 1
+                    plotLines(end + 1) = plot(xx, yy, 'color', currColor, 'linewidth', 1.5);
+                else
+                    plot(xx, yy, 'color', currColor, 'linewidth', 1.5);
+                end
+            end
         end
-        yL = [0 ceil(max(tuningAmp(:)))];%ylim();
-        plot([iTrial - 0.5, iTrial - 0.5], yL, '-', 'color', lineColor, ...
-            'linewidth', 1.5)
+        if iPlot == 1
+            lgd = legend(plotLines, sectionColorLabels, 'autoupdate', 'off', 'location', 'none')
+            lgd.FontSize = 10;
+            lgd.Orientation = 'horizontal';
+            lgd.Box = 'off';
+            drawnow()
+%             lgd.Position(3) = lgd.Position(3) * 1.2;
+            firstAx = ax;
+        end
     end
+
     if iPlot == nPlots
         xlabel('Trial number', 'fontsize', 13)
     else
         ax.XTickLabel = [];
     end
     xL = xlim;
-    xlim([0, xL(2) + 1])
+    xlim([0, size(tuningAmp, 2) + 1])
 %     ylabel(num2str(iPlot))
 end
 
@@ -638,14 +848,16 @@ end
 
 % Plot title at top of figure
 figTitleStr = {[bl.expID, ' - EB wedge visual tuning'], ...
-        [figTitleText, '  (max - min)'], ... 
-        'Green line  =  trial with opto + visual stim', ...
-        '  Red line  = trial with opto stim only'};
+        [figTitleText, '  (max - min)']};
 if omitMoveVols
     figTitleStr{2} = [figTitleStr{2}, '  -  excl. move.'];
 end
 h = suptitle(figTitleStr);
 h.FontSize = 12;
+
+axPos = firstAx.Position;
+lgd.Position(1) = axPos(1);
+lgd.Position(2) = sum(axPos([2 4])) * 1.002;
 
 % Save figure
 if saveFig
@@ -826,24 +1038,23 @@ end
 %% Plot average tuning curves for entire experiment
 %===================================================================================================
 
+saveFig = 0;
 
-saveFig = 1;
-
-omitMoveVols = 0;
+omitMoveVols = 1;
 
 subtractMean = 0;
 
-smWin = 5;
+smWin = 3;
 
 
 % sourceData = bl.wedgeRawFlArr;
 % sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
-% sourceData = bl.wedgeExpDffArr;
+sourceData = bl.wedgeExpDffArr;
 
-sourceData =  bl.dffArr;
+% sourceData =  bl.dffArr;
 % sourceData =  bl.rawFlArr;
-sourceData =  bl.zscoreArr;
+% sourceData =  bl.zscoreArr;
 % sourceData = bl.expDffArr;
 
 roiNames = {mD(1).roiData.name};%{'Top', 'L1', 'L2', 'L3', 'Bottom', 'R1', 'R2', 'R3', 'Mean'};

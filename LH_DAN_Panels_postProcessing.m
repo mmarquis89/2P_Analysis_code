@@ -168,7 +168,7 @@ for iTrial = 1:numel(allTrialNums)
     mD(iTrial).panelsFrameTimes = (1:1:mD(iTrial).nPanelsFrames) / mD(iTrial).displayRate;
     mD(iTrial).panelsPattern = mD(iTrial).expMetadata.pattern.Pats; % --> [y, x, frame, dim]
 
-    % Opto sti`m timing
+    % Opto stim timing
     if mD(iTrial).usingOptoStim
 
         % Make a list of each stim onset and offset throughout the entire trial

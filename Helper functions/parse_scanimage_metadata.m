@@ -18,11 +18,21 @@ function scanImageInfo = parse_scanimage_metadata(tifMetadata)
 mD = tifMetadata; % for conciseness
 
 scanImageInfo.fileInfo = rmfield(mD, 'tifinfo'); 
-scanImageInfo.fileInfo = setstructfields(scanImageInfo.fileInfo, rmfield(mD.tifinfo, 'Software'));
-
+try
+    scanImageInfo.fileInfo = setstructfields(scanImageInfo.fileInfo, ...
+            rmfield(mD.tifinfo, 'Software'));
+catch
+    scanImageInfo.fileInfo = setstructfields(scanImageInfo.fileInfo, ...
+            rmfield(mD.tifinfo, 'ImageDescription'));
+end
 
 % Split up ScanImage data string
-siDataStr = mD.tifinfo.Software;
+try
+    siDataStr = mD.tifinfo.Software;
+catch
+   siDataStr = mD.tifinfo.ImageDescription; 
+end
+
 siDataCell = strsplit(siDataStr, '\n');
 
 % Loop through each entry and convert the string to a field in the output structure
@@ -32,8 +42,12 @@ for iParam = 1:numel(siDataCell)
     if ~isempty(currStr)
        
        % The entries for each param are formatted as code, so we can just use the eval() function 
-       eval([regexprep(currStr, 'SI.', 'scanImageInfo.SI.'), ';']);       
-       
+       try
+%            disp(currStr)
+           eval([regexprep(currStr, '.*\.?SI\.', 'scanImageInfo.SI.'), ';'])
+       catch
+           disp(['Error evaluating "', currStr, '"'])
+       end
     end
 end
 

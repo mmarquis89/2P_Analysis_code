@@ -1,5 +1,5 @@
 function meanFlowMag = optic_flow_calc(vidFile, varargin)
- %==================================================================================================
+% %==================================================================================================
 % CALCULATE MEAN OPTIC FLOW DATA
 %
 % Calculates the mean optic flow magnitude for each frame of a video file. Can optionally restrict 

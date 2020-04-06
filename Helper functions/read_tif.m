@@ -35,7 +35,11 @@ else
     nPixels = size(tifData, 2);
     
     % Extract info from image description
-    frameString = tifMetadata.tifinfo.Software;
+    try
+        frameString = tifMetadata.tifinfo.Software;
+    catch
+        frameString = tifMetadata.tifinfo.ImageDescription;
+    end
     nChannels = length(frameStringKeyLookup(frameString, 'scanimage.SI.hChannels.channelSave'));
     nPlanes = frameStringKeyLookup(frameString, 'hFastZ.numFramesPerVolume');
     
