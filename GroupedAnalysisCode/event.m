@@ -17,8 +17,8 @@ classdef event
 %       .metadata_subset(fieldName, values)
 %
 % Subclasses:
-%       odorEvent
-%
+%       stimEvent
+%       flailingEvent
 %
 %
 % ==================================================================================================

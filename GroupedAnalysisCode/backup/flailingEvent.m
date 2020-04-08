@@ -64,13 +64,6 @@ classdef flailingEvent < event
 
         end%function
         
-        
-        function obj = append_annotation_data(obj)
-            
-            
-        end
-        
-        
     end%methods    
     
 end

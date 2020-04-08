@@ -20,11 +20,11 @@ classdef stimEvent < event
             addParameter(p, 'MetadataFieldNames', []);
             addParameter(p, 'MetadataFieldValues', []);
             parse(p, varargin{:});
-            extraFieldNames = p.Results.MetadataFieldNames;
-            extraFieldValues = p.Results.MetadataFieldValues;
+            mdFieldNames = p.Results.MetadataFieldNames;
+            mdFieldValues = p.Results.MetadataFieldValues;
             
             % Make sure any extra field name/value pairs match up 
-            if numel(extraFieldNames) ~= numel(extraFieldValues)
+            if numel(mdFieldNames) ~= numel(mdFieldValues)
                 error('ERROR: MetadataFieldNames and MetadataFieldValues must be same length');
             end
             
@@ -36,7 +36,7 @@ classdef stimEvent < event
                eventTimes{iTrial} = [onsetTimes', offsetTimes'];
             end           
             
-            obj = obj.append_data(trialNums, eventTimes, extraFieldNames, extraFieldValues);
+            obj = obj.append_data(trialNums, eventTimes, mdFieldNames, mdFieldValues);
         end
     end
     
