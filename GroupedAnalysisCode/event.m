@@ -3,16 +3,18 @@ classdef event
 %    
 % Properties:
 %       expID               (immutable)
-%       eventTimes
+%       eventData
 %       type                (immutable)
 %       nTrials             (dependent)
+%       fieldNames          (dependent)
 %
 % Methods:
-%       .append_data(trialNums, eventTimes)
+%       .append_data(trialNums, eventTimes, metadataFieldNames, metadataFieldValues)
+%       .clear_data()
 %       .export_csv(savePath, fileNameSuffix)
 %       .import_csv(parentDir, fileNameSuffix)
-%       .subset_trials(trialNums)
-%
+%       .trial_subset(trialNums)
+%       .metadata_subset(fieldName, values)
 %
 % Subclasses:
 %       odorEvent
@@ -22,7 +24,7 @@ classdef event
 % ==================================================================================================
 
     properties
-        eventTimes       % Table containing all the onset and offset times for each trial
+        eventData       % Table containing all the onset and offset times for each trial
     end
     properties (SetAccess = immutable)
         expID            % ID of the experiment the events were ocurring in
@@ -31,6 +33,7 @@ classdef event
     properties (Dependent)
         % Calculated values
         nTrials          % Number of distinct trials (with acquisition gaps) in the data   
+        fieldNames       % Names of all fields in event data table, in view-friendly format
     end
     
     methods
@@ -39,29 +42,36 @@ classdef event
         function obj = event(expID, type)
             obj.expID = expID;
             obj.type = type;
-            obj.eventTimes = [];            
+            obj.eventData = [];            
         end
         
         % GET/SET METHODS FOR DEPENDENT PROPERTIES
         function nTrials = get.nTrials(obj)
-            nTrials = numel(unique(obj.eventTimes.trialNum));
+            nTrials = numel(unique(obj.eventData.trialNum));
+        end
+        function fieldNames = get.fieldNames(obj)
+            variableNames = obj.eventData.Properties.VariableNames';
+            varNum = (1:numel(variableNames))';
+            fieldNames = (table(varNum, variableNames));
         end
         
         % APPEND DATA FOR NEW TRIALS
-        function obj = append_data(obj, trialNums, eventTimes)
+        function obj = append_data(obj, trialNums, eventTimes, metadataFieldNames, ...
+                    metadataFieldValues)
             
             % Make sure input arguments are the right size
             if numel(trialNums) ~= numel(eventTimes)
                 error('ERROR: eventTimes must contain one cell for each trial in trialNums')
             end
             
-            % Make sure data doesn't already exist for those trial numbers
-            if ~isempty(obj.eventTimes) && ...
-                        ~isempty(intersect(obj.eventTimes.trialNum, trialNums))
-               error('ERROR: at least one of those trial numbers already exists in the event data')
+            % Warn user if data already exists for those trial numbers
+            if ~isempty(obj.eventData) && ...
+                        ~isempty(intersect(obj.eventData.trialNum, trialNums))
+                warning(['at least one of those trial numbers already exists in the ', ...
+                        'event data']);
             end
             
-            % Append new data to eventTimes table
+            % Create new table to append to eventData
             tbAppend = [];
             for iTrial = 1:numel(trialNums)
                 newRow = table(trialNums(iTrial), {eventTimes{iTrial}(:, 1)}, ...
@@ -69,10 +79,31 @@ classdef event
                             'onsetTimes', 'offsetTimes'});
                 tbAppend = [tbAppend; newRow];                
             end
+            tbAppendFlat = flatten_table(tbAppend);
+            
+            % Add any extra metadata fields if necessary
+            if ~isempty(metadataFieldNames)
+                for iField = 1:numel(metadataFieldNames)
+                    currMdVal = metadataFieldValues{iField};
+                    if ~isscalar(currMdVal) || ~isnumeric(currMdVal)
+                        currMdVal = {currMdVal};
+                    end
+                    tbAppendFlat.(metadataFieldNames{iField}) = repmat(currMdVal, ...
+                        size(tbAppendFlat, 1), 1);
+                end
+            end
             
             % Flatten data into [trialNum, onsetTime, offsetTime] format
-            obj.eventTimes = [obj.eventTimes; flatten_table(tbAppend)];
+            obj.eventData = [obj.eventData; tbAppendFlat];
+            
+            % Delete any duplicate rows that were introduced
+            obj.eventData = unique(obj.eventData);
         end
+        
+        % CLEAR ALL EVENT DATA
+        function obj = clear_data(obj)
+            obj.eventData = [];
+        end 
         
         % SAVE EVENT TIMES TO .CSV FILE
         function export_csv(obj, savePath, fileNameSuffix)
@@ -83,8 +114,8 @@ classdef event
             end
             
             % Write to file
-            writetable(obj.eventTimes, fullfile(savePath, ['event_data_', lower(obj.type), '_', ...
-                    obj.expID, fileNameSuffix, '.csv']));
+            writetable(obj.eventData, fullfile(savePath, [obj.expID, '_event_data_', ...
+                    lower(obj.type), fileNameSuffix, '.csv']));
         end
          
         % IMPORT DATA FROM .CSV FILE
@@ -96,22 +127,31 @@ classdef event
             end
             
             % Load file 
-            tbAppend = csvread(fullfile(parentDir, ['event_data_', lower(obj.type), '_', obj.expID, ...
+            tbAppend = csvread(fullfile(parentDir, [obj.expID, '_event_data_', lower(obj.type),  ...
                     fileNameSuffix, '.csv']), 1, 0);
                             
             % Make sure data doesn't already exist for those trial numbers
-            if ~isempty(obj.eventTimes) && ...
-                        ~isempty(intersect(obj.eventTimes.trialNum, tbAppend.trialNum))
-               error('ERROR: at least one of those trial numbers already exists in the event data')
+            if ~isempty(obj.eventData) && ...
+                        ~isempty(intersect(obj.eventData.trialNum, tbAppend.trialNum))
+                warning(['at least one of those trial numbers already exists in the ', ...
+                        'event data']);
             end
             
-            % Append to eventTimes table
-            obj.eventTimes = [obj.eventTimes; tbAppend];
+            % Append to eventData table
+            obj.eventData = [obj.eventData; tbAppend];
+            
+            % Delete any duplicate rows that were introduced
+            obj.eventData = unique(obj.eventData);
         end
         
-        % SELECT SUBSET OF ALL TRIALS
-        function obj = subset_trials(obj, trialNums)
-            obj.eventTimes = obj.eventTimes(ismember(obj.eventTimes.trialNum, trialNums), :);
+        % SUBSET EVENTS BY TRIAL NUMBER
+        function obj = trial_subset(obj, trialNums)
+            obj.eventData = obj.eventData(ismember(obj.eventData.trialNum, trialNums), :);
+        end
+        
+        % SUBSET EVENTS BY EXTRA METADATA FIELD VALUES
+        function obj = metadata_subset(obj, fieldName, values)
+            obj.eventData = obj.eventData(ismember(obj.eventData.(fieldName), values), :);
         end
         
     end%Methods

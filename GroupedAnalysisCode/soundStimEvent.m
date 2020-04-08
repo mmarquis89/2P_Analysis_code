@@ -1,7 +1,7 @@
 classdef soundStimEvent < stimEvent
 
     properties (SetAccess = immutable)
-        ampSetting
+        metadataFieldNames
     end
     
     methods

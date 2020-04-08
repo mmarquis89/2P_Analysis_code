@@ -13,10 +13,10 @@ load(fullfile(parentDir, 'flowMags.mat'));
 %%
 
 
-currTrial = 4;
+currTrial = 7;
 td = mD([mD.trialNum] == currTrial);
 
-plotROIs = [1 2];
+plotROIs = [];
 
 smWin = 5;
 moveThresh = 0.08;

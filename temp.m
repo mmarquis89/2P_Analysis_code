@@ -25,7 +25,7 @@ end
 
 %% Extract data for target countries 
 
-countryList = {'US', 'Italy', 'Spain', 'Korea, South', 'Iran', 'France', 'Germany', 'United Kingdom'};
+countryList = {'US', 'Italy', 'Spain', 'Brazil', 'Iran', 'France', 'Germany', 'United Kingdom'};
 % countryList = {'Brazil', 'Switzerland', 'United Kingdom', 'Russia'};
 startDate = 'Mar_2';
 
@@ -63,6 +63,17 @@ ax.XTickLabelRotation = -60;
 ax.YTickLabel = ax.YTick;
 
 test = diff(plotData, 1);% ./ plotData(1:end-1, :);
-figure(2);clf; plot(smoothdata(test, 1, 'gaussian', 3), '-o')
-xlim([find(strcmp(plotDates, startDate)) - 1, size(plotData, 1) + 2]);
-
+figure(2);clf; 
+set(gcf, 'color', [1 1 1])
+plot(smoothdata(test, 1, 'gaussian', 3), '-o')
+if isempty(startDate)
+    xlim([0, size(plotData, 1) + 2]);
+else
+    xlim([find(strcmp(plotDates, startDate)) - 1, size(plotData, 1) + 2]);
+end
+legend(outputTb.Country, 'location', 'nw')
+ax = gca;
+ax.XTick = 1:2:size(plotData, 1);
+ax.XTickLabel = regexprep(plotDates(1:2:end), '_', '-');
+ax.XTickLabelRotation = -60;
+ax.YTickLabel = ax.YTick;
