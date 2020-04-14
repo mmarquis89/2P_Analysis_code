@@ -10,7 +10,6 @@ classdef event
 %
 % Methods:
 %       .append_data(trialNums, eventTimes, metadataFieldNames, metadataFieldValues)
-%       .clear_data()
 %       .export_csv(savePath, fileNameSuffix)
 %       .import_csv(parentDir, fileNameSuffix)
 %       .trial_subset(trialNums)
@@ -18,7 +17,8 @@ classdef event
 %
 % Subclasses:
 %       stimEvent
-%       flailingEvent
+%           --> odorEvent, panelsFlashEvent, optoStimEvent, soundStimEvent
+%       behaviorEvent
 %
 %
 % ==================================================================================================

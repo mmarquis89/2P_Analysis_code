@@ -21,7 +21,7 @@ end
 %%
 
 
-currTrial = 7;
+currTrial = 17;
 
 currTrialInd = find([mD.trialNum] == currTrial);
 
@@ -36,7 +36,7 @@ showPVA = 0;
 flData = td.wedgeDffMat;
 % flData = td.wedgeRawFlMat;
 % flData = td.wedgeZscoreMat;
-flData = td.wedgeExpDffMat;
+% flData = td.wedgeExpDffMat;
 
 % flData = td.dffMat;
 % flData = td.rawFlMat;
@@ -257,8 +257,8 @@ xlim([0 td.trialDuration])
 
 
 % Calculate average responses to each opto stim period
-baselineDur = 2;
-postStimDur = 2;
+baselineDur = 0.5;
+postStimDur = 1.5;
 
 if td.usingOptoStim
    
@@ -282,7 +282,7 @@ if td.usingOptoStim
     end
     plotTimes = td.volTimes(1:size(stimWinDffAvg, 1)) - td.volTimes(baselineVols + 1);
     
-    figure(2);clf;hold on;
+    figure(3);clf;hold on;
     for iWedge = 1:size(stimWinDffAvg, 2)
         plot(plotTimes, smoothdata(stimWinDffAvg(:, iWedge), 1, 'gaussian', 3), ...
                 'color', cm(iWedge, :), 'linewidth', 2);

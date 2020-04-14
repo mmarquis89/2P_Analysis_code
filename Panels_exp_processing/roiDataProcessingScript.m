@@ -67,8 +67,6 @@ for iFile = 1:numel(allROIData)
     
 end%iFile
 
-
-
 % Get average of bottom 5% of fluorescence values across experiment for each ROI
 
 % Get list of all unique ROI names in experiment

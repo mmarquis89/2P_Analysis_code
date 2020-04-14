@@ -7,8 +7,8 @@ classdef behaviorEvent < event
     methods
         % Constructor
         function obj = behaviorEvent(expID, type)
-            if ~ismember(type, {'locomotion', 'isolatedMovement', 'grooming', 'quiescence', ...
-                        'flailing'})
+            if ~ismember(type, {'Locomotion', 'IsolatedMovement', 'Grooming', 'Quiescence', ...
+                        'Flailing'})
                 error('invalid event type');
             end
             obj = obj@event(expID, type);
@@ -41,7 +41,15 @@ classdef behaviorEvent < event
             for iTrial = 1:numel(trialNums)
                 
                 currAnnotData = annotData{iTrial};
-                if sum(currAnnotData) > 0
+                if size(currAnnotData, 1) > size(currAnnotData, 2)
+                    currAnnotData = currAnnotData'; % Transpose if input is a column vector
+                end
+                
+                if sum(currAnnotData, 'omitnan') > 0
+                    
+                    % Replace nan values in annot data
+                    currAnnotData(isnan(currAnnotData)) = 0;
+                    
                     % Identify event onset frames
                     onsetFrames = find(diff(currAnnotData) == 1) + 1;
                     if currAnnotData(1) == 1

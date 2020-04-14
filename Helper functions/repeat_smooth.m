@@ -1,7 +1,7 @@
 function outputArr = repeat_smooth(inputArr, nReps, varargin)
 % Repeatedly applies the "smoothdata()" function to an input array
 % Inputs: (inputArr, nReps, varargin:[Dim=1, Method='gaussian', SmWin, NanFlag='omitnan'])
-% Default smooth window is determined heuristically by the smoothdata().
+% Default smooth window is determined heuristically by smoothdata().
 % Ignores NaN values in the smoothing window, but will not change any existing NaN values.
 
 p = inputParser;

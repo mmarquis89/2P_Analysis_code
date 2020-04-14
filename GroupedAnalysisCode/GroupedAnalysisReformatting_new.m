@@ -41,7 +41,7 @@ expMetadata.Properties.VariableNames = { ...
 
 % Trial metadata
 mdTable = struct2table(mD);
-trialMetadata = mdTable(:, {'trialNum', 'trialduration', 'nVolumes', 'nDaqSamples', 'nPanelsFrames', ...
+trialMetadata = mdTable(:, {'trialNum', 'trialDuration', 'nVolumes', 'nDaqSamples', 'nPanelsFrames', ...
         'usingOptoStim', 'usingPanels', 'using2P'}); 
 
 % Panels metadata
@@ -84,13 +84,20 @@ for iTrial = 1:expMetadata.nTrials
     end
 end
 
+% Reference images 
+refImages = zeros([size(mD(1).refImages), expMetadata.nTrials]);
+for iTrial = 1:expMetadata.nTrials
+    refImages(:, :, :, iTrial) = mD(iTrial).refImages; % --> [y, x, plane, trial]
+end
+
+
 % ----------- Save data in group analysis directory --------------
 writetable(expMetadata, fullfile(saveDir, [expID, '_expMetadata.csv'])); 
 writetable(trialMetadata, fullfile(saveDir, [expID, '_trialMetadata.csv'])); 
 save(fullfile(saveDir, [expID, '_panelsMetadata.mat']), 'panelsMetadata'); 
 save(fullfile(saveDir, [expID, '_ficTracData.mat']), 'ftData'); 
 save(fullfile(saveDir, [expID, '_ROI_data.mat']), 'roiData'); 
-
+save(fullfile(savedir, [expID, '_refImages.mat']), 'refImages');
 
 
 % CREATE EVENT OBJECTS AND EXPORT DATA

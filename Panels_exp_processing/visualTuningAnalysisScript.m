@@ -19,7 +19,7 @@ end
 
 %% COMBINE DATA FROM A BLOCK OF COMPATIBLE TRIALS
 
-blTrials = [1:16];
+blTrials = [1:15];
 
 
 flowSmWin = 30;
@@ -27,9 +27,9 @@ moveThresh = 0.05;
 moveDistThresh = 2;
 
 
-sectionBreakTrials = [4 7];
-sectionColorLabels = {'100 uM DA', '250 uM DA', '500 uM DA', 'No visual stim', 'Back to visual stim'};
-sectionBreakColors = [1 2];
+sectionBreakTrials = [6 10 13 14];
+sectionColorLabels = {'500 uM DA', 'Stopped chilling saline', 'No visual stim', 'Back to visual stim'};%{'100 uM DA', '250 uM DA', '500 uM DA', 'No visual stim', 'Back to visual stim'};
+sectionBreakColors = [1:numel(sectionBreakTrials)];
 fullColorList = [rgb('magenta'); rgb('green'); rgb('gold'); rgb('cyan') * 0.8; rgb('red') * 0.8];
 sectionBreakColorList = fullColorList(1:numel(sectionBreakTrials), :);
 
@@ -45,6 +45,7 @@ bl = extract_block_data(mD, blTrials, ...
     
 %% Compare correlations across the two halves of the PB
 
+try 
 flData = bl.expDffArr;
 flData = permute(flData, [2 1 3]);
 rsFlData = reshape(flData, size(flData, 1), [])';
@@ -95,10 +96,14 @@ shiftMat = circshift(shiftMat, 3);
 imagesc(shiftMat);
 axis square
 
+catch ME; rethrow(ME); end
+
 %% PLOT SUMMARY OF MOVEMENT THROUGHOUT EXPERIMENT
 
 saveFig = 0;
 
+try
+    
 % Heatmap of slightly smoothed flow throughout experiment
 f = figure(1);clf;
 f.Color = [1 1 1];
@@ -206,6 +211,8 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
+
 %% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
 
 saveFig =  0;
@@ -224,7 +231,8 @@ sourceData = bl.wedgeExpDffArr;
 
 figPos = [650 980];
 
-
+try 
+    
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr) || isequal(sourceData, bl.dffArr)
     figTitleText = 'dF/F';
@@ -339,6 +347,8 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
+
 %% ===================================================================================================
 %% Plot tuning heatmaps for each wedge across trials
 %===================================================================================================
@@ -355,7 +365,8 @@ sourceData = bl.wedgeRawFlArr;
 % sourceData = bl.wedgeZscoreArr;
 sourceData = bl.wedgeExpDffArr;
 
-
+try
+    
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
     figTitleText = 'dF/F';
@@ -491,6 +502,8 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
+
 %% ===================================================================================================    
 %% Plot as lines instead of using imagesc
 % ===================================================================================================
@@ -510,6 +523,8 @@ sourceData = bl.wedgeExpDffArr;
 figSize = [];
 figSize = [1250 980];
 
+try
+    
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
     figTitleText = 'dF/F';
@@ -687,6 +702,8 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
+
 %% ===================================================================================================
 %% Plot min and max values from the tuning curves
 %===================================================================================================
@@ -705,6 +722,8 @@ sourceData = bl.wedgeExpDffArr;
 figSize = [];
 figSize = [400 925];
 
+try
+    
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
     figTitleText = 'dF/F';
@@ -865,6 +884,8 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
+
 %% =================================================================================================
 %% Plot summary of tuning curve amplitudes
 %===================================================================================================
@@ -880,7 +901,7 @@ sourceData = bl.wedgeDffArr;
 % sourceData = bl.wedgeZscoreArr;
 sourceData = bl.wedgeExpDffArr;
 
-
+try
 % Generate figure labels and save file name
 if isequal(sourceData, bl.wedgeDffArr)
     figTitleText = 'dF/F';
@@ -1034,6 +1055,8 @@ if saveFig
    save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
+
 %% =================================================================================================
 %% Plot average tuning curves for entire experiment
 %===================================================================================================
@@ -1057,6 +1080,7 @@ sourceData = bl.wedgeExpDffArr;
 % sourceData =  bl.zscoreArr;
 % sourceData = bl.expDffArr;
 
+try
 roiNames = {mD(1).roiData.name};%{'Top', 'L1', 'L2', 'L3', 'Bottom', 'R1', 'R2', 'R3', 'Mean'};
 
 %     sourceData = permute(sourceData(:, 1:end-1, :), [1 3 2]);
@@ -1196,16 +1220,161 @@ if saveFig
     save_figure(f, saveDir, saveFileName);
 end
 
+catch ME; rethrow(ME); end
 
 
 
 
 
 
+%% =================================================================================================
+%% BUMP AMPLITUDE COMPARISONS
+%===================================================================================================
+
+%% Within-wedge amplitude for each trial 
+
+iTrial = 5;
+smWin = 5;
+
+% for iTrial = 1:size(test, 3)
+currTrialData = bl.wedgeExpDffArr(:, :, iTrial);
+smData = smoothdata(currTrialData, 1, 'gaussian', smWin);
 
 
+% Identify 5th and 95th percentile for each wedge
+smDataSorted = sort(smData);
+pct5vals = smDataSorted(round(size(smDataSorted, 1) * 0.05), :);
+pct95vals = smDataSorted(round(size(smDataSorted, 1) * 0.95), :);
+
+bumpAmp = pct95vals - pct5vals;
+
+% end
+
+f = figure(1); clf;
+ax = subaxis(1, 2, 1);
+imagesc(smData');
+ax.YTickLabel = round(bumpAmp, 2);
+
+subaxis(1, 2, 2)
+plot(smDataSorted);
 
 
+%% Instantaneous bump amplitude across wedges for each time point 
+
+smWin = 5;
+saveFig = 0;
+
+smData = smoothdata(bl.wedgeExpDffArr, 1, 'gaussian', smWin);
+smDataExpSort = sort(reshape(permute(smData, [2 1 3]), size(smData, 2), []), 2);
+wedgeDff95pct = smDataExpSort(:, round(size(smDataExpSort, 2) * 0.95));
+smDataNorm = smData ./ repmat(wedgeDff95pct', size(smData, 1), 1, size(smData, 3));
+
+plotData = smData;
+plotData = smDataNorm;
+
+bumpAmp = [];
+for iTrial = 1:size(bl.wedgeExpDffArr, 3)
+    currTrialData = plotData(:, :, iTrial);
+    bumpAmp(:, iTrial) = max(currTrialData, [], 2) - min(currTrialData, [], 2);
+end
+
+
+% Plot mean bump amplitude for each entire trial compared to overall mean dF/F
+f = figure(2); clf
+subaxis(2, 1, 1)
+plot(mean(bumpAmp, 1), '-o');
+hold on;
+plot(squeeze(mean(max(plotData, [], 2), 1)), '-o')
+plot(squeeze(mean(min(plotData, [], 2), 1)), '-o')
+legend({'Mean amp', 'Avg max', 'Avg min'})
+
+title('Amplitude');
+
+subaxis(2, 1, 2)
+plot(multi_mean(plotData, [1 2]), '-o');
+title('Mean dF/F')
+
+%
+figure(9);clf;
+imagesc(reshape(smData, size(smData, 1), [])');
+figure(10);clf;
+imagesc(reshape(smDataNorm, size(smData, 1), [])');
+
+% ------------------------------------------------------------------------------
+
+% Plot volume-by-volume amplitude throughout the entire experiment
+f = figure(8);clf; set(gcf, 'color', [1 1 1])
+ax(1) = subaxis(16, 1, 1:9, 'mr', 0.04, 'ml', 0.05, 'sv', 0.08);
+hold on
+xx = (1:numel(bumpAmp)) / bl.volumeRate;
+plot(xx, bumpAmp(:), 'color', [0 0 0.9])
+xlim([xx(1) xx(end)])
+ax(1).XTickLabel = 1:size(smData, 3);
+ax(1).FontSize = 12;
+ax(1).YLabel.String = 'Bump amplitude';
+
+% plot(xx, repeat_smooth(bumpAmp(:), 500, 'smWin', 10), 'color', 'r', 'linewidth', 1.5)
+
+% Add lines to mark trial boundaries and text labels for trial number
+yL = ylim();
+xTickLocs = [];
+for iTrial = 2:size(smData, 3)
+    xVal = bl.trialDuration * (iTrial - 1);
+    plot([xVal, xVal], [0 yL(2)], ':', 'color', 'k', 'linewidth', 1);
+    xTickLocs(end + 1) = xVal;
+end
+xTickLocs(end + 1) = xTickLocs(end) + bl.trialDuration;
+ax(1).XTick = xTickLocs - (bl.trialDuration / 2);
+ax(1).TickLength = [0 0];
+
+% Add annotation lines
+expSectionBreaks = ((sectionBreakTrials - 1) * bl.trialDuration);
+ if ~isempty(expSectionBreaks)
+        for iColor = 1:size(sectionBreakColorList, 1)
+            currColor = sectionBreakColorList(iColor, :);
+            currSectionBreaks = expSectionBreaks(sectionBreakColors(iColor));
+            for iSection = 1:numel(currSectionBreaks)
+                currTrialNum = currSectionBreaks(iSection);                
+                xx = [currTrialNum currTrialNum] - (0 * bl.trialDuration);
+                yy = [0 yL(2)];
+                if iColor == 1 && iSection == 1
+                    plotLines = plot(xx, yy, 'color', currColor, 'linewidth', 3);
+                elseif iSection == 1
+                    plotLines(end + 1) = plot(xx, yy, 'color', currColor, 'linewidth', 3);
+                else
+                    plot(xx, yy, 'color', currColor, 'linewidth',3);
+                end
+            end
+        end
+        
+
+        lgd = legend(plotLines, sectionColorLabels(1:numel(plotLines)), 'autoupdate', 'off', ...
+                'location', 'northoutside');
+        lgd.FontSize = 10;
+        lgd.Orientation = 'horizontal';
+        lgd.Box = 'off';
+        drawnow()
+ end
+ylim(yL);
+
+
+% Plot the full data underneath
+ax(2) = subaxis(16, 1, 10:16);
+xx = (1:numel(bumpAmp)) / bl.volumeRate;
+imagesc([0 xx(end)], [0.5, size(plotData, 2) + 0.5], reshape(permute(plotData, [2 1 3]), ...
+        size(plotData, 2), []));
+linkaxes(ax, 'x');
+ax(2).YTickLabel = [];
+ax(2).FontSize = 12;
+ax(2).YLabel.String = 'Normalized dF/F';
+ax(2).XLabel.String = 'Time (s)';
+
+suptitle(bl.expID)
+
+if saveFig
+   saveDir = fullfile(analysisDir, bl.expID);
+   save_figure(f, saveDir, 'bump_amplitude_normalized');
+end
 
 
 
