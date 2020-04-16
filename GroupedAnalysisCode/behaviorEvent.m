@@ -1,7 +1,22 @@
 classdef behaviorEvent < event
-    
+% ==================================================================================================   
+%    
+% obj = behaviorEvent(expID, type) 
+%
+% Valid types are: Locomotion, IsolatedMovement, Grooming, Quiescence, 'Flailing'                                   
+%
+% Properties:
+%       metadataFieldNames
+%
+% Methods:
+%       .append_annotation_data(trialNums, annotData, frameTimes, 'MetadataFieldNames', 
+%                               'MetadataFieldValues')
+%       .append_flow_data(trialNums, flowData, frameTimes, threshold)
+%
+% ==================================================================================================    
     properties
-        metadataFieldNames
+        metadataFieldNames % Names of any additional metadata fields that will be included in the 
+                           % eventData table
     end
     
     methods

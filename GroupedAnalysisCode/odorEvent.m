@@ -1,5 +1,14 @@
 classdef odorEvent < stimEvent
-
+% ==================================================================================================   
+%    
+% Properties:
+%       metadataFieldNames
+%
+% Methods:
+%       .append_shorthand(trialNums, stimTiming, trialDuration, odorName, odorConcentration,
+%                         flowRate)
+%
+% ================================================================================================== 
     
     properties (SetAccess = immutable)
         metadataFieldNames
@@ -22,9 +31,5 @@ classdef odorEvent < stimEvent
                     'MetadataFieldNames', mdFieldNames, 'MetadataFieldValues', mdFieldValues);
         end
         
-        
-        
-    end
-    
-    
-end
+    end%Methods    
+end%Class 

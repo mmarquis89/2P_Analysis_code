@@ -2,7 +2,7 @@ classdef event
 % ==================================================================================================   
 %    
 % Properties:
-%       expID               (immutable)
+%       expID               (immutable)  
 %       eventData
 %       type                (immutable)
 %       nTrials             (dependent)

@@ -1,7 +1,7 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019 Jan-Feb';
 
-expDate = '2019_02_26_exp_2';
-sidNums = [0 1 2];
+expDate = '2019_02_16_exp_1';
+sidNums = [0 1];
 
 expDir = fullfile(parentDir, expDate);
 saveDir = fullfile(expDir, 'sid_master');
@@ -33,10 +33,10 @@ end
 
 % Create a table to track the number of short trials that belong to each session
 sidTrialCounts = table(sidNums', shortTrialCounts', blockCounts', ...
-        'VariableNames', {'sidNum', 'nShortTrials', 'nBlocks'})
+        'VariableNames', {'sidNum', 'nShortTrials', 'nBlocks'});
 
     
-%% ---- Now the concatenation steps -----
+% ---- Now the concatenation steps -----
 
 % Copy over the required info that is shared between sids
 aD_master = struct();

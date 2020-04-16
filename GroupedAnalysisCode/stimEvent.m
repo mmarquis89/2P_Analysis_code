@@ -1,5 +1,16 @@
 classdef stimEvent < event
-
+% ==================================================================================================   
+%    
+% obj = stimEvent(expID, type)
+%
+% Properties:
+%       
+%
+% Methods:
+%       .append_shorthand(trialNums, stimTiming, trialDuration, 'MetadataFieldNames', 
+%                         'MetadataFieldValues')
+%
+% ================================================================================================== 
     
     properties
         

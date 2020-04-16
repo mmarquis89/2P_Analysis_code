@@ -1,15 +1,33 @@
 classdef optoStimEvent < stimEvent
-
+% ==================================================================================================   
+%    
+% Properties:
+%       metadataFieldNames
+%
+% Methods:
+%       .append_shorthand(trialNums, stimTiming, trialDuration, LEDpower, dutyCycle)
+%
+% ================================================================================================== 
     
     properties (SetAccess = immutable)
-        
+        metadataFieldNames
     end
     
     methods
         
         % Constructor
         function obj = optoStimEvent(expID)
-           obj = obj@stimEvent(expID, 'OptoStim');            
+            obj = obj@stimEvent(expID, 'OptoStim');
+            obj.metadataFieldNames = {'LEDpower', 'dutyCycle'};
+        end
+        
+        % Modified append_shorthand function
+        function obj = append_shorthand(obj, trialNums, stimTiming, trialDuration, LEDpower, ...
+                dutyCycle)
+            mdFieldNames = obj.metadataFieldNames;
+            mdFieldValues = {LEDpower, dutyCycle};
+            obj = append_shorthand@stimEvent(obj, trialNums, stimTiming, trialDuration, ...
+                'MetadataFieldNames', mdFieldNames, 'MetadataFieldValues', mdFieldValues);
         end
     end
     

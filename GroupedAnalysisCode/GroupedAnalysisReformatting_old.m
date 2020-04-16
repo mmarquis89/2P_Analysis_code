@@ -1,15 +1,45 @@
-
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019 Mar-Apr\2019_04_01_exp_2\sid_0';
-expName = 'D-ANT_6s';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\'; 
+expList = readtable(fullfile(saveDir, 'oldExpList_gaplessAcq.csv'), 'delimiter', ',');
 
+% Skipping multi-sid (nerve transection) expts because I already did them
+expList = expList([1:18, 27:size(expList, 1)], :); 
+
+expNum = 12;
 
 % ----- AUTOMATIC PROCESSING AND CONVERSION -----
-
 try
 
+% Convert expID to old-format expDir name
+currExpID = expList.expID{expNum};
+disp(currExpID);
+expDirName = [currExpID(1:4), '_', currExpID(5:6), '_', currExpID(7:8), '_exp_', currExpID(end)];
+
+% Find experiment directory
+if isempty(dir(fullfile(parentDir, '2018', expDirName)))
+    oldExpParentDirs = dir(fullfile(parentDir, '2019 *'));
+    for iDir = 1:numel(oldExpParentDirs)
+        expParentDir = fullfile(oldExpParentDirs(iDir).folder, oldExpParentDirs(iDir).name);
+        if ~isempty(dir(expParentDir))
+            break
+        end
+    end
+else
+    expParentDir = fullfile(parentDir, '2018');
+end
+sidDir = dir(fullfile(expParentDir, expDirName, 'sid_*'));
+sidDir = sidDir([sidDir.isdir]);
+if numel(sidDir) == 1
+    expDir = fullfile(expParentDir, expDirName, sidDir.name); % If there's only one sid directory
+elseif numel(sidDir) > 1
+    expDir = fullfile(expParentDir, expDirName, 'sid_master'); % If I've already manually combined sids
+else
+    error('Could not find experiment directory');
+end
+expName = expList.expName{expNum};
+
 % Load analysisMetadata file
-load(fullfile(parentDir, 'analysisMetadata.mat'), 'analysisMetadata');
+load(fullfile(expDir, 'analysisMetadata.mat'), 'analysisMetadata');
 aD = analysisMetadata;
 
 FRAME_RATE = 25; % Behavior video (and therefore FicTrac) frame rate was a constant
@@ -19,7 +49,7 @@ FRAME_RATE = 25; % Behavior video (and therefore FicTrac) frame rate was a const
 expID = regexprep(aD.expDate, {'_', 'exp'}, {'', '-'});
 expMd = table({expID}, 'VariableNames', {'expID'});
 expMd.expName = {expName};
-expMd.daqSampRate = 4000;        % (this is after 10x downsampling at the time of the experiment, and will be changed later in the script to downsample even more if saving DAQ output data)
+expMd.daqSampRate = 4000;        % this is after 10x downsampling at the time of the experiment, and will be changed later in the script to downsample even more if saving DAQ output data
 expMd.panelsDisplayRate = 50;    % Didn't have panels but just keeping the number consistent
 expMd.volumeRate = aD.volumeRate;
 expMd.nPlanes = aD.nPlanes; 
@@ -31,7 +61,7 @@ for iTrial = 1:expMd.nTrials
     newRow = table(iTrial, 'VariableNames', {'trialNum'});
     newRow.trialDuration = aD.trialDuration * aD.blockData(iTrial).nTrials;
     newRow.nVolumes = aD.nVolumes * aD.blockData(iTrial).nTrials;
-    newRow.nDaqSamples = size(aD.blockData.outputData, 1);
+    newRow.nDaqSamples = size(aD.blockData(iTrial).outputData, 1);
     newRow.nPanelsFrames = expMd.panelsDisplayRate * newRow.trialDuration;
     newRow.usingOptoStim = 0;
     newRow.usingPanels = 0;
@@ -47,24 +77,46 @@ odorACommand = [];
 odorBCommand = [];
 for iTrial = 1:expMd.nTrials
     currTrialOutputData = aD.blockData(iTrial).outputData;
-    if size(currTrialOutputData, 2) ~= 9
-       error('Change in output data channels'); 
+    
+    % 'Next file trigger' and 'acquisition start trigger' shared the same channel until 1/24/19,
+    % when I split them from the first column into the first and second columns, so if the exp 
+    % predates that insert a column of 'nan' on the left side of the array.
+    if size(currTrialOutputData, 2) == 7
+        currTrialOutputData = [nan(size(currTrialOutputData, 1), 1), currTrialOutputData];
     end
+    
+    % Opto stim column (3) was added starting 04/01/19...if exp predates that, insert a column 
+    % of zeros where it should be    
+    if size(currTrialOutputData, 2) == 8
+        currTrialOutputData = [currTrialOutputData(:, 1:2), zeros(size(currTrialOutputData, 1), ...
+                1), currTrialOutputData(:, 3:8)]; 
+    end
+    
+    % After both corrections above column labels should be:
+    % [acqStart, nextFile, optoStim, speaker, olfA, olfB, olfNO, trialAlignLED, cameraTrigger] 
+    
     trialNum = [trialNum; ones(size(currTrialOutputData, 1), 1) * trialMd.trialNum(iTrial)];
-    optoStimCommand = [optoStimCommand; currTrialOutputData(:, 3)];    
-    speakerCommand = [speakerCommand; currTrialOutputData(:, 4)]; 
-    odorACommand = [odorACommand; currTrialOutputData(:, 5)]; 
-    odorBCommand = [odorBCommand; currTrialOutputData(:, 6)]; 
+    optoStimCommand = [optoStimCommand; currTrialOutputData(:, 3)];
+    speakerCommand = [speakerCommand; currTrialOutputData(:, 4)];
+    odorACommand = [odorACommand; currTrialOutputData(:, 5)];
+    odorBCommand = [odorBCommand; currTrialOutputData(:, 6)];
+        
 end
 
+% Smooth a copy of the opto stim command before downsampling so that it will never miss an opto
+% stim pulse even if it's at a 1% duty cycle
 dsFactor = expMd.daqSampRate / 100;
-dsInds = 1:dsFactor:size(currTrialOutputData, 1);
+optoStimCommandSmoothed = smoothdata(optoStimCommand, 1, 'gaussian', 100);
+dsOptoStimSmoothed = optoStimCommandSmoothed(1:dsFactor:end);
+
+% Downsample
+dsInds = 1:dsFactor:size(trialNum, 1);
 daqOutputData = table(trialNum(dsInds), optoStimCommand(dsInds), speakerCommand(dsInds), ...
-        odorACommand(dsInds), odorBCommand(dsInds), ...
-        'VariableNames', {'trialNum', 'optoStim', 'speaker', 'odorA', 'odorB'});
+        odorACommand(dsInds), odorBCommand(dsInds), optoStimCommandSmoothed(dsInds), ...
+        'VariableNames', {'trialNum', 'optoStim', 'speaker', 'odorA', 'odorB', 'optoStimSmoothed'});
 expMd.daqSampRate = 100;
-    
-    
+
+
 % ----- IDENTIFY BLOCK (AKA TRIAL) BOUNDARIES -----
 nBlockTrials = [aD.blockData.nTrials];
 blockStartTrials = 1 + [0, cumsum(nBlockTrials(1:end-1))];
@@ -126,12 +178,23 @@ for iBlock = 1:numel(nBlockTrials)
    
 end%iBlock
 
-% Reference images (using the same whole-experiment set for each trial)
+% Reference images (using volAvgSessionData to get one set for each block)
+volAvgRefImgFile = dir(fullfile(expDir, '*volAvgSessionData.mat'));
+load(fullfile(expDir, volAvgRefImgFile.name), 'volAvgSessionData');
 refImages = [];
-for iPlane = 1:numel(aD.refImg)
-   refImages(:, :, iPlane) = aD.refImg{iPlane}; 
+for iTrial = 1:expMd.nTrials
+    refImages(:, :, :, iTrial) = mean(volAvgSessionData(:, :, :, ...
+            blockStartTrials(iTrial):blockEndTrials(iTrial)), 4);
 end
-refImages = repmat(refImages, 1, 1, 1, expMd.nTrials); % --> [y, x, plane, trial];
+
+% Also save the full experiment reference images in an array just in case I want them later
+try
+    fullExpRefImages = [];
+    for iPlane = 1:numel(aD.refImg)
+        fullExpRefImages(:, :, iPlane) = aD.refImg{iPlane};
+    end
+    fullExpRefImages = repmat(fullExpRefImages, 1, 1, 1, expMd.nTrials); % --> [y, x, plane, trial];
+catch; end
 
 catch ME; rethrow(ME); end
 
@@ -139,8 +202,10 @@ catch ME; rethrow(ME); end
 
 MAX_INTENS = 700;
 
+try
+    
 roiData = {};
-load(fullfile(parentDir, 'ROI_metadata.mat'), 'ROImetadata');
+load(fullfile(expDir, 'ROI_metadata.mat'), 'ROImetadata');
 for iROI = 1:numel(ROImetadata)
     figure(iROI);clf;
     currROI = ROImetadata{iROI};
@@ -153,27 +218,37 @@ for iROI = 1:numel(ROImetadata)
        plot(currROI(iPlot).xi, currROI(iPlot).yi, 'linewidth', 2, 'color', 'r')
     end
 end
+disp(['nROIs = ', num2str(numel(ROImetadata))])
 
 % Activate figures in reverse order so first one is on top
 for iROI = numel(ROImetadata):-1:1
    figure(iROI); 
 end
 
+catch ME; rethrow(ME); end
+
 %% Reformat ROI data to match newer experiments
 
-roiNames = {'TypeD-L', 'TypeD-R', 'ANT-L', 'ANT-R', 'Background'};
+roiNames = {'TypeD-R', 'ANT-R', 'ANT-L', 'Background'};
 
 try
     
 roiData = {};
-load(fullfile(parentDir, 'ROI_metadata.mat'), 'ROImetadata');
-load(fullfile(parentDir, 'ROI_data_avg.mat'), 'ROIDataAvg');
+load(fullfile(expDir, 'ROI_metadata.mat'), 'ROImetadata');
+% allROImd = {};
+% uniqueSids = unique(trialSidNums);
+% for iSid = 1:numel(uniqueSids)
+%     load(fullfile(expDir, ['sid_', num2str(uniqueSids(iSid)), '_ROI_metadata.mat']), 'ROImetadata');
+%     allROImd{iSid} = ROImetadata;
+% end
+
+load(fullfile(expDir, 'ROI_data_avg.mat'), 'ROIDataAvg');
 nROIs = size(ROIDataAvg, 3);
 
 % Get raw average fluorescence data for each ROI and calcualte trial-based dF/F
 for iTrial = 1:expMd.nTrials
     currBlockTrials = blockStartTrials(iTrial):blockEndTrials(iTrial);
-    currROIData = ROIDataAvg(:, currBlockTrials, :);                % --> [volume, shortTrial, ROI]
+    currROIData = ROIDataAvg(:, currBlockTrials, :);                 % --> [volume, shortTrial, ROI]
     currROIData = reshape(permute(currROIData, [3 2 1]), nROIs, []); % --> [ROI, volume]
     
     roiData{iTrial} = struct();
@@ -213,7 +288,7 @@ for iROI = 1:numel(ROIList)
         if sum(strcmp({roiData{iTrial}.name}, ROIList{iROI}))
             
             currROIData = roiData{iTrial}(strcmp({roiData{iTrial}.name}, ...
-                ROIList{iROI})).rawFl;
+                    ROIList{iROI})).rawFl;
             
             FL_THRESH = 8; % Hack to prevent the inclusion of trials when the PMT shutter was closed
             stdDevs(iROI, iTrial) = std(currROIData);
@@ -244,12 +319,13 @@ end
 catch ME; rethrow(ME); end
 
 %% ----- Save data in group analysis directory -----
-
+try
 writetable(expMd, fullfile(saveDir, [expID, '_expMetadata.csv']));
 writetable(trialMd, fullfile(saveDir, [expID, '_trialMetadata.csv']));
 writetable(daqOutputData, fullfile(saveDir, [expID, '_daqOutputData.csv']));
 save(fullfile(saveDir, [expID, '_ficTracData.mat']), 'ftData'); 
 save(fullfile(saveDir, [expID, '_refImages.mat']), 'refImages');
+save(fullfile(saveDir, [expID, '_fullExpRefImages.mat']), 'fullExpRefImages');
 save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData');
 
 if ~isempty(quiescenceEvents.eventData)
@@ -265,12 +341,18 @@ if ~isempty(locEvents.eventData)
     locEvents.export_csv(saveDir, '');
 end
 
-%% ----- ODOR EVENT DATA ----
+if exist(fullfile(expDir, 'sidTrialCounts.csv'), 'file')
+    copyfile(fullfile(expDir, 'sidTrialCounts.csv'), ...
+            fullfile(saveDir, [expID, '_sidTrialCounts.csv'])); 
+end
+catch ME; rethrow(ME); end
+
+%% ----- ODOR EVENT DATA -----
 
 odorANames = {'EtOH'};
 odorAConcentrations = {'neat'};
-odorBNames = {''};
-odorBConcentrations = {''};
+odorBNames = {'EtOH'};
+odorBConcentrations = {'e-3'};
 flowRates = {20};
 trialNums = {[]};
 
@@ -361,21 +443,72 @@ end%if
 
 catch ME; rethrow(ME); end
 
-%%
+%% ----- OPTO STIM EVENT DATA -----
 
-% Speaker
-if any(daqOutputData.speaker)
+LEDpowers = {[25]};
+dutyCycles = {[1]};
+trialNums = {[]}; % AKA block nums
+
+try 
     
-end 
-
 % Opto stim
-if any(daqOutputData.odorB)
+if any(daqOutputData.optoStimSmoothed)
+    optoStimEvents = optoStimEvent(expMd.expID{:});
+    
+    for iCond = 1:numel(trialNums)
+        
+        % Get info for current set of conditions
+        currPower = LEDpowers{iCond};
+        currDutyCycle = dutyCycles{iCond};
+        if isempty(trialNums{iCond})
+            currTrialNums = 1:expMd.nTrials;
+        else
+            currTrialNums = trialNums{iCond};
+        end
+        mdFieldNames = {'LEDpower', 'dutyCycle'};
+        mdFieldValues = {currPower, currDutyCycle};
+        
+        for iTrial = 1:numel(currTrialNums)
+            currTrialData = daqOutputData(daqOutputData.trialNum == currTrialNums(iTrial), :);
+            daqSampleTimes = (1:size(currTrialData, 1)) / expMd.daqSampRate;
+            optoStimSamples = currTrialData.optoStimSmoothed > 0;
+            
+            if any(optoStimSamples)
+                                
+                % Identify onset and offset samples
+                onsetSamples = find(diff(optoStimSamples) == 1) + 1;
+                if optoStimSamples(1) == 1
+                    onsetSamples = [1, onsetSamples];
+                end
+                offsetSamples = find(diff(optoStimSamples) == -1) + 1;
+                if optoStimSamples(end) == 1
+                    offsetSamples = [offsetSamples, numel(optoStimSamples)];
+                end
+                
+                % Convert to times
+                onsetTimes = daqSampleTimes(onsetSamples);
+                offsetTimes = daqSampleTimes(offsetSamples);
+                eventTimes = {[onsetTimes', offsetTimes']};
+                
+                optoStimEvents = optoStimEvents.append_data(currTrialNums(iTrial), eventTimes, ...
+                    mdFieldNames, mdFieldVals);
+            end%if
+            
+        end%iTrial
+        
+    end%iCond
+    
+    % Export to .csv file
+    optoStimEvents.export_csv(saveDir, '');
     
 end
 
+catch ME; rethrow(ME); end
 
-
-
+%% Speaker
+if any(daqOutputData.speaker)
+    
+end 
 
 
 
