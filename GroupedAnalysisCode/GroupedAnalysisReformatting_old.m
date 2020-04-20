@@ -5,7 +5,7 @@ expList = readtable(fullfile(saveDir, 'oldExpList_gaplessAcq.csv'), 'delimiter',
 % Skipping multi-sid (nerve transection) expts because I already did them
 expList = expList([1:18, 27:size(expList, 1)], :); 
 
-expNum = 12;
+expNum = 43;
 
 % ----- AUTOMATIC PROCESSING AND CONVERSION -----
 try
@@ -20,7 +20,7 @@ if isempty(dir(fullfile(parentDir, '2018', expDirName)))
     oldExpParentDirs = dir(fullfile(parentDir, '2019 *'));
     for iDir = 1:numel(oldExpParentDirs)
         expParentDir = fullfile(oldExpParentDirs(iDir).folder, oldExpParentDirs(iDir).name);
-        if ~isempty(dir(expParentDir))
+        if ~isempty(dir(fullfile(expParentDir, expDirName)))
             break
         end
     end
@@ -229,7 +229,7 @@ catch ME; rethrow(ME); end
 
 %% Reformat ROI data to match newer experiments
 
-roiNames = {'TypeD-R', 'ANT-R', 'ANT-L', 'Background'};
+roiNames = {'TypeD-R', 'ANT-R', 'LH-R', 'TypeF-R', 'Background'};
 
 try
     
@@ -351,8 +351,8 @@ catch ME; rethrow(ME); end
 
 odorANames = {'EtOH'};
 odorAConcentrations = {'neat'};
-odorBNames = {'EtOH'};
-odorBConcentrations = {'e-3'};
+odorBNames = {''};
+odorBConcentrations = {''};
 flowRates = {20};
 trialNums = {[]};
 
@@ -393,11 +393,11 @@ if any(daqOutputData.odorA + daqOutputData.odorB)
                 % Identify onset and offset samples
                 onsetSamples = find(diff(currTrialData.odorA) == 1) + 1;
                 if currTrialData.odorA(1) == 1
-                   onsetSamples = [1, onsetSamples]; 
+                   onsetSamples = [1; onsetSamples]; 
                 end
                 offsetSamples = find(diff(currTrialData.odorA) == -1) + 1;
                 if currTrialData.odorA(end) == 1
-                   offsetSamples = [offsetSamples, numel(currTrialData.odorA)]; 
+                   offsetSamples = [offsetSamples; numel(currTrialData.odorA)]; 
                 end
                 
                 % Convert to times
@@ -445,8 +445,8 @@ catch ME; rethrow(ME); end
 
 %% ----- OPTO STIM EVENT DATA -----
 
-LEDpowers = {[25]};
-dutyCycles = {[1]};
+LEDpowers = {20};
+dutyCycles = {100};
 trialNums = {[]}; % AKA block nums
 
 try 
@@ -478,11 +478,11 @@ if any(daqOutputData.optoStimSmoothed)
                 % Identify onset and offset samples
                 onsetSamples = find(diff(optoStimSamples) == 1) + 1;
                 if optoStimSamples(1) == 1
-                    onsetSamples = [1, onsetSamples];
+                    onsetSamples = [1; onsetSamples];
                 end
                 offsetSamples = find(diff(optoStimSamples) == -1) + 1;
                 if optoStimSamples(end) == 1
-                    offsetSamples = [offsetSamples, numel(optoStimSamples)];
+                    offsetSamples = [offsetSamples; numel(optoStimSamples)];
                 end
                 
                 % Convert to times

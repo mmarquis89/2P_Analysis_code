@@ -127,8 +127,8 @@ classdef event
             end
             
             % Load file 
-            tbAppend = csvread(fullfile(parentDir, [obj.expID, '_event_data_', lower(obj.type),  ...
-                    fileNameSuffix, '.csv']), 1, 0);
+            tbAppend = readtable(fullfile(parentDir, [obj.expID, '_event_data_', lower(obj.type),  ...
+                    fileNameSuffix, '.csv']));
                             
             % Make sure data doesn't already exist for those trial numbers
             if ~isempty(obj.eventData) && ...
@@ -141,7 +141,11 @@ classdef event
             obj.eventData = [obj.eventData; tbAppend];
             
             % Delete any duplicate rows that were introduced
-            obj.eventData = unique(obj.eventData);
+            if any(size(obj.eventData) ~= size(unique(obj.eventData)))
+                obj.eventData = unique(obj.eventData);
+                warning('duplicate rows removed from event data after import');
+            end
+            
         end
         
         % SUBSET EVENTS BY TRIAL NUMBER

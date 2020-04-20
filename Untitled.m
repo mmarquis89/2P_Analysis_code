@@ -2,7 +2,7 @@
 
 %% Reformat expIDs and names from my manual Excel spreadsheet
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-expList = readtable(fullfile(parentDir, 'oldExpList_gaplessAcq.csv'), 'delimiter', ',');
+expList = readtable(fullfile(parentDir, 'oldExpList_singleTrialAcq.csv'), 'delimiter', ',');
 
 years = regexp(expList.year, '..(?= \()', 'match', 'once');
 expNums = regexp(expList.year, '.(?=\))', 'match', 'once');
@@ -16,7 +16,7 @@ for iExp = 1:numel(years)
     newExpList = [newExpList; newRow];        
 end
 
-writetable(newExpList, fullfile(parentDir, 'oldExpList_gaplessAcq.csv'))
+writetable(newExpList, fullfile(parentDir, 'oldExpList_singleTrialAcq.csv'))
 
 %% Loop through each experiment and double check the format of some key data
 

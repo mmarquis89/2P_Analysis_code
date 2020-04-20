@@ -6,7 +6,7 @@ expNum = 27;
 
 try
     
-expName = expNames.expDirs{expNum}
+expName = expNames.expDirs{expNum};
 sourceDataDir = fullfile(parentDir, expName, 'ProcessedData');
 
 % expDir = uigetdir(parentDir, 'Select an experiment directory');
@@ -16,7 +16,6 @@ sourceDataDir = fullfile(parentDir, expName, 'ProcessedData');
 
 % expDir = dir(fullfile(parentDir, [expID, '*']));
 % sourceDataDir = fullfile(expDir.folder, expDir.name, 'ProcessedData');
-
 
 
 % Load necessary files

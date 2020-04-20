@@ -22,8 +22,8 @@ classdef behaviorEvent < event
     methods
         % Constructor
         function obj = behaviorEvent(expID, type)
-            if ~ismember(type, {'Locomotion', 'IsolatedMovement', 'Grooming', 'Quiescence', ...
-                        'Flailing'})
+            if ~ismember(lower(type), {'locomotion', 'isolatedmovement', 'grooming', 'quiescence', ...
+                        'flailing'})
                 error('invalid event type');
             end
             obj = obj@event(expID, type);
