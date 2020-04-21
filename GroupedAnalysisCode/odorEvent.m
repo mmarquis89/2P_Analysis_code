@@ -5,7 +5,7 @@ classdef odorEvent < stimEvent
 %       metadataFieldNames
 %
 % Methods:
-%       .append_shorthand(trialNums, stimTiming, trialDuration, odorName, odorConcentration,
+%       .append_shorthand(expID, trialNums, stimTiming, trialDuration, odorName, odorConcentration,
 %                         flowRate)
 %
 % ================================================================================================== 
@@ -17,17 +17,17 @@ classdef odorEvent < stimEvent
     methods
         
         % Constructor
-        function obj = odorEvent(expID)
-           obj = obj@stimEvent(expID, 'Odor');            
+        function obj = odorEvent()
+           obj = obj@stimEvent('Odor');            
            obj.metadataFieldNames = {'odorName', 'concentration', 'flowRate'};
         end
         
         % Modified append_shorthand function
-        function obj = append_shorthand(obj, trialNums, stimTiming, trialDuration, odorName, ...
+        function obj = append_shorthand(obj, expID, trialNums, stimTiming, trialDuration, odorName, ...
                     odorConcentration, flowRate)
             mdFieldNames = obj.metadataFieldNames;
             mdFieldValues = {odorName, odorConcentration, flowRate};
-            obj = append_shorthand@stimEvent(obj, trialNums, stimTiming, trialDuration, ...
+            obj = append_shorthand@stimEvent(obj, expID, trialNums, stimTiming, trialDuration, ...
                     'MetadataFieldNames', mdFieldNames, 'MetadataFieldValues', mdFieldValues);
         end
         

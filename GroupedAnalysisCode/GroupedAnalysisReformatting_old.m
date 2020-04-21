@@ -58,7 +58,8 @@ expMd.nTrials = numel(aD.blockData); % Redefining "trial" as an individual conti
 % ----- CREATE TRIAL METADATA TABLE -----
 trialMd = [];
 for iTrial = 1:expMd.nTrials
-    newRow = table(iTrial, 'VariableNames', {'trialNum'});
+    newRow = table(expID, 'VariableNames', {'expID'});
+    newRow.trialNum = iTrial;
     newRow.trialDuration = aD.trialDuration * aD.blockData(iTrial).nTrials;
     newRow.nVolumes = aD.nVolumes * aD.blockData(iTrial).nTrials;
     newRow.nDaqSamples = size(aD.blockData(iTrial).outputData, 1);
@@ -145,36 +146,37 @@ end
 
 
 % ----- BEHAVIOR ANNOTATION EVENT DATA ----
-quiescenceEvents = behaviorEvent(expID, 'Quiescence');
-isoMoveEvents = behaviorEvent(expID, 'IsolatedMovement');
-groomEvents = behaviorEvent(expID, 'Grooming');
-locEvents = behaviorEvent(expID, 'Locomotion');
+quiescenceEvents = behaviorEvent('Quiescence');
+isoMoveEvents = behaviorEvent('IsolatedMovement');
+groomEvents = behaviorEvent('Grooming');
+locEvents = behaviorEvent('Locomotion');
 for iBlock = 1:numel(nBlockTrials)
-   currBlockTrials = blockStartTrials(iBlock):blockEndTrials(iBlock);
-   currAnnotData = aD.trialAnnotations(currBlockTrials, :)';
-   currAnnotData(1, :) = currAnnotData(2, :); % currently the first frame is (wrongly) always quiescence  
-   currAnnotData = currAnnotData(:);
-   frameTimes = (1:numel(currAnnotData)) / FRAME_RATE;
-      
-   % Separate according to behavior type
-   qFrames = currAnnotData == 0;
-   iFrames = currAnnotData == 1;
-   gFrames = currAnnotData == 2;
-   lFrames = currAnnotData == 3;
-
-   % Append data for each trial
-   if sum(qFrames) > 0
-       quiescenceEvents = quiescenceEvents.append_annotation_data(iBlock, qFrames, frameTimes);
-   end
-   if sum(iFrames) > 0
-       isoMoveEvents = isoMoveEvents.append_annotation_data(iBlock, iFrames, frameTimes);
-   end
-   if sum(gFrames) > 0
-       groomEvents = groomEvents.append_annotation_data(iBlock, gFrames, frameTimes);
-   end
-   if sum(lFrames) > 0
-       locEvents = locEvents.append_annotation_data(iBlock, lFrames, frameTimes);
-   end   
+    currBlockTrials = blockStartTrials(iBlock):blockEndTrials(iBlock);
+    currAnnotData = aD.trialAnnotations(currBlockTrials, :)';
+    currAnnotData(1, :) = currAnnotData(2, :); % currently the first frame is (wrongly) always quiescence
+    currAnnotData = currAnnotData(:);
+    frameTimes = (1:numel(currAnnotData)) / FRAME_RATE;
+    
+    % Separate according to behavior type
+    qFrames = currAnnotData == 0;
+    iFrames = currAnnotData == 1;
+    gFrames = currAnnotData == 2;
+    lFrames = currAnnotData == 3;
+    
+    % Append data for each trial
+    if sum(qFrames) > 0
+        quiescenceEvents = quiescenceEvents.append_annotation_data(expID, iBlock, qFrames, ...
+                frameTimes);
+    end
+    if sum(iFrames) > 0
+        isoMoveEvents = isoMoveEvents.append_annotation_data(expID, iBlock, iFrames, frameTimes);
+    end
+    if sum(gFrames) > 0
+        groomEvents = groomEvents.append_annotation_data(expID, iBlock, gFrames, frameTimes);
+    end
+    if sum(lFrames) > 0
+        locEvents = locEvents.append_annotation_data(expID, iBlock, lFrames, frameTimes);
+    end
    
 end%iBlock
 
@@ -329,16 +331,16 @@ save(fullfile(saveDir, [expID, '_fullExpRefImages.mat']), 'fullExpRefImages');
 save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData');
 
 if ~isempty(quiescenceEvents.eventData)
-    quiescenceEvents.export_csv(saveDir, '');
+    quiescenceEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 if ~isempty(isoMoveEvents.eventData)
-    isoMoveEvents.export_csv(saveDir, '');
+    isoMoveEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 if ~isempty(groomEvents.eventData)
-    groomEvents.export_csv(saveDir, '');
+    groomEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 if ~isempty(locEvents.eventData)
-    locEvents.export_csv(saveDir, '');
+    locEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 
 if exist(fullfile(expDir, 'sidTrialCounts.csv'), 'file')
@@ -359,7 +361,7 @@ trialNums = {[]};
 try 
     
 if any(daqOutputData.odorA + daqOutputData.odorB)
-    odorEvents = odorEvent(expMd.expID{:});
+    odorEvents = odorEvent();
     
     for iCond = 1:numel(trialNums)
         
@@ -405,8 +407,8 @@ if any(daqOutputData.odorA + daqOutputData.odorB)
                 offsetTimes = daqSampleTimes(offsetSamples);
                 eventTimes = {[onsetTimes', offsetTimes']};              
                 
-                odorEvents = odorEvents.append_data(currTrialNums(iTrial), eventTimes, ...
-                        mdFieldNames, mdFieldVals);
+                odorEvents = odorEvents.append_data(expMd.expID{:}, currTrialNums(iTrial), ...
+                        eventTimes, mdFieldNames, mdFieldVals);
             end%if
             
             % Odor B 
@@ -429,15 +431,15 @@ if any(daqOutputData.odorA + daqOutputData.odorB)
                 offsetTimes = daqSampleTimes(offsetSamples);
                 eventTimes = {[onsetTimes', offsetTimes']};              
                 
-                odorEvents = odorEvents.append_data(currTrialNums(iTrial), eventTimes, ...
-                        mdFieldNames, mdFieldVals);
+                odorEvents = odorEvents.append_data(expMd.expID{:}, currTrialNums(iTrial), ...
+                        eventTimes, mdFieldNames, mdFieldVals);
             end%if
 
         end%iTrial
     end%iCond
     
     % Export to .csv file
-    odorEvents.export_csv(saveDir, '');
+    odorEvents.export_csv(saveDir, 'fileNamePrefix', expMd.expID{:});
     
 end%if
 
@@ -453,7 +455,7 @@ try
     
 % Opto stim
 if any(daqOutputData.optoStimSmoothed)
-    optoStimEvents = optoStimEvent(expMd.expID{:});
+    optoStimEvents = optoStimEvent();
     
     for iCond = 1:numel(trialNums)
         
@@ -490,8 +492,8 @@ if any(daqOutputData.optoStimSmoothed)
                 offsetTimes = daqSampleTimes(offsetSamples);
                 eventTimes = {[onsetTimes', offsetTimes']};
                 
-                optoStimEvents = optoStimEvents.append_data(currTrialNums(iTrial), eventTimes, ...
-                    mdFieldNames, mdFieldVals);
+                optoStimEvents = optoStimEvents.append_data(expMd.expID{:}, currTrialNums(iTrial), ...
+                        eventTimes, mdFieldNames, mdFieldVals);
             end%if
             
         end%iTrial
@@ -499,7 +501,7 @@ if any(daqOutputData.optoStimSmoothed)
     end%iCond
     
     % Export to .csv file
-    optoStimEvents.export_csv(saveDir, '');
+    optoStimEvents.export_csv(saveDir, 'fileNamePrefix', expMd.expID{:});
     
 end
 

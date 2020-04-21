@@ -58,7 +58,8 @@ expMd.nTrials = aD.nTrials;
 % ----- CREATE TRIAL METADATA TABLE -----
 trialMd = [];
 for iTrial = 1:expMd.nTrials
-    newRow = table(iTrial, 'VariableNames', {'trialNum'});
+    newRow = table(expID, 'VariableNames', {'expID'});
+    newRow.trialNum = iTrial;
     newRow.trialDuration = aD.trialDuration;
     newRow.nVolumes = aD.nVolumes;
     newRow.nDaqSamples = nan;
@@ -135,35 +136,36 @@ end
 % Load annotation data file 
 load(fullfile(expDir, 'Annotations.mat'), 'trialAnnotations'); 
 
-quiescenceEvents = behaviorEvent(expID, 'Quiescence');
-isoMoveEvents = behaviorEvent(expID, 'IsolatedMovement');
-groomEvents = behaviorEvent(expID, 'Grooming');
-locEvents = behaviorEvent(expID, 'Locomotion');
+quiescenceEvents = behaviorEvent('Quiescence');
+isoMoveEvents = behaviorEvent('IsolatedMovement');
+groomEvents = behaviorEvent('Grooming');
+locEvents = behaviorEvent('Locomotion');
 for iTrial = 1:expMd.nTrials
-   if ~isnan(ftData(iTrial).intX(1))
-       currAnnotData = trialAnnotations{iTrial};
-       frameTimes = ftData(iTrial).frameTimes;
-       
-       % Separate according to behavior type
-       qFrames = currAnnotData == 0;
-       iFrames = currAnnotData == 4;
-       gFrames = currAnnotData == 3;
-       lFrames = currAnnotData == 2;
-       
-       % Append data for each trial
-       if sum(qFrames) > 0
-           quiescenceEvents = quiescenceEvents.append_annotation_data(iTrial, qFrames, frameTimes);
-       end
-       if sum(iFrames) > 0
-           isoMoveEvents = isoMoveEvents.append_annotation_data(iTrial, iFrames, frameTimes);
-       end
-       if sum(gFrames) > 0
-           groomEvents = groomEvents.append_annotation_data(iTrial, gFrames, frameTimes);
-       end
-       if sum(lFrames) > 0
-           locEvents = locEvents.append_annotation_data(iTrial, lFrames, frameTimes);
-       end
-   end
+    if ~isnan(ftData(iTrial).intX(1))
+        currAnnotData = trialAnnotations{iTrial};
+        frameTimes = ftData(iTrial).frameTimes;
+        
+        % Separate according to behavior type
+        qFrames = currAnnotData == 0;
+        iFrames = currAnnotData == 4;
+        gFrames = currAnnotData == 3;
+        lFrames = currAnnotData == 2;
+        
+        % Append data for each trial
+        if sum(qFrames) > 0
+            quiescenceEvents = quiescenceEvents.append_annotation_data(expID, iTrial, qFrames, ...
+                    frameTimes);
+        end
+        if sum(iFrames) > 0
+            isoMoveEvents = isoMoveEvents.append_annotation_data(expID, iTrial, iFrames, frameTimes);
+        end
+        if sum(gFrames) > 0
+            groomEvents = groomEvents.append_annotation_data(expID, iTrial, gFrames, frameTimes);
+        end
+        if sum(lFrames) > 0
+            locEvents = locEvents.append_annotation_data(expID, iTrial, lFrames, frameTimes);
+        end
+    end
 end%iTrial
 
 
@@ -281,6 +283,7 @@ end
 catch ME; rethrow(ME); end
 
 %% ----- Save data in group analysis directory -----
+
 try
 writetable(expMd, fullfile(saveDir, [expID, '_expMetadata.csv']));
 writetable(trialMd, fullfile(saveDir, [expID, '_trialMetadata.csv']));
@@ -291,16 +294,16 @@ save(fullfile(saveDir, [expID, '_fullExpRefImages.mat']), 'fullExpRefImages');
 save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData');
 
 if ~isempty(quiescenceEvents.eventData)
-    quiescenceEvents.export_csv(saveDir, '');
+    quiescenceEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 if ~isempty(isoMoveEvents.eventData)
-    isoMoveEvents.export_csv(saveDir, '');
+    isoMoveEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 if ~isempty(groomEvents.eventData)
-    groomEvents.export_csv(saveDir, '');
+    groomEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 if ~isempty(locEvents.eventData)
-    locEvents.export_csv(saveDir, '');
+    locEvents.export_csv(saveDir, 'fileNamePrefix', expID);
 end
 
 if exist(fullfile(expDir, 'sidTrialCounts.csv'), 'file')

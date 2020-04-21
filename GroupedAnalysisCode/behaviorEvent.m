@@ -1,7 +1,7 @@
 classdef behaviorEvent < event
 % ==================================================================================================   
 %    
-% obj = behaviorEvent(expID, type) 
+% obj = behaviorEvent(type) 
 %
 % Valid types are: Locomotion, IsolatedMovement, Grooming, Quiescence, 'Flailing'                                   
 %
@@ -9,9 +9,9 @@ classdef behaviorEvent < event
 %       metadataFieldNames
 %
 % Methods:
-%       .append_annotation_data(trialNums, annotData, frameTimes, 'MetadataFieldNames', 
+%       .append_annotation_data(expID, trialNums, annotData, frameTimes, 'MetadataFieldNames', 
 %                               'MetadataFieldValues')
-%       .append_flow_data(trialNums, flowData, frameTimes, threshold)
+%       .append_flow_data(expID, trialNums, flowData, frameTimes, threshold)
 %
 % ==================================================================================================    
     properties
@@ -21,16 +21,16 @@ classdef behaviorEvent < event
     
     methods
         % Constructor
-        function obj = behaviorEvent(expID, type)
+        function obj = behaviorEvent(type)
             if ~ismember(lower(type), {'locomotion', 'isolatedmovement', 'grooming', 'quiescence', ...
                         'flailing'})
                 error('invalid event type');
             end
-            obj = obj@event(expID, type);
+            obj = obj@event(type);
             obj.metadataFieldNames = [];
         end
         
-        function obj = append_annotation_data(obj, trialNums, annotData, frameTimes, varargin)
+        function obj = append_annotation_data(obj, expID, trialNums, annotData, frameTimes, varargin)
             
             % Parse optional arguments
             p = inputParser;
@@ -83,14 +83,15 @@ classdef behaviorEvent < event
                     eventTimes = {[onsetTimes', offsetTimes']};
                     
                     % Append data
-                    obj = obj.append_data(trialNums(iTrial), eventTimes, mdFieldNames, mdFieldVals);
+                    obj = obj.append_data(expID, trialNums(iTrial), eventTimes, mdFieldNames, ...
+                            mdFieldVals);
                 end
                 
             end%iTrial
         end%function
             
         
-        function obj = append_flow_data(obj, trialNums, flowData, frameTimes, threshold)           
+        function obj = append_flow_data(obj, expID, trialNums, flowData, frameTimes, threshold)           
             
             % Make sure input variable sizes and types match up
             [flowData, frameTimes] = multi_trial_input_check(trialNums, flowData, frameTimes);
@@ -106,7 +107,7 @@ classdef behaviorEvent < event
                 mdFieldVals = {threshold, 20, 6};
                 
                 if sum(moveFrames) > 0
-                    obj = obj.append_annotation_data(trialNums(iTrial), moveFrames, ...
+                    obj = obj.append_annotation_data(expID, trialNums(iTrial), moveFrames, ...
                             frameTimes{iTrial}, 'MetadataFieldNames', mdFieldNames, ...
                             'MetadataFieldValues', mdFieldVals);
                 end 

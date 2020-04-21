@@ -42,6 +42,8 @@ expMetadata.Properties.VariableNames = { ...
 mdTable = struct2table(mD);
 trialMetadata = mdTable(:, {'trialNum', 'trialDuration', 'nVolumes', 'nDaqSamples', 'nPanelsFrames', ...
         'usingOptoStim', 'usingPanels', 'using2P'}); 
+trialMetadata = [table(repmat({expID}, size(trialMetadata, 1), 1), 'VariableNames', {'expID'}), ...
+        trialMetadata];
 
 % Panels metadata
 panelsMetadata = struct();
@@ -104,7 +106,7 @@ save(fullfile(savedir, [expID, '_refImages.mat']), 'refImages');
 % ----- Panels flash stim -----
 
 if any(trialMetadata.usingPanels)
-    panelsFlashStims = panelsFlashEvent(expMetadata.expID{1});
+    panelsFlashStims = panelsFlashEvent();
     panelsTrials = find(trialMetadata.usingPanels);
     for iTrial = 1:numel(panelsTrials)
         currTrial = panelsTrials(iTrial);
@@ -142,15 +144,15 @@ if any(trialMetadata.usingPanels)
                 trialNum = panelsMetadata(currTrial).trialNum;
                 eventTimes = {[stimOnsetTimes', stimOffsetTimes']};
                 
-                panelsFlashStims = panelsFlashStims.append_data(trialNum, eventTimes, brightness, ...
-                        patternTypes{iType});
+                panelsFlashStims = panelsFlashStims.append_data(expMetadata.expID{1}, trialNum, ...
+                        eventTimes, brightness, patternTypes{iType});
             end
         end%iType
         
     end%iTrial
     
     % Export to .csv file
-    panelsFlashStims.export_csv(saveDir, '')
+    panelsFlashStims.export_csv(saveDir, 'fileNamePrefix', expMetadata.expID{1})
     
     
 end%if 
@@ -168,7 +170,7 @@ trialNums = {[]};
 
 try
 if any(trialMetadata.usingOptoStim)
-    odorStims = odorEvent(expMetadata.expID{1});
+    odorStims = odorEvent();
     odorTrials = find(trialMetadata.usingOptoStim);
     for iCond = 1:numel(trialNums)
         
@@ -186,14 +188,15 @@ if any(trialMetadata.usingOptoStim)
                 stimTiming = mD(trialMetadata.trialNum == currTrialNums(iTrial)).optoStimTiming;
                 trialDuration = trialMetadata.trialDuration(trialMetadata.trialNum == ...
                         currTrialNums(iTrial));
-                odorStims = odorStims.append_shorthand(currTrialNums(iTrial), stimTiming, ...
-                        trialDuration, odorName, concentration, flowRate);
+                odorStims = odorStims.append_shorthand(expMetadata.expID{1}, ...
+                        currTrialNums(iTrial), stimTiming, trialDuration, odorName, concentration, ...
+                        flowRate);
             end
         end%iTrial
     end
     
     % Export to .csv file
-    odorStims.export_csv(saveDir, '')
+    odorStims.export_csv(saveDir, 'fileNamePrefix', expMetadata.expID{1})
     
 end%if 
 catch ME; rethrow(ME); end
@@ -253,11 +256,11 @@ for iTrial = 1:numel(meanFlowMags)
     end
 end
 
-flailingEvents = flailingEvent(expMetadata.expID{1});
-flailingEvents = flailingEvents.append_flow_data(trialMetadata.trialNum, meanFlowMags, ...
-        flowFrameTimes, moveThresh);
+flailingEvents = flailingEvent();
+flailingEvents = flailingEvents.append_flow_data(expMetadata.expID{1}, trialMetadata.trialNum, ...
+        meanFlowMags, flowFrameTimes, moveThresh);
 
-flailingEvents.export_csv(saveDir, '');
+flailingEvents.export_csv(saveDir, 'fileNamePrefix', expMetadata.expID{1});
 
 
 

@@ -1,13 +1,13 @@
 classdef stimEvent < event
 % ==================================================================================================   
 %    
-% obj = stimEvent(expID, type)
+% obj = stimEvent(type)
 %
 % Properties:
 %       
 %
 % Methods:
-%       .append_shorthand(trialNums, stimTiming, trialDuration, 'MetadataFieldNames', 
+%       .append_shorthand(expID, trialNums, stimTiming, trialDuration, 'MetadataFieldNames', 
 %                         'MetadataFieldValues')
 %
 % ================================================================================================== 
@@ -19,12 +19,12 @@ classdef stimEvent < event
     methods
         
         % Constructor
-        function obj = stimEvent(expID, type)
-           obj = obj@event(expID, type);            
+        function obj = stimEvent(type)
+           obj = obj@event(type);            
         end
         
         % Append using [pre-stim, duration, ISI] notation
-        function obj = append_shorthand(obj, trialNums, stimTiming, trialDuration, varargin)
+        function obj = append_shorthand(obj, expID, trialNums, stimTiming, trialDuration, varargin)
             
             % Parse optional arguments
             p = inputParser;
@@ -47,7 +47,7 @@ classdef stimEvent < event
                eventTimes{iTrial} = [onsetTimes', offsetTimes'];
             end           
             
-            obj = obj.append_data(trialNums, eventTimes, mdFieldNames, mdFieldValues);
+            obj = obj.append_data(expID, trialNums, eventTimes, mdFieldNames, mdFieldValues);
         end
     end
     
