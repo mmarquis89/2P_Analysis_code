@@ -3,7 +3,6 @@ classdef event
 %    
 % Properties:
 %       eventData
-%       eventDataSubset
 %       type                (immutable)
 %       nExps               (dependent)
 %       fieldNames          (dependent)
@@ -11,9 +10,13 @@ classdef event
 % Methods:
 %       .append_data(expID, trialNums, eventTimes, metadataFieldNames, metadataFieldValues)
 %       .export_csv(savePath, 'fileNamePrefix', 'fileNameSuffix')
-%       .import_csv(parentDir, 'fileNamePrefix, 'fileNameSuffix')
-%       .metadata_subset(fieldName, values)
+%       .load_csv(parentDir, 'fileNamePrefix, 'fileNameSuffix')
 %       .create_logical_array(nSamples, sampRate)
+%
+%       Also supports direct table indexing syntax, which is redirected to obj.eventData:
+%           obj.(eventDataFieldName)
+%           obj(1, 1:5) or obj(1, {'var1', 'var2'})
+%           obj{...}
 %
 % Subclasses:
 %       stimEvent
@@ -54,6 +57,27 @@ classdef event
             fieldNames = (table(varNum, variableNames));
         end
         
+        % SUBSREF OVERLOAD FOR DIRECT TABLE INDEXING
+        function sref = subsref(obj, s)
+            if ~isempty(obj.eventData)
+                switch s(1).type
+                    case '.'
+                        % Determine whether user is refering to obj properties or obj.eventData fields
+                        if ismember(s(1).subs, obj.fieldNames.variableNames)
+                            sref = builtin('subsref', obj.eventData, s);                            
+                        else
+                            sref = builtin('subsref', obj, s);
+                        end
+                    otherwise
+                        % Other indexing types passed directly on to eventData table
+                        sref = builtin('subsref', obj.eventData, s);
+                end
+            else
+                % Don't even try to overload builtin if eventData is empty
+                sref = builtin('subsref', obj, s);
+            end
+        end
+        
         % APPEND DATA FOR NEW TRIALS
         function obj = append_data(obj, expID, trialNums, eventTimes, metadataFieldNames, ...
                     metadataFieldValues)
@@ -66,7 +90,7 @@ classdef event
             % Create new table to append to eventData
             tbAppend = [];
             for iTrial = 1:numel(trialNums)
-                newRow = table(expID, trialNums(iTrial), {eventTimes{iTrial}(:, 1)}, ...
+                newRow = table({expID}, trialNums(iTrial), {eventTimes{iTrial}(:, 1)}, ...
                             {eventTimes{iTrial}(:, 2)}, 'VariableNames', {'expID', 'trialNum', ...
                             'onsetTimes', 'offsetTimes'});
                 tbAppend = [tbAppend; newRow];                
@@ -93,7 +117,7 @@ classdef event
         end
         
         % SAVE EVENT TIMES TO .CSV FILE
-        function export_csv(obj, savePath, varargin)
+        function obj = export_csv(obj, savePath, varargin)
             
             [fileNamePrefix, fileNameSuffix] = process_filename_args(varargin);
             
@@ -135,21 +159,17 @@ classdef event
             
         end
         
-        % SUBSET EVENTS BY TRIAL NUMBER
-        function obj = trial_subset(obj, trialNums)
-            obj.eventData = obj.eventData(ismember(obj.eventData.trialNum, trialNums), :);
-        end
-        
-        % SUBSET EVENTS BY EXTRA METADATA FIELD VALUES
-        function obj = metadata_subset(obj, fieldName, values)
-            obj.eventDataSubset = obj.eventData(ismember(obj.eventData.(fieldName), values), :);
-        end
+%         % CONVERT EVENT TIME INTO LOGICAL ARRAY 
+%         function outputArr = create_logical_array()
+%             
+%             
+%             
+%             
+%         end
         
     end%Methods
     
 end%Class
-
-
 
 % ==================================================================================================
 % Local functions
@@ -164,7 +184,7 @@ for iTrial = 1:size(tbIn, 1)
     currOnsets = tbIn.onsetTimes{iTrial};
     currOffsets = tbIn.offsetTimes{iTrial};
     for iEvent = 1:numel(currOnsets)
-        newRow = table(currExpID, currTrialNum, currOnsets(iEvent), currOffsets(iEvent), ...
+        newRow = table({currExpID}, currTrialNum, currOnsets(iEvent), currOffsets(iEvent), ...
                 'VariableNames', {'expID', 'trialNum', 'onsetTime', 'offsetTime'});
         tbOut = [tbOut; newRow];
     end
@@ -177,9 +197,9 @@ function [fileNamePrefix, fileNameSuffix] = process_filename_args(varargin)
 p = inputParser;
 addParameter(p, 'fileNamePrefix', '');
 addParameter(p, 'fileNameSuffix', '');
-parse(p, varargin{:});
-fileNamePrefix = p.fileNamePrefix;
-fileNameSuffix = p.fileNameSuffix;
+parse(p, varargin{1}{:});
+fileNamePrefix = p.Results.fileNamePrefix;
+fileNameSuffix = p.Results.fileNameSuffix;
 
 % Make sure suffix (if provided) starts with underscore
 if ~isempty(fileNameSuffix) && ~strcmp(fileNameSuffix(1), '_')

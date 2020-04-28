@@ -279,7 +279,7 @@ for iFile = 1:numel(imgDataFiles)
         regTemplates(:, :, iPlane) = regTemplate;       % --> [y, x, plane]
         
     end%iPlane
-        
+                
     % Save registered imaging data
     disp('Saving registered data...');
     imgData = imgDataReg;

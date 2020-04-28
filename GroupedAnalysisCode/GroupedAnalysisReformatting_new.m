@@ -97,7 +97,7 @@ writetable(expMetadata, fullfile(saveDir, [expID, '_expMetadata.csv']));
 writetable(trialMetadata, fullfile(saveDir, [expID, '_trialMetadata.csv'])); 
 save(fullfile(saveDir, [expID, '_panelsMetadata.mat']), 'panelsMetadata'); 
 save(fullfile(saveDir, [expID, '_ficTracData.mat']), 'ftData'); 
-save(fullfile(saveDir, [expID, '_ROI_data.mat']), 'roiData'); 
+save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData'); 
 save(fullfile(savedir, [expID, '_refImages.mat']), 'refImages');
 
 

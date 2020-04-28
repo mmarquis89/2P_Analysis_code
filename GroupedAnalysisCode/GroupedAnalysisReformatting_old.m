@@ -58,7 +58,7 @@ expMd.nTrials = numel(aD.blockData); % Redefining "trial" as an individual conti
 % ----- CREATE TRIAL METADATA TABLE -----
 trialMd = [];
 for iTrial = 1:expMd.nTrials
-    newRow = table(expID, 'VariableNames', {'expID'});
+    newRow = table({expID}, 'VariableNames', {'expID'});
     newRow.trialNum = iTrial;
     newRow.trialDuration = aD.trialDuration * aD.blockData(iTrial).nTrials;
     newRow.nVolumes = aD.nVolumes * aD.blockData(iTrial).nTrials;
@@ -367,7 +367,7 @@ if any(daqOutputData.odorA + daqOutputData.odorB)
         
         % Get info for current set of conditions
         currNameA = odorANames{iCond};
-        currNameB = odorANames{iCond};
+        currNameB = odorBNames{iCond};
         concA = odorAConcentrations{iCond};
         concB = odorBConcentrations{iCond};
         if numel(flowRates) == 1
