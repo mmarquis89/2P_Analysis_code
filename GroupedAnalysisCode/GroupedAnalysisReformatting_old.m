@@ -3,9 +3,9 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\';
 expList = readtable(fullfile(saveDir, 'oldExpList_gaplessAcq.csv'), 'delimiter', ',');
 
 % Skipping multi-sid (nerve transection) expts because I already did them
-expList = expList([1:18, 27:size(expList, 1)], :); 
+expList = expList([5 11], :); 
 
-expNum = 43;
+expNum = 2;
 
 % ----- AUTOMATIC PROCESSING AND CONVERSION -----
 try
@@ -231,7 +231,7 @@ catch ME; rethrow(ME); end
 
 %% Reformat ROI data to match newer experiments
 
-roiNames = {'TypeD-R', 'ANT-R', 'LH-R', 'TypeF-R', 'Background'};
+roiNames = {'TypeD-R', 'ANT-R', 'Background-SMP'};
 
 try
     
@@ -353,8 +353,8 @@ catch ME; rethrow(ME); end
 
 odorANames = {'EtOH'};
 odorAConcentrations = {'neat'};
-odorBNames = {''};
-odorBConcentrations = {''};
+odorBNames = {'EtOH'};
+odorBConcentrations = {'e-2'};
 flowRates = {20};
 trialNums = {[]};
 

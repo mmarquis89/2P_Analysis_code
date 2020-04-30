@@ -1,15 +1,15 @@
 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017';
-expDirs = dir(fullfile(parentDir, '2*'));
+parentDir = 'F:\ImagingData';
+expDirs = dir(fullfile(parentDir, '2018_02_09_exp_*'));
 expDirs = expDirs([expDirs.isdir]);
-expDirs = expDirs([4:5 9 12]); % 
+expDirs = expDirs([1]); % 
 
 for iExp = 1:numel(expDirs)
     sidDir = dir(fullfile(expDirs(iExp).folder, expDirs(iExp).name, 's*'));
-    for iSid = 1:numel(sidDir)
+    for iSid = 2%:numel(sidDir)
 %         sessionDataFile = dir(fullfile(sidDir(1).folder, sidDir(1).name, 'rigid*'));
-        sessionDataFile = dir(fullfile(sidDir(1).folder, sidDir(1).name, '*sessionFile_Reg1*'));
+        sessionDataFile = dir(fullfile(sidDir(iSid).folder, sidDir(iSid).name, 'rigid*sessionFile*.mat'));
         if numel(sessionDataFile) > 0
             m = matfile(fullfile(sessionDataFile(1).folder, sessionDataFile(1).name));
             if contains('regProduct', fieldnames(m))
