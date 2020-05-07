@@ -63,7 +63,6 @@ try
 
         % Extract scanimage data from the first trial
         if iFile == 1
-            write_to_log(exist(fullfile(parentDir, 'cdata_20190909_125626_sid_0_bid_0_dur_1200_nTrials_60_00001.tif'), 'file'), mfilename);
             [~, tifMetadata] = read_patterned_tifdata(fullfile(parentDir, currFiles{iFile}));
             scanimageInfo = tifMetadata.tifinfo;
             nFlybackFrames = frameStringKeyLookup(scanimageInfo.Software, ...

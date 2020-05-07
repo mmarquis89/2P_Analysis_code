@@ -1,4 +1,4 @@
-function [ tifData, tifMetadata ] = read_tif( tifPath )
+function [ imgData, tifMetadata ] = read_tif( tifPath )
 %===================================================================================================
 % Reads a .tif stack of scanimage 2P data into an array.
 %
@@ -10,7 +10,7 @@ function [ tifData, tifMetadata ] = read_tif( tifPath )
 %       tifPath = String specifying path to .tif file
 %
 % Output:
-%       tifData     = image data array: [Lines, Pixels, Planes, Volumes]
+%       imgData     = image data array: [Lines, Pixels, Planes, Volumes]
 %
 %       tifMetadata = structure containing all the ScanImage metadata for the .tif file
 %
@@ -24,15 +24,20 @@ if exist(regexprep(tifPath, '.tif', '.mat'), 'file')
     % Just load a .mat file for the data, if available
 %     write_to_log('Found .mat file to use instead of .tif', mfilename);
     load(regexprep(tifPath, '.tif', '.mat')) % "tifData"
-    tifData = tifData;
+    if exist('tifData', 'var') && ~exist('imgData', 'var')
+        imgData = tifData;
+    end
+    
+    % Load just the metadata from the .tif file
+    [~, tifMetadata] = read_patterned_tifdata(tifPath, []);
 else
     % Otherwise get everything from the .tif file
 %     write_to_log('Using .tif file for data and metadata');
-    [tifData, tifMetadata] = read_patterned_tifdata(tifPath);
+    [imgData, tifMetadata] = read_patterned_tifdata(tifPath);
     
     % Save image dimensions
-    nLines = size(tifData, 1);
-    nPixels = size(tifData, 2);
+    nLines = size(imgData, 1);
+    nPixels = size(imgData, 2);
     
     % Extract info from image description
     try
@@ -45,26 +50,28 @@ else
     
     % Calculate number of volumes per trial
     if nChannels == 1
-        nVolumes = size(tifData, 3) / nPlanes;
+        nVolumes = size(imgData, 3) / nPlanes;
     else
-        nVolumes = size(tifData, 3) / (nPlanes * 2);
+        nVolumes = size(imgData, 3) / (nPlanes * 2);
     end
     
     % Save image stack to array, accounting for multiple channels if necessary
     if nChannels == 1
-        tifDataReshaped = reshape(tifData, [nLines, nPixels, nPlanes, nVolumes]);
-        tifData = tifDataReshaped;
+        tifDataReshaped = reshape(imgData, [nLines, nPixels, nPlanes, nVolumes]);
+        imgData = tifDataReshaped;
     else
         chanData = [];
         for iChannel = 1:nChannels
-            chanData(:,:,:,:, iChannel) = reshape(tifData(:,:,iChannel:nChannels:end), [nLines, ...
+            chanData(:,:,:,:, iChannel) = reshape(imgData(:,:,iChannel:nChannels:end), [nLines, ...
                 nPixels, nPlanes, nVolumes]);
         end
-        tifData = chanData;
+        imgData = chanData;
     end
-    % Close tif file handle
-    fclose(tifMetadata.fid);
 end
+
+% Close tif file handle
+fclose(tifMetadata.fid);
+
 
 end
 

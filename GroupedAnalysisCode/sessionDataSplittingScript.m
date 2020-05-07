@@ -7,7 +7,7 @@ expDirs = expDirs([1]); %
 
 for iExp = 1:numel(expDirs)
     sidDir = dir(fullfile(expDirs(iExp).folder, expDirs(iExp).name, 's*'));
-    for iSid = 2%:numel(sidDir)
+    for iSid = 1:numel(sidDir)
 %         sessionDataFile = dir(fullfile(sidDir(1).folder, sidDir(1).name, 'rigid*'));
         sessionDataFile = dir(fullfile(sidDir(iSid).folder, sidDir(iSid).name, 'rigid*sessionFile*.mat'));
         if numel(sessionDataFile) > 0
