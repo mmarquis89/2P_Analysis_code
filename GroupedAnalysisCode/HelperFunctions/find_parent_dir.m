@@ -10,8 +10,10 @@ elseif expDateNum < 20180623
     parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2018\2018 Apr-May';
 elseif expDateNum < 20190211
     parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2018';
+elseif expDateNum < 20190304
+    parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019 Jan-Feb';
 else
-    error('Not ready to process those experiments yet');
+    parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2019 Mar-Apr';
 end
 
 end

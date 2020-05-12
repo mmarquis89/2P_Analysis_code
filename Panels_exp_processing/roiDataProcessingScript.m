@@ -104,8 +104,8 @@ for iROI = 1:numel(ROIList)
     % Calculate experiment-wide dF/F for each trial
     for iTrial = 1:numel(allROIData)
          if sum(strcmp({allROIData(iTrial).roiDefs.name}, ROIList{iROI}))
-             expDffData = allROIData(iTrial).roiDefs(strcmp({allROIData(iTrial).roiDefs.name}, ...
-                    ROIList{iROI})).rawData ./ currROIBaseline;
+             expDffData = (allROIData(iTrial).roiDefs(strcmp({allROIData(iTrial).roiDefs.name}, ...
+                    ROIList{iROI})).rawData - currROIBaseline) ./ currROIBaseline;
              allROIData(iTrial).roiDefs(strcmp({allROIData(iTrial).roiDefs.name}, ...
                     ROIList{iROI})).expDffData = expDffData;
          end
