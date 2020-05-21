@@ -159,13 +159,22 @@ classdef event
             
         end
         
-%         % CONVERT EVENT TIME INTO LOGICAL ARRAY 
-%         function outputArr = create_logical_array()
-%             
-%             
-%             
-%             
-%         end
+        % CONVERT EVENT TIME INTO LOGICAL ARRAY 
+        function outputArr = create_logical_array(obj, nSamples, sampRate)
+            
+            nTrials = max(obj.eventData.trialNum);
+            outputArr = zeros(nSamples, nTrials); % --> [sample, trial]
+            for iTrial = 1:nTrials
+                currTrialEvents = obj.eventData(obj.eventData.trialNum == iTrial, :);
+                onsetVols = round(currTrialEvents.onsetTime * sampRate);
+                onsetVols(onsetVols < 1) = 1;
+                offsetVols = round(currTrialEvents.offsetTime * sampRate);
+                offsetVols(offsetVols > nSamples) = nSamples;
+                for iEvent = 1:numel(onsetVols)
+                    outputArr(onsetVols(iEvent):offsetVols(iEvent), iTrial) = 1;
+                end
+            end            
+        end
         
     end%Methods
     

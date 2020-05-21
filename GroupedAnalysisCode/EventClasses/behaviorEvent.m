@@ -3,7 +3,7 @@ classdef behaviorEvent < event
 %    
 % obj = behaviorEvent(type) 
 %
-% Valid types are: Locomotion, IsolatedMovement, Grooming, Quiescence, 'Flailing'                                   
+% Valid types are: Locomotion, IsolatedMovement, Grooming, Quiescence, 'Flailing', 'BallStop'                                 
 %
 % Properties:
 %       metadataFieldNames
@@ -23,7 +23,7 @@ classdef behaviorEvent < event
         % Constructor
         function obj = behaviorEvent(type)
             if ~ismember(lower(type), {'locomotion', 'isolatedmovement', 'grooming', 'quiescence', ...
-                        'flailing'})
+                        'flailing', 'ballstop'})
                 error('invalid event type');
             end
             obj = obj@event(type);
@@ -136,6 +136,9 @@ function [behavData, frameTimes] = multi_trial_input_check(trialNums, behavData,
     else
         if ~iscell(behavData)
             behavData = {behavData}; % Put flow data in a cell if necessary
+        end
+        if size(frameTimes, 1) > size(frameTimes, 2)
+            frameTimes = frameTimes'; % Transpose if input is a column vector
         end
         if ~iscell(frameTimes)
             frameTimes = {frameTimes};

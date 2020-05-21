@@ -22,7 +22,7 @@ classdef odorEvent < stimEvent
            obj.metadataFieldNames = {'odorName', 'concentration', 'flowRate'};
         end
         
-        % Modified append_shorthand function
+        % Modified append_shorthand function (stimTiming in [pre-Stim, stimDur, ISI] format
         function obj = append_shorthand(obj, expID, trialNums, stimTiming, trialDuration, odorName, ...
                     odorConcentration, flowRate)
             mdFieldNames = obj.metadataFieldNames;

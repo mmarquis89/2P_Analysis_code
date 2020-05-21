@@ -43,98 +43,33 @@ end
 test = summaryStats.trialMedVals;
 test2 = cellfun(@(x) max([0, (max(x) - min(x))]), test);
 
-test3 = table(summaryStats.expID, test2, 'VariableNames', {'expID', 'maxOffset'})
-
-
-%%
-
-for iExp = 1:size(summaryStats, 1)
-    f = figure(iExp); clf; hold on
-    f.Color = [1 1 1];
-    f.Position = [50, 250, 1500, 700];
-    %    plot(smoothdata(summaryStats.minVals{iExp}, 'gaussian', 5));
-    %    plot(smoothdata(summaryStats.medVals{iExp}, 'gaussian', 5));
-    plot(summaryStats.trialMedVals{iExp})
-    yL = ylim();
-%     trialBounds = cumsum(summaryStats.volCounts{iExp});
-%     for iTrial = 1:numel(trialBounds)
-%         plot([trialBounds(iTrial), trialBounds(iTrial)], yL, '--', 'color', 'm')
-%     end
-%     ax = gca;
-%     ax.XTick = trialBounds;
-%     ax.XTickLabel = 1:numel(trialBounds);
-    title(summaryStats.expID{iExp});
-end
-
-
+test3 = table(summaryStats.expID, test2, 'VariableNames', {'expID', 'maxOffset'});
 
 %%
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
 
-% Load exp list
 expList = load_expList();
-% expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
 
-summaryStats = [];
+nRows = [];
+nCols = [];
 for iExp = 1:size(expList, 1)
     currExpID = expList.expID{iExp};
-    disp(currExpID);
-    expDirName = [currExpID(1:4), '_', currExpID(5:6), '_', currExpID(7:8), '_exp_', currExpID(end)];
-    parentDir = find_parent_dir(currExpID);
-    
-    if exist(fullfile(parentDir, expDirName, 'volCounts.mat'), 'file')
-        load(fullfile(parentDir, expDirName, 'volCounts.mat'), 'volCounts');
-        load(fullfile(parentDir, expDirName, 'summaryStats.mat'), 'medVals', 'minVals', ...
-                'minFrameVals')
-        newRow = table({currExpID}, 'VariableNames', {'expID'});
-        newRow.minVals = {cell2mat(minVals')};
-        newRow.medVals = {cell2mat(medVals')};
-        newRow.volCounts = {volCounts};
-        summaryStats = [summaryStats; newRow];
-    end
+    disp(currExpID)
+    roiFile = fullfile(parentDir, [currExpID, '_roiData.mat']);
+    if exist(roiFile, 'file')
+        
+        % Load ROI data for current experiment
+        load(roiFile, 'roiData');
+
+        nRows(iExp) = size(roiData.rawFl{1}, 1);
+        nCols(iExp) = size(roiData.rawFl{1}, 2);
+    else
+        nRows(iExp) = nan;
+        nCols(iExp) = nan;
+    end%if
 end
 
-%%
-
-for iExp = 1:size(summaryStats, 1)    
-   f = figure(iExp); clf; hold on
-   f.Color = [1 1 1];
-   f.Position = [50, 250, 1500, 700];
-   plot(smoothdata(summaryStats.minVals{iExp}, 'gaussian', 5));
-   plot(smoothdata(summaryStats.medVals{iExp}, 'gaussian', 5));
-   yL = ylim();
-   trialBounds = cumsum(summaryStats.volCounts{iExp});
-   for iTrial = 1:numel(trialBounds)
-       plot([trialBounds(iTrial), trialBounds(iTrial)], yL, '--', 'color', 'm')
-   end
-   ax = gca;
-   ax.XTick = trialBounds
-   ax.XTickLabel = 1:numel(trialBounds)
-   title(summaryStats.expID{iExp});
-end
-
-%%
-expList = load_expList('groupName', 'singleTrialAcq_preROIs');
-% expList = expList(4:end, :);
-for iExp = 1:size(expList, 1)
-    currExpID = expList.expID{iExp};
-    disp(currExpID);
-    expDirName = [currExpID(1:4), '_', currExpID(5:6), '_', currExpID(7:8), '_exp_', currExpID(end)];
-    parentDir = find_parent_dir(currExpID);
-    refImgFiles = dir(fullfile(parentDir, expDirName, 'refImages_reg_block*.mat'));
-    if ~isempty(refImgFiles)
-        for iFile = 1:numel(refImgFiles)
-            load(fullfile(parentDir, expDirName, refImgFiles(iFile).name), 'refImages');
-            refImages = squeeze(mean(refImages, 5));
-            save(fullfile(parentDir, expDirName, refImgFiles(iFile).name), 'refImages');
-        end
-    end
-end
-
-
-
-
-
-
+newTable = [expList, table(nRows', nCols', 'VariableNames', {'nRows', 'nCols'})];
 
 
 

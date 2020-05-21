@@ -1,5 +1,5 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\allExperiments';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
 
 % Get list of all experiments in parent directory
@@ -17,7 +17,7 @@ uniqueFiles = unique(fileNameSuffixes(~cellfun(@isempty, fileNameSuffixes)));
 % Initialize checklist table
 fileChecklistArr = zeros(numel(expList), numel(uniqueFiles));
 fileChecklistTable = array2table(fileChecklistArr, 'VariableNames', regexprep(uniqueFiles, ...
-        '\.', '_'));
+        '(\.|-)', '_'));
 
 % Fill in checklist table
 for iExp = 1:numel(expList)
@@ -31,4 +31,5 @@ end
 
 % Add expID column and save csv
 fileChecklistTable = [table(expList, 'VariableNames', {'expID'}), fileChecklistTable];
-writetable(fileChecklistTable, fullfile(saveDir, 'outputFileChecklist'));
+writetable(fileChecklistTable, fullfile(saveDir, 'outputFileChecklist.csv'));
+

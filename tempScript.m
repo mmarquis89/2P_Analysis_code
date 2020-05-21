@@ -1,5 +1,5 @@
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\gaplessAcq';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
 
 % Find all expMetadata files and concatenate into a table
 expMdFiles = dir(fullfile(parentDir, '*_expMetadata.csv'));
@@ -12,7 +12,7 @@ gaplessAcqExpList = gaplessAcqExpMd.expID;
 
 % Load and concatenate data from all experiments in parent directory
 allTrialMd = [];
-allExpOdorEvents = odorEvent();
+allExpOdorEvents = soundStimEvent();
 roiDataTable = [];
 ftDataTable = [];
 for iExp = 1:numel(gaplessAcqExpList)
@@ -22,39 +22,100 @@ for iExp = 1:numel(gaplessAcqExpList)
     
     % trialMetadata files
     currTrialMd = readtable(fullfile(parentDir, [currExpID, '_trialMetadata.csv']));
+    if ~any(strcmp(fieldnames(currTrialMd), 'originalTrialCount'))
+       currTrialMd.originalTrialCount = ones(size(currTrialMd, 1), 1); 
+    end
     allTrialMd = [allTrialMd; currTrialMd];
     
     % Odor event data
-    odorEventFile = fullfile(parentDir, [currExpID, '_event_data_odor.csv']);
+%     odorEventFile = fullfile(parentDir, [currExpID, '_event_data_odor.csv']);
+    odorEventFile = fullfile(parentDir, [currExpID, '_event_data_soundstim.csv']);
     if exist(odorEventFile, 'file')
         allExpOdorEvents = allExpOdorEvents.load_csv(parentDir, 'fileNamePrefix', currExpID);
     end
-    
-    % ROI data
-    load(fullfile(parentDir, [currExpID, '_roiData.mat']), 'roiData');
-    for iTrial = 1:numel(roiData)
-        for iROI = 1:numel(roiData{iTrial})
-            newRow = table({currExpID}, 'VariableNames', {'expID'});
-            newRow.trialNum = iTrial;
-            newRow.roiName = {roiData{iTrial}(iROI).name};
-            newRow.rawFl = {roiData{iTrial}(iROI).rawFl};
-            newRow.expDffData = {roiData{iTrial}(iROI).expDffData};
-            roiDataTable = [roiDataTable; newRow];
-        end
-    end% iTrial
-    
-%     % FicTrac data
-%     load(fullfile(parentDir, [currExpID, '_ficTracData.mat']), 'ftData');    
-%     newData = [table(repmat({currExpID}, numel(ftData), 1), 'VariableNames', {'expID'}), ...
-%             struct2table(ftData, 'AsArray', 1)];
-%     ftDataTable = [ftDataTable; newData];
 %     
 end%iExp
 
 
+%%
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
+currExpList = unique(allExpOdorEvents.eventData.expID);
+allExpRoiData = [];
+for iExp = 1:numel(currExpList)
+    if exist(fullfile(parentDir, [currExpList{iExp}, '_roiData.mat']))
+        load(fullfile(parentDir, [currExpList{iExp}, '_roiData.mat']), 'roiData'); 
+        allExpRoiData = [allExpRoiData; roiData];
+    end
+end
+
+%%
+targetRoiRegex = '^ANT(-.)?';
+analysisWin = [2 5];
+
+currStimData = allExpOdorEvents.eventData;
+trialList = unique(currStimData(:, {'expID', 'trialNum'}));
+currRoiData = innerjoin(trialList, allExpRoiData(~cellfun(@isempty, regexp(allExpRoiData.roiName, ...
+        targetRoiRegex)), :));
+
+currMd = innerjoin(innerjoin(innerjoin(trialList, gaplessAcqExpMd(:, {'expID', 'volumeRate'})), ...
+        allTrialMd(:, {'expID', 'trialNum', 'trialDuration', 'nVolumes', 'originalTrialCount'})), ...
+        currRoiData);
+
+expIDs = unique(currMd.expID);
+outputTable = table(expIDs, 'VariableNames', {'expID'});
+for iExp = 1:numel(expIDs)
+    currExpID = expIDs{iExp, 1};
+    currExpMd = currMd(strcmp(currMd.expID, currExpID), :);
+    nStims = size(innerjoin(currExpMd(:, {'expID', 'trialNum'}), currStimData), 1);
+    winSizeVolumes = ceil(sum(analysisWin) * currExpMd.volumeRate(1)) + 1;
+    currExpDff = nan(winSizeVolumes, nStims);
+    stimCount = 1;
+    for iTrial = 1:size(currExpMd, 1)
+        currTrialDff = currExpMd.expDffData{iTrial};
+        currTrialDff = reshape(currTrialDff, currExpMd.originalTrialCount(iTrial), ...
+                currExpMd.nVolumes(iTrial) / currExpMd.originalTrialCount(iTrial))';
+        currTrialDff = currTrialDff(:);
+        volTimes = (1:currExpMd.nVolumes(iTrial)) / currExpMd.volumeRate(1);
+        currTrialOdorData = innerjoin(currExpMd(iTrial, {'expID', 'trialNum'}), currStimData);
+        for iStim = 1:size(currTrialOdorData, 1)
+            startTime = currTrialOdorData.onsetTime(iStim) - analysisWin(1);
+            endTime = currTrialOdorData.onsetTime(iStim) + analysisWin(2);
+            startFrame = argmin(abs(volTimes - startTime));
+            endFrame = argmin(abs(volTimes - endTime));
+%             startFrame = argmin(abs(testVolTimes - startTime));
+%             endFrame = argmin(abs(testVolTimes - endTime));
+            currStimDff = currTrialDff(startFrame:endFrame);
+            stimStartVol = 1 + argmin(abs(volTimes - analysisWin(1)));
+            currStimDur = currTrialOdorData.offsetTime(iStim) - currTrialOdorData.onsetTime(iStim);
+            stimEndVol = 1 + argmin(abs(volTimes - (analysisWin(1) + currStimDur)));
+            currStimDff(stimStartVol) = nan;
+            currStimDff(stimEndVol) = nan;
+            currExpDff(1:numel(currStimDff), stimCount) = currStimDff';
+            stimCount = stimCount + 1;
+        end
+    end
+    outputTable.expDff{iExp} = currExpDff;
+end
+
+%%
+
+for iExp = 1:size(outputTable, 1)
+   
+    figure(iExp);clf;
+    nanVals = isnan(outputTable.expDff{iExp});
+    smData = smoothdata(outputTable.expDff{iExp}, 1, 'gaussian', 3);
+    smData(nanVals) = nan;
+    plot(smData);
+    hold on
+    plot(mean(smData, 2, 'omitnan'), 'color', 'k', 'linewidth', ....
+            2);
+    
+    
+end
+
 %% Make list of number of experiments for each unique odor identity/concentration combo
 
-uniqueStims = unique(allExpOdorEvents(:, 5:6));
+uniqueStims = unique(allExpOdorEvents.eventData(:, 5:6));
 disp(uniqueStims)
 
 odorCounts = table(nan(size(uniqueStims, 1), 1), 'VariableNames', {'count'});
@@ -69,7 +130,7 @@ disp([uniqueStims, odorCounts])
 
 targetStim = uniqueStims(4,:);
 targetRoiRegex = '^ANT(-.)?';
-analysisWin = [8 12];
+analysisWin = [2 2];
 
 currStimOdorData = innerjoin(targetStim, allExpOdorEvents.eventData);
 trialList = unique(currStimOdorData(:, {'expID', 'trialNum'}));
@@ -104,17 +165,22 @@ for iExp = 1:numel(expIDs)
             endFrame = argmin(abs(testVolTimes - endTime));
             currStimDff = currTrialDff(startFrame:endFrame);
             currExpDff(1:numel(currStimDff), stimCount) = currStimDff';
+            currSti
             stimCount = stimCount + 1;
         end
     end
     outputTable.expDff{iExp} = currExpDff;
 end
 
+
+
+
+
 %% Load ROI data to compare offset across trials
 
 
 % PRE-GAPLESS ACQUISITION
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\pre_gaplessAcq_with_ROIs'; 
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\singleTrialAcq_preROIs'; 
 roiFiles = dir(fullfile(parentDir, '*_roiData.mat'));
 
 allExpROIData = [];
@@ -148,7 +214,7 @@ end
 
 % OLD FORMAT, GAPLESS ACQUISITION
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\gaplessAcq'; 
-roiFiles = dir(fullfile(parentDir, '*_roiData.mat'));
+roiFiles = dir(fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData', '*_roiData.mat'));
 
 allExpROIData = [];
 for iExp = 1:numel(roiFiles)
@@ -161,7 +227,8 @@ for iExp = 1:numel(roiFiles)
     trialMd = readtable(fullfile(parentDir, [currExpID, '_trialMetadata.csv']), 'delimiter', ',');
     
     % Load ROI data
-    load(fullfile(parentDir, currFileName), 'roiData');
+%     load(fullfile(parentDir, currFileName), 'roiData');
+    load(fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData', currFileName), 'roiData');
     roiData = innerjoin(roiData, trialMd(:, {'expID', 'trialNum', 'originalTrialCount'}));
     roiNames = unique(roiData.roiName);
     nROIs = numel(roiNames);
@@ -218,7 +285,7 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\testing';
 
 currFileName = 'newFormat.mat'; %'gaplessAcq.mat'; %'preGaplessAcq.mat'; %  
 
-smWin = 17;
+smWin = 7;
 
 load(fullfile(parentDir, currFileName), 'allExpROIData');
 expIDs = unique(allExpROIData.expID);
@@ -231,7 +298,7 @@ for iExp = 1:numel(expIDs)
    f.Position = [50, 250, 1500, 700];
    
    for iROI = 1:size(currData, 1)
-       flData = currData.rawFl{iROI};
+       flData = currData.rawFl{iROI}(:);
        flData(currData.trialBounds{1}) = nan;
        plot(smoothdata(flData, 'gaussian', smWin, 'omitnan'));
    end
