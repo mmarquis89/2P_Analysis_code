@@ -6,6 +6,7 @@ classdef event
 %       type                (immutable)
 %       nExps               (dependent)
 %       fieldNames          (dependent)
+%       trialList           (dependent)
 %
 % Methods:
 %       .append_data(expID, trialNums, eventTimes, metadataFieldNames, metadataFieldValues)
@@ -37,6 +38,7 @@ classdef event
         % Calculated values
         nExps            % Number of distinct experiment IDs in the data   
         fieldNames       % Names of all fields in event data table, in view-friendly format
+        trialList        % Table with all the unique expID - trialNum pairs in the eventData
     end
     
     methods
@@ -55,6 +57,13 @@ classdef event
             variableNames = obj.eventData.Properties.VariableNames';
             varNum = (1:numel(variableNames))';
             fieldNames = (table(varNum, variableNames));
+        end
+        function trialList = get.trialList(obj) 
+            if ~isempty(obj.eventData)
+                trialList = unique(obj.eventData(:, {'expID', 'trialNum'}));
+            else
+                trialList = [];
+            end
         end
         
         % SUBSREF OVERLOAD FOR DIRECT TABLE INDEXING
@@ -160,18 +169,21 @@ classdef event
         end
         
         % CONVERT EVENT TIME INTO LOGICAL ARRAY 
-        function outputArr = create_logical_array(obj, nSamples, sampRate)
-            
-            nTrials = max(obj.eventData.trialNum);
+        function outputArr = create_logical_array(obj, nSamples, sampRate, trialList)
+            if nargin < 4
+                trialList = obj.trialList;
+            end
+            nTrials = size(trialList, 1);
+                
             outputArr = zeros(nSamples, nTrials); % --> [sample, trial]
             for iTrial = 1:nTrials
-                currTrialEvents = obj.eventData(obj.eventData.trialNum == iTrial, :);
-                onsetVols = round(currTrialEvents.onsetTime * sampRate);
-                onsetVols(onsetVols < 1) = 1;
-                offsetVols = round(currTrialEvents.offsetTime * sampRate);
-                offsetVols(offsetVols > nSamples) = nSamples;
-                for iEvent = 1:numel(onsetVols)
-                    outputArr(onsetVols(iEvent):offsetVols(iEvent), iTrial) = 1;
+                currTrialEvents = innerjoin(trialList(iTrial, :), obj.eventData);
+                onsetSamples = round(currTrialEvents.onsetTime * sampRate);
+                onsetSamples(onsetSamples < 1) = 1;
+                offsetSamples = round(currTrialEvents.offsetTime * sampRate);
+                offsetSamples(offsetSamples > nSamples) = nSamples;
+                for iEvent = 1:numel(onsetSamples)
+                    outputArr(onsetSamples(iEvent):offsetSamples(iEvent), iTrial) = 1;
                 end
             end            
         end

@@ -204,7 +204,11 @@ plot(posFunTimes, posFunTrial);
 plot(xPosTimes, xPos * 10)
 
 
+%%
 
+test = 1;
+pause(4);
+disp(test)
 
 
 
