@@ -169,18 +169,28 @@ classdef event
         end
         
         % CONVERT EVENT TIME INTO LOGICAL ARRAY 
-        function outputArr = create_logical_array(obj, nSamples, sampRate, trialList)
+        function outputArr = create_logical_array(obj, nSamples, sampTimes, trialList)
+            % TrialList = table with columns [expID][trialNum][onsetTime][offsetTime]
             if nargin < 4
                 trialList = obj.trialList;
+            end
+            if numel(sampTimes) ~= nSamples
+               error('Number of elements in sampTimes must equal nSamples') 
             end
             nTrials = size(trialList, 1);
                 
             outputArr = zeros(nSamples, nTrials); % --> [sample, trial]
             for iTrial = 1:nTrials
                 currTrialEvents = innerjoin(trialList(iTrial, :), obj.eventData);
-                onsetSamples = round(currTrialEvents.onsetTime * sampRate);
+                onsetSamples = [];
+                offsetSamples = [];
+                for iEvent = 1:size(currTrialEvents, 1)
+                    [~, onsetSamples(iEvent)] = min(abs(volTimes - ...
+                            currTrialEvents.onsetTime(iEvent)));
+                    [~, offsetSamples(iEvent)] = min(abs(volTimes - ...
+                            currTrialEvents.offsetTime(iEvent)));
+                end
                 onsetSamples(onsetSamples < 1) = 1;
-                offsetSamples = round(currTrialEvents.offsetTime * sampRate);
                 offsetSamples(offsetSamples > nSamples) = nSamples;
                 for iEvent = 1:numel(onsetSamples)
                     outputArr(onsetSamples(iEvent):offsetSamples(iEvent), iTrial) = 1;

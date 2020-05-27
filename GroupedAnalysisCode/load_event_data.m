@@ -51,12 +51,14 @@ for iType = 1:numel(eventTypeList)
     switch currType
         case 'odor'
             eventObjects.(currType) = odorEvent();
-        case 'optoStim'
+        case 'optostim'
             eventObjects.(currType) = optoStimEvent();
-        case 'panelsFlash'
+        case 'panelsflash'
             eventObjects.(currType) = panelsFlashEvent();
-        case 'soundStim'
+        case 'soundstim'
             eventObjects.(currType) = soundStimEvent();
+        case 'ir-laser'
+            continue % I don't think I'm going to want to analyze these
         case {'locomotion', 'isolatedmovement', 'grooming', 'quiescence', 'flailing', 'ballstop'}
             eventObjects.(currType) = behaviorEvent(currType);
     end%switch
