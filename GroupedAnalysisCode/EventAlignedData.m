@@ -84,6 +84,7 @@ classdef EventAlignedData
             
             % Calculate indices of aligned sample data and necessary nan padding size
             disp('Aligning data to primary event type...')
+            tic
             startTime = []; endTime = [];
             startPadVols = []; endPadVols = [];
             onsetVol = []; startVol = []; endVol = [];
@@ -111,7 +112,7 @@ classdef EventAlignedData
                         volTimes = [volTimes, (trialVolTimes + ((currEventData.trialDuration / ...
                                 currEventData.originalTrialCount) * (iTrial - 1)))];
                     end
-                    [~, onsetVol(iEvent)] = min(abs(volTimes - currEventData.onsetTime));
+                    onsetVol(iEvent) = argmin(abs(volTimes - currEventData.onsetTime));
                 else
                     onsetVol(iEvent) = round(currEventData.onsetTime * currEventData.volumeRate);
                 end
@@ -139,7 +140,7 @@ classdef EventAlignedData
                     table(startTime', endTime', startPadVols', endPadVols', onsetVol', startVol', endVol', ...
                     'VariableNames', {'startTime', 'endTime', 'startPadVols', 'endPadVols', 'onsetVol', ...
                     'startVol', 'endVol'})];
-            disp('Alignment complete.');
+            disp(['Alignment completed in ', num2str(round(toc)), ' seconds']);
         end
         
         % EXTRACT ROI DATA
@@ -203,9 +204,14 @@ classdef EventAlignedData
 
                 eventFt = inner_join(ftData, obj.alignEventTable);
                 disp('Extracting FicTrac data within event windows...')
-                startPadFrames = []; endPadFrames = [];
-                onsetFrame = []; startFrame = []; endFrame = []; avgFrameRate = [];
-                ftFrameTimesResamp = {}; moveSpeedResamp = {}; yawSpeedResamp = {};
+                emptyVec = nan(1, size(eventFt, 1));
+                emptyCell = repmat({nan}, size(eventFt, 1), 1);
+                startPadFrames = emptyVec; endPadFrames = emptyVec;
+                onsetFrame = emptyVec; startFrame = emptyVec; endFrame = emptyVec; 
+                avgFrameRate = emptyVec;
+                ftFrameTimesResamp = emptyCell; 
+                moveSpeedResamp = emptyCell; 
+                yawSpeedResamp = emptyCell;
                 for iRow = 1:size(eventFt, 1)
                     if ~mod(iRow, 1000)
                         disp([num2str(iRow), ' of ', num2str(size(eventFt, 1))]);
@@ -248,10 +254,9 @@ classdef EventAlignedData
                         else
                             endPadFrames(iRow) = 0;
                         end
-                        
                     end%if
                 end%iRow
-                eventMoveSpeed = {}; eventYawSpeed = {}; eventFrameTimes = {};
+                eventMoveSpeed = emptyCell; eventYawSpeed = emptyCell; eventFrameTimes = emptyCell;
                 for iRow = 1:size(eventFt, 1)
                     if ~isempty(eventFt.frameTimes{iRow})
                         eventMoveSpeed{iRow, 1} = [nan(startPadFrames(iRow), 1); moveSpeedResamp{iRow}( ...
@@ -288,6 +293,10 @@ classdef EventAlignedData
             filterTable = [];
             eventObjNames = fieldnames(obj.eventObjects);
             disp('Creating filter event vectors...')
+            tic
+            
+            % Create logical arrays for each event type
+            disp('Creating logical arrays...')
             for iObj = 1:numel(eventObjNames)
                 
                 currObjName = eventObjNames{iObj};
@@ -298,7 +307,11 @@ classdef EventAlignedData
                 disp(currObjName)
                 trialList = unique(filterEventData(:, {'expID', 'trialNum', 'nVolumes', ...
                         'originalTrialCount', 'trialDuration', 'volumeRate'}));
-                
+                    
+                % Don't bother processing trials in which the alignment event never occurs
+                trialList = innerjoin(trialList, unique(obj.alignEventTable(:, ...
+                        {'expID', 'trialNum'})));
+                    
                 for iTrial = 1:size(trialList, 1)
                     if ~mod(iTrial, 1000)
                         disp([num2str(iTrial), ' of ', num2str(size(trialList, 1))]);
@@ -307,7 +320,7 @@ classdef EventAlignedData
                     
                     % Calculate volume times
                     volTimes = calc_volTimes(currTrial.nVolumes, currTrial.volumeRate, ...
-                            currTrial.trialDuration, currTrial.orginalTrialCount);
+                            currTrial.trialDuration, currTrial.originalTrialCount);
                     
                     % Get logical array for current event and trial volumes
                     eventArr = currEventObj.create_logical_array(currTrial.nVolumes, ...
@@ -319,7 +332,9 @@ classdef EventAlignedData
                 end
             end
             filterVectorTable = filterTable;
-
+            
+            % Extract aligned data from logical arrays
+            disp('Aligning data from logical arrays...')
             obj.eventFilterTable = obj.alignEventTable;
             for iType = 1:numel(eventObjNames)
                 currName = eventObjNames{iType};
@@ -344,7 +359,7 @@ classdef EventAlignedData
             end
             obj.eventFilterTable = obj.eventFilterTable(:, [{'expID', 'trialNum', 'onsetTime'}, ...
                     eventObjNames']);
-            disp('Filter event vectors created.')
+            disp(['Filter event vectors created in ', num2str(round(toc)), ' seconds'])
         end
         
         % OUTPUT A TABLE WITH PART OR ALL OF THE DATA
@@ -381,14 +396,19 @@ classdef EventAlignedData
                     end
 
                     % Trim FicTrac frame fields
-                    relFrameTimes = ((1:numel(currRow.moveSpeed{1})) / currRow.avgFrameRate) ...
+                    if ~isnan(currRow.avgFrameRate)
+                        relFrameTimes = ((1:numel(currRow.moveSpeed{1})) / currRow.avgFrameRate) ...
                             - relOnsetTime;
-                    eventFrameInds = relFrameTimes > -analysisWin(1) & ...
+                        eventFrameInds = relFrameTimes > -analysisWin(1) & ...
                             relFrameTimes < analysisWin(2);
-                    frameTimes{iRow, 1} = relFrameTimes(eventFrameInds);
-                    moveSpeed{iRow, 1} = currRow.moveSpeed{:}(eventFrameInds);
-                    yawSpeed{iRow, 1} = currRow.yawSpeed{:}(eventFrameInds);
-
+                        frameTimes{iRow, 1} = relFrameTimes(eventFrameInds);
+                        moveSpeed{iRow, 1} = currRow.moveSpeed{:}(eventFrameInds);
+                        yawSpeed{iRow, 1} = currRow.yawSpeed{:}(eventFrameInds);
+                    else
+                        frameTimes{iRow, 1} = nan;
+                        moveSpeed{iRow, 1} = nan;
+                        yawSpeed{iRow, 1} = nan;
+                    end
                 end
 
                 outputTable = dataTable;
@@ -401,6 +421,10 @@ classdef EventAlignedData
                 outputTable.frameTimes = frameTimes;
                 outputTable.moveSpeed = moveSpeed;
                 outputTable.yawSpeed = yawSpeed;
+                
+                % Add a custom property to keep track of the alignment event name
+                outputTable = addprop(outputTable, 'alignEventName', 'table');
+                outputTable.Properties.CustomProperties.alignEventName = obj.alignEventName;
             end
                 
         end

@@ -1,51 +1,37 @@
 
-testObj = EventAlignedData(load_expList());
-testObj = testObj.set_align_event('locomotion');
-testObj = testObj.extract_roi_data();
-testObj = testObj.extract_fictrac_data();
+% Create a EventAlignedData object
+alignObj = EventAlignedData(load_expList());
 
-testObj = testObj.create_filter_event_vectors();
-test2 = testObj.output_analysis_subset([2 3]);
+% Get list of all available event types
 
-% head(test.sourceMd, 1)
-% head(test.alignEventTable, 1)
-% head(test.eventFlTable, 1)
-% head(test.eventFilterTable, 1)
+
+
+alignObj = alignObj.set_align_event('locomotion');
+alignObj = alignObj.extract_roi_data();
+alignObj = alignObj.extract_fictrac_data();
+alignObj = alignObj.create_filter_event_vectors();
 
 %%
 
-test = test2(strcmp(test2.roiName, 'TypeF-R'), :);
-expList = unique(test.expID);
-for iExp = 1:numel(expList)
-   currExpID = expList{iExp};
-   currData = test(strcmp(test.expID, currExpID), :);
-   
-   currEventFl = cell2mat(currData.eventFl');
-   currEventMoveSpeed = cell2mat(currData.moveSpeed');
-   
-   figure(iExp);clf;
-%    plot(smoothdata(currEventFl, 1, 'gaussian', 3));
-%    hold on;
-%    plot(mean(smoothdata(currEventFl, 1, 'gaussian', 3), 2), 'linewidth', 3, 'color', 'k');
-% imagesc(currEventFl');
-imagesc(currEventMoveSpeed')
-   title(currExpID);
-   
-end
-
+test3 = alignObj.output_analysis_subset([2 4]);
+unique(test3.roiName)
 
 %%
 
 filts = struct();
-filts.roiName = 'TypeD';
+filts.roiName = 'Background';
+
 filts.ballstop = 0;
 filts.flailing = 0;
-% filts.grooming = 0;
-% filts.isolatedmovement = 0;
-% filts.locomotion = 0;
-filts.optostim = 0;
+filts.grooming = 0;
+filts.isolatedmovement = 1;
+filts.locomotion = 0;
 filts.odor = 0;
+filts.optostim = 0;
+filts.panelsflash = 0;
+filts.quiescence = nan;
 filts.soundstim = 0;
+
 % filts.odorName = 'EtOH';
 % filts.concentration = '4%'
 
@@ -53,13 +39,23 @@ filtNames = fieldnames(filts);
 filterVec = ones(size(test3, 1), 1);
 for iFilt = 1:size(filtNames)
     currFiltName = filtNames{iFilt};
-    if isa(filts.(currFiltName), 'char')
-        currFiltVec = ~cellfun(@isempty, regexp(test3.(currFiltName), filts.(currFiltName), ...
+    if ~isnan(filts.(currFiltName))
+        if isa(filts.(currFiltName), 'char')
+            % Filter based on a string field
+            currFiltVec = ~cellfun(@isempty, regexp(test3.(currFiltName), filts.(currFiltName), ...
                 'once'));
-    elseif filts.(currFiltName) == 0
-        currFiltVec = ~cellfun(@any, test3.(currFiltName));
+        elseif strcmp(currFiltName, test3.Properties.CustomProperties.alignEventName)
+            % Filter out events with pre-onset instances of the alignment event type
+            onsetVols = cellfun(@(x) argmin(abs(x)), test3.volTimes);
+            currFiltVec = ~cellfun(@(x, y) any(x(1:(y - 1))), test3.(currFiltName), ...
+                    mat2cell(onsetVols, ones(size(onsetVols))));
+            
+        elseif filts.(currFiltName) == 0
+            % Filter out based on an event filter vector
+            currFiltVec = ~cellfun(@any, test3.(currFiltName));
+        end
+        filterVec = filterVec .* currFiltVec;
     end
-    filterVec = filterVec .* currFiltVec;    
 end
 filterVec = logical(filterVec);
 test4 = test3(filterVec, :);
@@ -69,6 +65,7 @@ test4 = test3(filterVec, :);
 test4 = innerjoin(test4, oneNoteMd(:, {'expID', 'olfactometerVersion'}));
 
 smWin = 3;
+singleTrials = 1;
 
 expIDList = unique(test4.expID);
 subplotDims = numSubplots(numel(expIDList));
@@ -81,40 +78,49 @@ currPlotNum = 0;
 for iExp = 1:numel(expIDList)
     currExpID = expIDList{iExp};
     currData = test4(strcmp(test4.expID, currExpID), :);
+    
+    % If more than one ROI matched the filter string, only use the first one
     firstRoiName = currData.roiName{1};
     currData = currData(strcmp(currData.roiName, firstRoiName), :);
+    
     currEventFl = cell2mat(currData.eventFl');
     
     fl = currEventFl;
     bl = repmat(currData.trialBaseline', size(fl, 1), 1);
-    currEventFl = (fl - bl) ./ bl; 
+    currEventFl = (fl - bl) ./ bl;
     
     currEventFl = currEventFl(:, ~any(isnan(currEventFl), 1));
     
+    [~, onsetVol] = min(abs(currData.volTimes{1}));
+    stimDur = currData.offsetTime(1) - currData.onsetTime(1);
+    [~, offsetVol] = min(abs(currData.volTimes{1} - stimDur));
+
+%     currEventFl((onsetVol - 1):(offsetVol + 1), :) = nan;
+%     currEventFl((onsetVol - 1):(onsetVol + 2), :) = nan;
+
     %    currEventMoveSpeed = cell2mat(currData.moveSpeed');
     if size(currEventFl, 2) > 0
         
         currPlotNum = currPlotNum + 1;
         ax = subaxis(subplotDims(1), subplotDims(2), currPlotNum, 'm', 0.02, 'sv', 0.04, 'sh', 0.02);
-        
-%         plot(smoothdata(currEventFl, 1, 'gaussian', smWin));
+        if singleTrials
+            xx = repmat(currData.volTimes{1}', 1, size(currEventFl, 2));
+            plot(xx, smoothdata(currEventFl, 1, 'gaussian', smWin, 'omitnan'));
+        end
         hold on;
-        plot(mean(smoothdata(currEventFl, 1, 'gaussian', smWin), 2, 'omitnan'), ...
+        plot(currData.volTimes{1}, mean(smoothdata(currEventFl, 1, 'gaussian', smWin), 2, 'omitnan'), ...
                 'linewidth', 3, 'color', 'k');
-%             
-        [~, onsetVol] = min(abs(currData.volTimes{1}));  
-        stimDur = currData.offsetTime(1) - currData.onsetTime(1);
-        [~, offsetVol] = min(abs(currData.volTimes{1} - stimDur));
-%         
-        
-        
+
         meanData = mean(smoothdata(currEventFl, 1, 'gaussian', smWin), 2, 'omitnan');
         SE = std_err(currEventFl, 2);
-        jbfill((1:numel(SE)), (meanData + SE)', (meanData - SE)', [0 0 0], [0 0 0], 1, 0.2);
+        xx = currData.volTimes{1};
+        upperY = (meanData + SE)';
+        lowerY = (meanData - SE)';
+        jbfill(xx(~isnan(upperY)), upperY(~isnan(upperY)), lowerY(~isnan(lowerY)), [0 0 0], [0 0 0], 1, 0.2);
         yL = ylim();
         
 %         plot_stim_shading([onsetVol, offsetVol]);
-        plot([onsetVol onsetVol], yL, 'color', 'r', 'linewidth', 3);
+        plot([0, 0], yL, 'color', 'r', 'linewidth', 3);
         
 % imagesc(isnan(currEventFl'));
         ylim(yL);
@@ -125,19 +131,33 @@ for iExp = 1:numel(expIDList)
     end
 end
 
+unique(test3.roiName)
 % unique(test3(:, {'odorName', 'concentration'}))
 
 
 %%
-test = test3(strcmp(test3.expID, '20190606-1'), :);
-test = test(contains(test.roiName, 'TypeD-L'), :);
-locTest = cell2mat(test.locomotion');
-moveSpeedTest = cell2mat(test.moveSpeed');
-flTest = cell2mat(test.eventFl');
+singleExpData = test4(strcmp(test4.expID, '20171108-1'), :);
+plotVars = {'eventFl', 'moveSpeed', 'locomotion', 'isolatedmovement', 'panelsflash', 'ballstop'};
 
-flTest = flTest(:, ~any(locTest, 1));
-figure; imagesc(flTest')
-figure; imagesc(moveSpeedTest')
-figure; imagesc(locTest');
+
+plotVars = plotVars([1 4 6]);
+removeNanTrials = 1;
+
+
+for iVar = 1:numel(plotVars)
+    
+    dataArr = cell2mat(singleExpData.(plotVars{iVar})');
+    if removeNanTrials
+       dataArr = dataArr(:, ~any(isnan(dataArr), 1));
+    end
+    
+    figure(100 + iVar); clf; 
+    imagesc(dataArr');
+    title(plotVars{iVar})
+end
+
+
+
+
 
 
