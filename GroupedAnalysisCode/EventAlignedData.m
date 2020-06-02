@@ -63,8 +63,6 @@ classdef EventAlignedData
             obj.sourceMd = inner_join(trialMd(:, {'expID', 'trialNum', 'nVolumes', 'trialDuration', ...
                         'originalTrialCount', 'pmtShutoffVols'}), expMd(:, {'expID', 'expName', ...
                         'volumeRate'}));
-                    
-
         end        
         
         % GET/SET METHODS FOR DEPENDENT PROPERTIES
@@ -380,13 +378,13 @@ classdef EventAlignedData
             
             % Create a full data table
             if ~isempty(oneNoteDataFile)
-                dataTable = generate_data_table(obj, loadOneNoteData, oneNoteDataFile);
+                dataTable = generate_DataTable(obj, loadOneNoteData, oneNoteDataFile);
             else
-                dataTable = generate_data_table(obj, loadOneNoteData);
+                dataTable = generate_DataTable(obj, loadOneNoteData);
             end
             
             % Get list of all field names
-            allFieldNames = dataTable.Properties.VariableNames;
+            allFieldNames = dataTable.sourceData.Properties.VariableNames;
             
             % Remove names of fields that don't make sense to use as filters (doing this 
             % subtractively instead of selecting desired fields because table may have stimEvent
@@ -412,48 +410,27 @@ classdef EventAlignedData
             
         end
         
-        % OUTPUT A TABLE WITH PART OR ALL OF THE DATA
-        function dataTable = output_analysis_subset(obj, analysisWin, filterDefs)
+        % OUTPUT A DataTable OBJECT WITH PART OR ALL OF THE DATA
+        function outputDataTable = output_analysis_DataTable(obj, analysisWin)
             
             % Generate table
-            dataTable = generate_data_table(obj);
+            outputDataTable = generate_DataTable(obj);
             
-            % Split the time-vector-based fields off of filterDefs so that the rest of the filters
-            % can be applied before they are trimmed to the size of the analysis window
-            if nargin > 2
-                eventNames = fieldnames(obj.eventObjects);
-                firstRoundFilterDefs = rmfield(filterDefs, [eventNames; {'moveSpeed'; 'yawSpeed'}]);
-            end
-            
-            % Subset table if filterDefs were provided 
-            if nargin > 2
-                dataTable = subset_data_table(dataTable, firstRoundFilterDefs);
-            end
+            % Save a the analysisWin and alignEventName to the DataTable's custom properties
+            outputDataTable.customProps.analysisWin = analysisWin;
+            outputDataTable.customProps.alignEventName = obj.alignEventName;
                 
-            if ~isempty(dataTable)
-                
-                % Trim to analysis window if one was provided
-                if nargin > 1 && ~isempty(analysisWin)
-                    dataTable = trim_data_table(dataTable, analysisWin, fieldnames(obj.eventObjects));
-                end
-                
-                % Second round of subsetting for time-vector-based fields
-                if nargin > 2
-                    dataTable = subset_data_table(dataTable, filterDefs);
-                end
+            % Trim the DataTable's sourceData to the analysis window if one was provided
+            if nargin > 1 && ~isempty(analysisWin)
+                trimmedSourceData = trim_aligned_data(outputDataTable.sourceData, analysisWin, ...
+                        fieldnames(obj.eventObjects));
+                outputDataTable.sourceData = trimmedSourceData;
+                outputDataTable.filterMat = true(size(trimmedSourceData));
             end
-            
-            % Save a copy of the filterDefs and analysisWin to the table's custom properties
-            dataTable = addprop(dataTable, {'analysisWin', 'filterDefs'}, {'table', 'table'});
-            dataTable.Properties.CustomProperties.analysisWin = analysisWin;
-            dataTable.Properties.CustomProperties.filterDefs = filterDefs;
         end
 
     end%Methods (ordinary)
     
-    methods(Static)
-        
-    end%Methods (static)
 end%Classdef
 
 % ==================================================================================================
@@ -473,7 +450,7 @@ outputTable = removevars(inputTable, existingFieldNames);
 end
 
 % Generate comprehensive data table from all aligned data
-function dataTable = generate_data_table(obj, loadOneNoteData, oneNoteDataFile)
+function outputTable = generate_DataTable(obj, loadOneNoteData, oneNoteDataFile)
 
 if nargin < 2
     loadOneNoteData = 1;
@@ -484,31 +461,29 @@ if nargin < 3 && loadOneNoteData
 end
 
 % Create base table
-dataTable = inner_join(obj.sourceMd, obj.alignEventTable, obj.eventFlTable, ...
+fullTable = inner_join(obj.sourceMd, obj.alignEventTable, obj.eventFlTable, ...
     obj.eventFilterTable);
 
 % Load and join OneNote metadata if necessary
 if loadOneNoteData
     oneNoteData = readtable(oneNoteDataFile, 'delimiter', ',');
-    dataTable = inner_join(dataTable, oneNoteData);
+    fullTable = inner_join(fullTable, oneNoteData);
 end
 
-% Add a custom property to keep track of the alignment event name
-dataTable = addprop(dataTable, 'alignEventName', 'table');
-dataTable.Properties.CustomProperties.alignEventName = obj.alignEventName;
-            
+outputTable = DataTable(fullTable);
+
 end
 
-% Trim all aligned data fields in a data table to a specified time window
-function trimmedTable = trim_data_table(dataTable, analysisWin, eventNames)
+% Trim all aligned data fields in a table to a specified time window
+function trimmedTable = trim_aligned_data(inputTable, analysisWin, eventNames)
 
 volTimes = {}; eventFl = {}; eventData = struct();
 frameTimes = {}; moveSpeed = {}; yawSpeed = {};
-for iRow = 1:size(dataTable, 1)
+for iRow = 1:size(inputTable, 1)
     if ~mod(iRow, 1000)
-        disp([num2str(iRow), ' of ', num2str(size(dataTable, 1))]);
+        disp([num2str(iRow), ' of ', num2str(size(inputTable, 1))]);
     end
-    currRow = dataTable(iRow, :);
+    currRow = inputTable(iRow, :);
     relOnsetTime = currRow.onsetTime - currRow.startTime;
     
     % Trim volume fields (fluorescence data and logical filter vectors)
@@ -540,7 +515,7 @@ for iRow = 1:size(dataTable, 1)
 end%iRow
 
 % Overwrite original fields with trimmed data
-trimmedTable = dataTable;
+trimmedTable = inputTable;
 trimmedTable.volTimes = volTimes;
 trimmedTable.eventFl = eventFl;
 for iType = 1:numel(eventNames)
@@ -552,131 +527,7 @@ trimmedTable.yawSpeed = yawSpeed;
 
 end%function
 
-% Use filterDefs to return a subset of rows from the full data table
-function outputTable = subset_data_table(dataTable, filterDefs)
-%  If filter is a string:
-%   - Apply a regex string to a character field
-%       Example: 'regex'
-% 
-%   - Evaluate as an expression to apply to a numeric field after replacing 'x' with 'filtData'
-%       Example: '(x > 4 | x == 2) & x ~= 20'
-% 
-% If filter is numeric:
-%   - Select a specific value or set of values from a numeric scalar field:
-%       Example: 2 or [2 4 6]
-% 
-%   - Specify a code for a logical condition to apply one of the logical event vector fields:
-%       0:  remove events with any occurance of the filter event
-%       -1: remove events with any pre-onset occurance of the filter event
-%       -2: remove events with any post-onset occurance of the filter event
-%       1: remove events withOUT any pre-onset occurance of the filter event
-%       2: remove events withOUT any post-onset occurance of the filter event
 
-filterVec = ones(size(dataTable, 1), 1);
-filtNames = fieldnames(filterDefs);
-alignEventName = dataTable.Properties.CustomProperties.alignEventName;
-for iFilt = 1:numel(filtNames)
-    
-    % Get current filter info
-    filtName = filtNames{iFilt};
-    filtValue = filterDefs.(filtName);
-    filtData = dataTable.(filtName);
-    
-    % Determine the data type of the filter value and the table field to be filtered
-    filterType = get_filter_type(filtValue);
-    dataType = get_data_type(filtData);
-    
-    % ------ Decide how to interpret the filter ------
-    if ~isempty(filtValue)
-        
-        % A regex string for a char field
-        if strcmp(filterType, 'charVector') && strcmp(dataType, 'charVector')            
-            currFiltVec = ~cellfun(@isempty, regexp(filtData, filtValue, 'once'));
-            
-        % A string to be evaluated as an expression after replacing 'x' with 'filtData' 
-        elseif strcmp(filterType, 'charVector')
-            currFiltVec = eval(regexprep(filtValue, 'x', 'filtData'));
-        
-        % A value specifying a logical filter vector condition
-        elseif strcmp(filterType, 'numericScalar') && strcmp(dataType, 'numericVector')
-            
-             onsetVols = cellfun(@(x) argmin(abs(x)), dataTable.volTimes);
-             onsetVols = mat2cell(onsetVols, ones(size(onsetVols)));
-             
-            % Filter out events with a pre-onset occurance of the alignment event type
-            if filtValue < 1 && strcmp(filtName, alignEventName)
-               
-                currFiltVec = ~cellfun(@(x, y) any(x(1:(y - 1))), filtData, onsetVols);
-            
-            % Filter out events withOUT a pre-onset occurance of the alignment event time
-            elseif filtValue == 1 && strcmp(filtName, alignEventName)
 
-                currFiltVec = cellfun(@(x, y) any(x(1:(y - 1))), filtData, onsetVols);                
-                
-            % Filter out events with any occurance of the filter event type
-            elseif filtValue == 0
-                currFiltVec = ~cellfun(@any, filtData);
-            
-            % Filter out events with any pre-onset occurance of the filter event type
-            elseif filtValue == -1
-                currFiltVec = ~cellfun(@(x, y) any(x(1:(y - 1))), filtData, onsetVols);
-                
-            % Filter out events withOUT any pre-onset occurance of the filter event type
-            elseif filtValue == 1
-                currFiltVec = cellfun(@(x, y) any(x(1:(y - 1))), filtData, onsetVols);
-                
-            % Filter out events with any post-onset occurance of the filter event type
-            elseif filtValue == -2
-                currFiltVec = ~cellfun(@(x, y) any(x(y:end)), filtData, onsetVols);
-                
-            % Filter out events withOUT any post-onset occurance of the filter event type
-            elseif filtValue == 2
-                currFiltVec = cellfun(@(x, y) any(x((y:end))), filtData, onsetVols);                
-                        
-            else
-                error(['Invalid filter type "', filterType, '" for field ', filtName]); 
-            end
-            
-        % A specific scalar value or set of acceptable scalar values
-        elseif strcmp(dataType, 'numericScalar')            
-            currFiltVec = ismember(filtData, filtValue);    
-            
-        else
-            error(['Invalid filter type "', filterType, '" for field ', filtName]); 
-        end
-        
-        filterVec = filterVec .* currFiltVec;
-    end    
-end%iFilt
-
-% Subset data table
-filterVec = logical(filterVec);
-outputTable = dataTable(filterVec, :);
-
-end%function
-
-% Determine data type of a particular filterDef field value
-function filterDataType = get_filter_type(filtValue)
-if isa(filtValue, 'char')
-    filterDataType = 'charVector';
-elseif isa(filtValue, 'numeric') && isscalar(filtValue)
-    filterDataType = 'numericScalar';
-else
-    filterDataType = 'numericVector';
-end
-end
-
-% Determine data type of a particular table field to use in filtering
-function fieldDataType = get_data_type(filtData)
-if isa(filtData, 'cell') && strcmp(unique(cellfun(@class, filtData, 'uniformOutput', 0)), ...
-        'char')
-    fieldDataType = 'charVector';
-elseif isa(filtData, 'cell') && strcmp(unique(cellfun(@class, filtData, 'uniformOutput', 0)), ...
-        'double')
-    fieldDataType = 'numericVector';
-else
-    fieldDataType = 'numericScalar';
-end
-end
 
 

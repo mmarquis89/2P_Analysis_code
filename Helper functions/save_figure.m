@@ -1,6 +1,6 @@
 function save_figure(figHandle, saveDir, fileName)
 %===================================================================================================
-% Wrapper function for saving figures as both a .png and .fig file that asks to make sure the user
+% Wrapper function for saving figures as a .png .pdf, and .fig file that asks to make sure the user
 % wants to overwrite a file of the same name if one exists. The .fig file is saved within a 
 % separate subdirectory (which is created if necessary) called "figFiles".
 %
