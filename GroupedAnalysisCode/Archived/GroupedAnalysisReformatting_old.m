@@ -1,9 +1,12 @@
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\'; 
-expList = load_expList('groupname', 'gaplessAcq');
+% expList = load_expList('groupname', 'gaplessAcq');
+% 
+% % Skipping multi-sid (nerve transection) expts because I already did them
+% expList = expList([5 11], :); 
 
-% Skipping multi-sid (nerve transection) expts because I already did them
-expList = expList([5 11], :); 
+expList = table({'20190315-3'}, 'variablenames', {'expID'}); 
+expList.expName{1} = 'D-ANT_6s';
 
 expNum =1;
 
@@ -16,17 +19,7 @@ disp(currExpID);
 expDirName = [currExpID(1:4), '_', currExpID(5:6), '_', currExpID(7:8), '_exp_', currExpID(end)];
 
 % Find experiment directory
-if isempty(dir(fullfile(parentDir, '2018', expDirName)))
-    oldExpParentDirs = dir(fullfile(parentDir, '2019 *'));
-    for iDir = 1:numel(oldExpParentDirs)
-        expParentDir = fullfile(oldExpParentDirs(iDir).folder, oldExpParentDirs(iDir).name);
-        if ~isempty(dir(fullfile(expParentDir, expDirName)))
-            break
-        end
-    end
-else
-    expParentDir = fullfile(parentDir, '2018');
-end
+expParentDir = find_parent_dir(currExpID);
 sidDir = dir(fullfile(expParentDir, expDirName, 'sid_*'));
 sidDir = sidDir([sidDir.isdir]);
 if numel(sidDir) == 1
@@ -67,6 +60,8 @@ for iTrial = 1:expMd.nTrials
     newRow.usingOptoStim = 0;
     newRow.usingPanels = 0;
     newRow.using2P = 1;
+    newRow.originalTrialCount = aD.blockData(iTrial).nTrials;
+    newRow.pmtShutoffVols = {[]};
     trialMd = [trialMd; newRow];
 end
 
@@ -323,12 +318,13 @@ catch ME; rethrow(ME); end
 %% ----- Save data in group analysis directory -----
 try
 writetable(expMd, fullfile(saveDir, [expID, '_expMetadata.csv']));
-writetable(trialMd, fullfile(saveDir, [expID, '_trialMetadata.csv']));
+save(fullfile(saveDir, [expID, '_trialMetadata.mat']), 'trialMd');
+% writetable(trialMd, fullfile(saveDir, [expID, '_trialMetadata.csv']));
 writetable(daqOutputData, fullfile(saveDir, [expID, '_daqOutputData.csv']));
 save(fullfile(saveDir, [expID, '_ficTracData.mat']), 'ftData'); 
 save(fullfile(saveDir, [expID, '_refImages.mat']), 'refImages');
 save(fullfile(saveDir, [expID, '_fullExpRefImages.mat']), 'fullExpRefImages');
-save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData');
+% save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData');
 
 if ~isempty(quiescenceEvents.eventData)
     quiescenceEvents.export_csv(saveDir, 'fileNamePrefix', expID);
@@ -353,8 +349,8 @@ catch ME; rethrow(ME); end
 
 odorANames = {'EtOH'};
 odorAConcentrations = {'neat'};
-odorBNames = {'EtOH'};
-odorBConcentrations = {'e-2'};
+odorBNames = {''};
+odorBConcentrations = {'e-1'};
 flowRates = {20};
 trialNums = {[]};
 

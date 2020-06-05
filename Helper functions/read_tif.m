@@ -1,4 +1,4 @@
-function [ imgData, tifMetadata ] = read_tif( tifPath )
+function [ imgData, tifMetadata ] = read_tif(tifPath, readMatfile)
 %===================================================================================================
 % Reads a .tif stack of scanimage 2P data into an array.
 %
@@ -8,6 +8,9 @@ function [ imgData, tifMetadata ] = read_tif( tifPath )
 %
 % Input:
 %       tifPath = String specifying path to .tif file
+% 
+%       readMatfile = (optional positional, default = 1) boolean specifying whether to load a .mat 
+%                     file with the same name instead if one exists.
 %
 % Output:
 %       imgData     = image data array: [Lines, Pixels, Planes, Volumes]
@@ -16,13 +19,17 @@ function [ imgData, tifMetadata ] = read_tif( tifPath )
 %
 % ==================================================================================================
 
+if nargin < 2
+   readMatfile = 1; 
+end
+
 write_to_log(['Attempting to open ', tifPath], mfilename);
 
 % Open .tif file and metadata
-if exist(regexprep(tifPath, '.tif', '.mat'), 'file')
+if exist(regexprep(tifPath, '.tif', '.mat'), 'file') && readMatfile
     
     % Just load a .mat file for the data, if available
-%     write_to_log('Found .mat file to use instead of .tif', mfilename);
+    disp('Found .mat file to use instead of .tif');
     load(regexprep(tifPath, '.tif', '.mat')) % "tifData"
     if exist('tifData', 'var') && ~exist('imgData', 'var')
         imgData = tifData;

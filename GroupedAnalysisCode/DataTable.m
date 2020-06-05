@@ -5,11 +5,11 @@ classdef DataTable
 %       sourceData
 %       filterDefs
 %       filterMat
-%       filterVec
+%       filterVec (dependent)
 %       fieldNames (dependent)
 %       subset (dependent)
 % Methods:
-%       .generate_filters(filterDefs)
+%       .initialize_filters(filterDefs)
 %       .update_filter(filtName, filtValue)
 %       .show_filters() 
 % 
@@ -18,11 +18,11 @@ properties
     sourceData          % source table
     filterDefs          % struct containing filters for fields of sourceData
     filterMat           % logical array of filter vectors, same dimensions as sourceData
-    filterVec           % Single logical vector for table, combining all filters
     customProps         % Additional properties of the source data
 end
 
 properties (Dependent)
+    filterVec           % Single logical vector for table, combining all filters
     fieldNames          % field names of the source data table
     subset              % a version of sourceData, using filterVec to subset rows
 end
@@ -33,7 +33,6 @@ methods
     function obj = DataTable(sourceTable)
         obj.sourceData = sourceTable;
         obj.filterMat = true(size(sourceTable));
-        obj.filterVec = true(size(sourceTable, 1), 1);
         if ~isempty(sourceTable.Properties.CustomProperties) %#ok<*MCNPN>
             fNames = fieldnames(sourceTable.Properties.CustomProperties);
             for iField = 1:numel(fNames)
@@ -44,7 +43,7 @@ methods
     end
     
     % Add a new filter
-    function obj = generate_filters(obj, filterDefs)
+    function obj = initialize_filters(obj, filterDefs)
 %   if filter is a function handle: 
 %       - Apply the function to any field and return the result (must be n x 1 logical vector)    
 %
@@ -66,9 +65,8 @@ methods
 %           1: remove events withOUT any pre-onset occurance of the filter event
 %           2: remove events withOUT any post-onset occurance of the filter event
         
-    % Reset filterMat and filterVec
+    % Reset filterMat
     obj.filterMat = true(size(obj.sourceData));
-    obj.filterVec = true(size(obj.sourceData, 1), 1);
     
     % Create new filters
         filtNames = fieldnames(filterDefs);
@@ -91,27 +89,30 @@ methods
             end
         end%iFilt
         
-        % Update master filterVec
-        obj.filterVec = all(obj.filterMat, 2);
-        
         obj.filterDefs = filterDefs;
     end
     
-    % Update a single filter
-    function obj = update_filter(obj, filtName, filtValue)
+    % Generate and return a filter vector for a single field
+    function filterVec = generate_filter(obj, fieldName, filtValue)
         
         % Create the new filter vector
-        filtData = obj.sourceData.(filtName);        
-        newFiltVec = parse_filter(obj, filtValue, filtData);
+        filtData = obj.sourceData.(fieldName);
+        filterVec = parse_filter(obj, filtValue, filtData);
         
+    end
+    
+    % Update a single filter
+    function obj = update_filter(obj, fieldName, filterVec)
+        
+%         % Create the new filter vector
+%         filtData = obj.sourceData.(filtName);        
+%         newFiltVec = parse_filter(obj, filtValue, filtData);
+%         
         % Update the appropriate column in the filter matrix
-        obj.filterMat(:, strcmp(fieldnames(obj.sourceData), filtName)) = newFiltVec;
-        
-        % Update the main filterVec
-        obj.filterVec = all(obj.filterMat, 2);
+        obj.filterMat(:, strcmp(fieldnames(obj.sourceData), fieldName)) = filterVec;
         
         % Update filterDefs
-        obj.filterDefs.(filtName) = filtValue;
+        obj.filterDefs.(fieldName) = '<Manual>';
         
     end
     
@@ -151,6 +152,11 @@ methods
         fieldNames = (table(col, rawNames'));
     end
     
+    % Condense the filter matrix into a single vector 
+    function filterVec = get.filterVec(obj)
+        filterVec = all(obj.filterMat, 2);
+    end
+    
 end%methods
 
 end%class
@@ -174,14 +180,18 @@ end
 
 % Determine data type of a particular table field to use in filtering
 function fieldDataType = get_data_type(filtData)
-i = 1;
-while isempty(filtData{i})
-    i = i + 1;
-end
-if isa(filtData, 'cell') && ischar(filtData{i})
-    fieldDataType = 'charVector';
-elseif isa(filtData, 'cell') && isnumeric(filtData{i})
-    fieldDataType = 'numericVector';
+
+if isa(filtData, 'cell')
+    % Just pull out the first non-empty element to look at if it's a cell array
+    i = 1;
+    while isempty(filtData{i})
+        i = i + 1;
+    end
+    if ischar(filtData{i})
+        fieldDataType = 'charVector';
+    elseif isnumeric(filtData{i})
+        fieldDataType = 'numericVector';
+    end
 else
     fieldDataType = 'numericScalar';
 end

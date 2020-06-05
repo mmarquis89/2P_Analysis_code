@@ -1,123 +1,178 @@
-% % 
-% %% Load a base aligned data object
+%% Load a base aligned data object
+
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
+alignEventDateStr = '20200528';
+
+% ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
+alignEventName = 'odor';
+
+load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_AlignEventObj_', ...
+        alignEventName, '.mat']));
+
+%% Generate or load aligned event data table
+
+analysisWin = [2 5];
+
+saveFileName = [alignObj.alignEventName, '_pre_', num2str(analysisWin(1)), '_post_', ...
+        num2str(analysisWin(2)), '.mat'];
+if exist(fullfile(parentDir, 'Saved_DataTable_objects', saveFileName), 'file')
+    disp('Loading saved DataTable...')
+    load(fullfile(parentDir, 'Saved_DataTable_objects', saveFileName), 'dt');
+    disp('DataTable loaded')
+else
+    disp('Generating new DataTable...')
+    dt = alignObj.output_analysis_DataTable(analysisWin);
+end
+
+%% Generate filter structure and use it to get a subset of the data
+baseFilterDefs = alignObj.create_filterDefs();
+
+% General fields
+baseFilterDefs.expID = [];
+baseFilterDefs.trialNum = [];
+baseFilterDefs.expName = [];
+baseFilterDefs.moveSpeed = [];
+baseFilterDefs.yawSpeed = [];
+baseFilterDefs.roiName = 'TypeD';
+
+% Event filter vectors
+baseFilterDefs.ballstop = 0;
+baseFilterDefs.grooming = 0;
+baseFilterDefs.isolatedmovement = 0;
+baseFilterDefs.locomotion = 0;
+baseFilterDefs.flailing = 0;
+baseFilterDefs.odor = [];
+baseFilterDefs.optostim = 0;
+baseFilterDefs.panelsflash = 0;
+baseFilterDefs.soundstim = 0;
+
+% OneNote experiment metadata
+baseFilterDefs.genotype = [];
+baseFilterDefs.ageHrs = [];
+baseFilterDefs.foodType = [];
+baseFilterDefs.bedtime = [];
+baseFilterDefs.starvationTimeHrs = [];
+baseFilterDefs.olfactometerVersion = [];
+baseFilterDefs.bathTemp = [];
+
+% Alignment event-specific fields
+if strcmp(alignObj.alignEventName, 'odor')
+    baseFilterDefs.odorName = [];
+    baseFilterDefs.concentration = [];
+end
 % 
-% parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Saved_AlignEvent_objects';
-% alignEventDateStr = '20200528';
-% 
-% % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
-% alignEventName = 'isolatedmovement';
-% 
-% load(fullfile(parentDir, [alignEventDateStr, '_AlignEventObj_', alignEventName, '.mat']));
-% 
-% %% Generate aligned event data table
-% 
-% analysisWin = [2 3];
-% 
-% dt = alignObj.output_analysis_DataTable(analysisWin);
-% 
-% %% Generate filter structure and use it to get a subset of the data
-% filterDefs = alignObj.create_filterDefs();
-% 
-% % General fields
-% filterDefs.expID = [];
-% filterDefs.trialNum = [];
-% filterDefs.expName = [];
-% filterDefs.moveSpeed = [];
-% filterDefs.yawSpeed = [];
-% filterDefs.roiName = [];
-% 
-% % Event filter vectors
-% filterDefs.ballstop = 0;
-% filterDefs.grooming = 0;
-% filterDefs.isolatedmovement = -1;
-% filterDefs.locomotion = 0;
-% filterDefs.flailing = 0;
-% filterDefs.odor = 0;
-% filterDefs.optostim = 0;
-% filterDefs.panelsflash = 0;
-% filterDefs.soundstim = 0;
-% 
-% % OneNote experiment metadata
-% filterDefs.genotype = [];
-% filterDefs.ageHrs = [];
-% filterDefs.foodType = [];
-% filterDefs.bedtime = [];
-% filterDefs.starvationTimeHrs = [];
-% filterDefs.olfactometerVersion = [];
-% filterDefs.bathTemp = [];
-% 
-% % Alignment event-specific fields
-% if strcmp(alignObj.alignEventName, 'odor')
-%     filterDefs.odorName = [];
-%     filterDefs.concentration = [];
-% end
-% % 
-% dt = dt.generate_filters(filterDefs);
-% % locTest = cell2mat(dt.subset.locomotion');
-% % flTest = cell2mat(dt.subset.eventFl');
-% % moveSpeedTest = cell2mat(dt.subset.moveSpeed');
-% % figure; imagesc(locTest')
-% % figure; imagesc(flTest')
-% % figure; imagesc(moveSpeedTest')
+dt = dt.initialize_filters(baseFilterDefs);
+baseFilterMat = dt.filterMat;
 
 
-%% PLOT FL DATA FOR EXPERIMENT, COLORED BY ROI
+%% SETUP PLOTTING VARIABLES
 
+% Will make one subplot per value in this variable list
+plotVar = 'expID';
+transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
+        '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
+expIDList = unique(dt.subset.expID);
+plotVarList = expIDList(~ismember(expIDList, transectionExpts));
+
+plotVarList = plotVarList(50:end);
+% expIDsOfInterest = {'20180207-2', '20180207-3', '20180209-1', '20180228-1', '20180228-3', '20180307-3', ...
+%         '20180314-1', '20180316-2', '20180323-1', ...
+%         '20180328-2', '20180329-1', '20180426-1', '20180525-1', '20180623-1', ...
+%         '20180623-2', '20180627-1'};
+% plotVarList = expIDsOfInterest';
+
+% Will plot one overlay group per value in this variable list (if rows matching the filter exist)
+% groupVar = 'expID';
+% transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
+%         '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
+% expIDList = unique(dt.subset.expID)';
+% groupVarList = expIDList(~ismember(expIDList, transectionExpts));
+% groupVarColors = lines(numel(groupVarList));
+
+groupVar = 'odorName';
+groupVarList = unique(dt.subset.odorName)'; % {'TypeD', 'TypeB', 'TypeF'}; %
+groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
+
+% Pre-calculate filter vectors so it's not being done repeatedly in a loop during plotting  
+plotVarFilters = {};
+groupVarFilters = {};
+
+% Plot var
+disp('Creating plotVar filters...')
+for iPlot = 1:numel(plotVarList)
+    plotVarFilters{iPlot} = dt.generate_filter(plotVar, plotVarList{iPlot});
+end
+
+% Grouping overlay var
+disp('Creating grouping var filters...')
+for iGroup = 1:numel(groupVarList)
+    groupVarFilters{iGroup} = dt.generate_filter(groupVar, groupVarList{iGroup});
+end
+
+plotVarFilterTable = table(plotVarList, plotVarFilters', 'VariableNames', {plotVar, ...
+    'filterVec'});
+groupVarFilterTable = table(groupVarList', groupVarFilters', 'VariableNames', ...
+        {groupVar, 'filterVec'});
+    
+disp('Plot and group filters ready')    
+    
+%% GENERATE PLOTS
+
+% Set plotting options
 smWin = 1;
 singleTrials = 0;
-shadeStim = 0;
+shadeStim = [];
 includeNaN = 0;
 shadeSEM = 1;
 minTrials = 5;
+matchYLims = 1;
+useLegend = 1;
 
-overlayVar = 'roiName';
-overlayVarList = {'TypeD', 'TypeB', 'TypeF'};
-overlayVarColors = [rgb('blue'); rgb('red'); rgb('green')];
+% Configure plot spacing and margins
+SV = 0.05;
+SH = 0.025;
+ML = 0.04;
+MR = 0.015;
+MT = 0.03;
+MB = 0.06;
 
-transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
-        '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
+% Get plot and group numbers
+nPlots = size(plotVarFilterTable, 1);
+nGroups = size(groupVarFilterTable, 1);
 
-overlayVarFilter = '';
-for i=1:numel(overlayVarList)
-   overlayVarFilter = [overlayVarFilter, '|', overlayVarList{i}];
-end
-overlayVarFilter = overlayVarFilter(2:end);
-filterDefs.(overlayVar) = overlayVarFilter;
-dt = dt.generate_filters(filterDefs);
-expIDList = unique(dt.subset.expID);
-subplotDims = numSubplots(numel(expIDList));
+% Initialize figure 
 f = figure(1); clf;
 f.Color = [1 1 1];
-currPlotNum = 0;
 clear ax;
-emptyAxes = zeros(size(expIDList));
-for iExp = 1:numel(expIDList)
-    
-    currPlotNum = currPlotNum + 1;
-    ax(iExp) = subaxis(subplotDims(1), subplotDims(2), currPlotNum, 'm', 0.02, 'sv', 0.05, ...
-            'sh', 0.03);
+subplotDims = numSubplots(nPlots);
+emptyAxes = zeros(nPlots, 1);
+globalYLims = [];
+for iPlot = 1:nPlots
+ 
+    ax(iPlot) = subaxis(subplotDims(1), subplotDims(2), iPlot);
     hold on;
-    emptyAxes(iExp) = 1;
+    emptyAxes(iPlot) = 1;
     
-    currExpID = expIDList{iExp};
-    if ~ismember(currExpID, transectionExpts)
-    dt = dt.update_filter('expID', currExpID);
-%     dt = dt.update_filter(overlayVar, filterDefs.(filterIterVar));
-%     iterVarList = unique(dt.subset.(filterIterVar));
-    
-    for iVar = 1:numel(overlayVarList)
+    allStimDurs = [];
+    for iGroup = 1:nGroups
         
-        dt = dt.update_filter(overlayVar, overlayVarList{iVar});
+        % Reset filter mat and filterDefs 
+        dt.filterMat = baseFilterMat;
+        dt.filterDefs = baseFilterDefs;
         
-        if size(dt.subset, 1) >= minTrials
+        % Manually set current filter status
+        dt = dt.update_filter(plotVar, plotVarFilterTable.filterVec{iPlot});
+        dt = dt.update_filter(groupVar, groupVarFilterTable.filterVec{iGroup});
+        
+        currSubset = dt.subset;
+        
+        if size(currSubset, 1) >= minTrials
             
-            disp(unique(dt.subset.roiName)');
-            
-            if ~isempty(dt.subset)
-                volTimes = dt.subset.volTimes{1};
+            if ~isempty(currSubset)
+                volTimes = currSubset.volTimes{1};
             end
             
-            fl = cell2mat(dt.subset.eventFl');
+            fl = cell2mat(currSubset.eventFl');
             bl = repmat(mean(fl(volTimes < 0, :), 1, 'omitnan'), size(fl, 1), 1);
 %             bl = repmat(dt.subset.trialBaseline', size(fl, 1), 1);
             dff = (fl - bl) ./ bl;
@@ -128,58 +183,68 @@ for iExp = 1:numel(expIDList)
             
             % Get stim timing info
             [~, onsetVol] = min(abs(volTimes));
-            stimDur = dt.subset.offsetTime(1) - dt.subset.onsetTime(1);
-            [~, offsetVol] = min(abs(volTimes - stimDur));
+            allStimDurs = [allStimDurs; currSubset.offsetTime - currSubset.onsetTime];
             
-%                    dff((onsetVol - 1):(offsetVol + 4), :) = nan;
 %                    dff((onsetVol - 1):(onsetVol + 2), :) = nan;
             
-%            Plot individual trials if appropriate
+            % Plot individual trials if appropriate
             if singleTrials
                 xx = repmat(volTimes', 1, size(dff, 2));
-                plot(xx, smoothdata(dff, 1, 'gaussian', smWin, 'omitnan'), 'color', overlayVarColors(iVar, :));
+                plot(xx, smoothdata(dff, 1, 'gaussian', smWin, 'omitnan'), 'color', groupVarColors(iGroup, :));
             end
             
-            % Plot mean response for current ROI
+            % Plot mean response for current group
             meanData = mean(smoothdata(dff, 1, 'gaussian', smWin), 2, 'omitnan');
-            plot(volTimes', meanData, 'linewidth', 2, 'color', overlayVarColors(iVar, :));
+            plot(volTimes', meanData, 'linewidth', 2, 'color', groupVarColors(iGroup, :), ...
+                    'displayname', groupVarList{iGroup});
             
             % Shade SEM if appropriate
-            SE = std_err(dff, 2);
-            xx = volTimes;
-            upperY = (meanData + SE)';
-            lowerY = (meanData - SE)';
-            jbfill(xx(~isnan(upperY)), upperY(~isnan(upperY)), lowerY(~isnan(lowerY)), ...
-                overlayVarColors(iVar, :), ...
-                overlayVarColors(iVar, :), 1, 0.2);
+            if shadeSEM
+                SE = std_err(dff, 2);
+                xx = volTimes;
+                upperY = (meanData + SE)';
+                lowerY = (meanData - SE)';
+                jbfill(xx(~isnan(upperY)), upperY(~isnan(upperY)), lowerY(~isnan(lowerY)), ...
+                    groupVarColors(iGroup, :), ...
+                    groupVarColors(iGroup, :), 1, 0.2);
+            end
             
             if any(~isnan(meanData)) && size(dff, 2) >= minTrials
-                emptyAxes(iExp) = 0;
+                emptyAxes(iPlot) = 0;
+                titleStr = [currSubset.expID{1}];
             end
             
         end%if
-    end%iVar
-            
-    if ~emptyAxes(iExp)
+    end%iGroup
+    
+    if ~emptyAxes(iPlot)
         
         % Plot line or shade to mark stim onset and/or offset
         yL = ylim(); xL = xlim();
-        if shadeStim
-            plot_stim_shading([0 stimDur]);
+        if isempty(globalYLims)
+            globalYLims = yL;
         else
-            plot([0, 0], yL, 'color', 'r', 'linewidth', 3);
+            globalYLims(1) = min([globalYLims(1), yL(1)]);
+            globalYLims(2) = max([globalYLims(2), yL(2)]);
+        end
+        if isempty(shadeStim)
+            % Automatically decide whether to shade or just draw a line 
+            if numel(unique(round(allStimDurs))) == 1
+                shadeStim = 1;
+            else
+                shadeStim = 0;
+            end
+        end    
+        if shadeStim
+            plot_stim_shading([0 unique(stimDur)]);
+        else
+            plot([0, 0], [-100, 100], 'color', 'r', 'linewidth', 3); % Huge in case I change yLims later
         end
         ylim(yL); xlim(xL);
-        
-        title([currExpID]);
+        title(titleStr);
         box off
     end
-    %         legend(roiList);
 
-    % imagesc(isnan(currEventFl'));
-    %                imagesc(currEventFl');
-    % imagesc(currEventMoveSpeed')
-    end
 end%iExp
 
 % Copy the non-empty plots over to a new figure
@@ -191,29 +256,52 @@ if all(subplotDims == [1 3])
    subplotDims = [2 2]; 
 end
 goodAxes = ax(~emptyAxes);
+clear newAxes
 for iAx = 1:numel(goodAxes)
-    newAx = subaxis(subplotDims(1), subplotDims(2), iAx, 'ml', 0.04 , 'mt', 0.04, 'mb', 0.06, ...
-            'mr', 0.02, 'sv', 0.05, 'sh', 0.03);
+
+    tempAx = subaxis(subplotDims(1), subplotDims(2), iAx, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, ...
+            'sv', SV, 'sh', SH);
     axis off
-    newPlot = copyobj(goodAxes(iAx), newFig);
-    newPlot.Position = newAx.Position;
-    newPlot.FontSize = 11;
+    newAxes(iAx) = copyobj(goodAxes(iAx), newFig);
+    newAxes(iAx).Position = tempAx.Position;
+    newAxes(iAx).FontSize = 11;
     
     if mod(iAx, subplotDims(2)) == 1
-        newPlot.YLabel.String = 'dF/F';
+        newAxes(iAx).YLabel.String = 'dF/F';
     end
     if iAx > (subplotDims(2) * (subplotDims(1) - 1))
-        newPlot.XLabel.String = 'Time (sec)';
+        newAxes(iAx).XLabel.String = 'Time (sec)';
     end
+    if matchYLims
+        ylim(newAxes(iAx), globalYLims);
+    end
+    if iAx == numel(goodAxes) && useLegend
+        handles = legendUnq(newFig);
+        legend(newAxes(end), handles, 'location', 'best', 'autoupdate', 'off');
+    end    
 end
 % close(f);
 
-% %% Save current figure
-% 
-% saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\testFigs';
-% fileName = 'odorOnset_EtOH_neat_response_noMove_TypeD_TypeB_TypeF';
-% 
-% save_figure(newFig, saveDir, fileName)
+% % Plot legend on an empty axes in an unused part of the figure 
+% tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, ...
+%             'sv', SV, 'sh', SH);
+% if  useLegend
+%     handles = legendUnq(newFig);
+%     legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
+%     set(gca, 'FontSize', 14)
+%     axis off;
+% end
+
+% Reset filter mat and filterDefs
+dt.filterMat = baseFilterMat;
+dt.filterDefs = baseFilterDefs;
+
+%% Save current figure
+
+saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
+fileName = 'TypeD_odor_response_comparison';
+
+save_figure(newFig, saveDir, fileName)
 
 
 

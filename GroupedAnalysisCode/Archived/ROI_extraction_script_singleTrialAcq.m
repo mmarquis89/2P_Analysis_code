@@ -1,9 +1,12 @@
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
+% 
+% % Load exp list
+% expList = load_expList('groupName', 'singleTrialAcq_preROIs');
+% expList = [expList; load_expList('groupName', 'singleTrialAcq_with_ROIs')];
 
-% Load exp list
-expList = load_expList('groupName', 'singleTrialAcq_preROIs');
-expList = [expList; load_expList('groupName', 'singleTrialAcq_with_ROIs')];
+expList = table({'20180623-3'}, 'variablenames', {'expID'}); 
+expList.expName = {'D-ANT_6s'};
 
 for iExp = 1:size(expList, 1)
     currExpID = expList.expID{iExp};
