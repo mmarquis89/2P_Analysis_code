@@ -5,7 +5,7 @@
 % expList = load_expList('groupName', 'singleTrialAcq_with_ROIs');
 % expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
 
-expList = table({'20180414-1', '20180623-3', '20181120-1', '20190315-1'}, 'variablenames', {'expID'}); 
+expList = table({'20180623-3'; '20181120-1'; '20190315-1'}, 'variablenames', {'expID'}); 
 
 for iExp = 1:size(expList, 1)
     currExpID = expList.expID{iExp};

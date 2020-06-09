@@ -6,16 +6,19 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_exper
 
 expList = load_expList();
 
+expList = expList(ismember(expList.expID, {'20180414-1', '20180623-3', '20181120-1', '20190315-3'}), :)
+
 %%
 
-iExp = 137;
+iExp = 4;
 
 currExpID = expList.expID{iExp};
 disp(currExpID)
 roiFile = fullfile(parentDir, [currExpID, '_roiData.mat']);
-trialMdFile = fullfile(parentDir, [currExpID, '_trialMetadata.csv']);
+trialMdFile = fullfile(parentDir, [currExpID, '_trialMetadata.mat']);
 if exist(trialMdFile, 'file')
-    trialMd = readtable(trialMdFile, 'delimiter', ',');
+    load(trialMdFile, 'trialMetadata');
+    trialMd = trialMetadata;
     trialMd.pmtShutoffVols = num2cell(nan(size(trialMd, 1), 1));
     if exist(roiFile, 'file')
         
@@ -29,7 +32,7 @@ if exist(trialMdFile, 'file')
         for iName = 1:numel(uniqueNames)
             currRoiData = roiData(strcmp(roiData.roiName, uniqueNames{iName}), :);
             if iName == 1
-                roiDataVect = cell2mat(currRoiData.rawFl');
+                roiDataVect = cell2mat(currRoiData.rawFl);
                 
                 % Save trial bounds for later
                 trialStartVols = 1 + cumsum(cellfun(@numel, currRoiData.rawFl));
@@ -37,7 +40,7 @@ if exist(trialMdFile, 'file')
                 
             else
                 if numel(cell2mat(currRoiData.rawFl)) == numel(roiDataVect)
-                    roiDataVect = roiDataVect + cell2mat(currRoiData.rawFl');
+                    roiDataVect = roiDataVect + cell2mat(currRoiData.rawFl);
                 end
             end
         end
@@ -62,17 +65,18 @@ if exist(trialMdFile, 'file')
             end
             
             % Split into trials and save to trialMetadata table
-            trialBounds = [trialStartVols, numel(roiDataVect)];
+            trialBounds = [trialStartVols, numel(roiDataVect) + 1];
             for iTrial = 1:numel(trialStartVols)
                 trialMd.pmtShutoffVols{iTrial} = ...
-                        expShutoffVols(trialBounds(iTrial):trialBounds(iTrial + 1));
+                        find(expShutoffVols(trialBounds(iTrial):(trialBounds(iTrial + 1) - 1)))';
             end
             
         end
     end%if
     
     % Re-save trialMetadata table
-    writetable(trialMd, trialMdFile);
+    trialMetadata = trialMd;
+    save(trialMdFile, 'trialMetadata')
     
     disp(['PMT shutoff processing completed for ', currExpID])
 end%if

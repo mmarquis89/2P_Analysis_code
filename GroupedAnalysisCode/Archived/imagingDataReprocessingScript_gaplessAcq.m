@@ -1,10 +1,11 @@
 
 %% INTIAL PROCESSING OF RAW SCANIMAGE FILES
 
-% Load exp list
-expList = load_expList('groupName', 'gaplessAcq');
-% expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
+% % Load exp list
+% expList = load_expList('groupName', 'gaplessAcq');
+% % expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
 
+expList = table({'20181120-1'; '20190315-3'}, 'variablenames', {'expID'}); 
 
 for iExp = 1:size(expList, 1)
     currExpID = expList.expID{iExp};
@@ -27,7 +28,7 @@ for iExp = 1:size(expList, 1)
                 
                 % Load current file
                 currFile = fullfile(parentDir, expDirName, cdataFiles(iFile).name);
-                [imgData, siMetadata] = read_tif(currFile); % --> [y, x, planes, volumes]
+                [imgData, siMetadata] = read_tif(currFile, 0); % --> [y, x, planes, volumes]
                 sz = size(imgData);
                 volCounts(iFile) = size(imgData, 4);
                 
@@ -80,9 +81,9 @@ end%iExp
 
 %% PLANE-WISE MOTION CORRECTION OF 20-TRIAL CHUNKS OF DATA
 
-% Load exp list
-expList = load_expList('groupName', 'gaplessAcq');
-% expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
+% % Load exp list
+% expList = load_expList('groupName', 'gaplessAcq');
+% % expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
 
 
 for iExp = 1:size(expList, 1)
@@ -130,7 +131,14 @@ for iExp = 1:size(expList, 1)
                         if iFile == 1
                             blockData = imgData;
                         else
-                            blockData = cat(5, blockData, imgData); % --> [y, x, plane, volume, trial]
+                            if size(imgData, 4) > size(blockData, 4)
+                                blockData = cat(5, blockData, imgData(:, :, :, 1:end-1, :));
+                            elseif size(imgData, 4) < size(blockData, 4)
+                                blockData = blockData(:, :, :, 1:end-1, :);
+                                blockData = cat(5, blockData, imgData);
+                            else
+                                blockData = cat(5, blockData, imgData); % --> [y, x, plane, volume, trial]
+                            end
                         end
                     end
                     

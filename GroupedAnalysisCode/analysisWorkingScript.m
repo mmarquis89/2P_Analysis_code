@@ -1,7 +1,7 @@
 %% Load a base aligned data object
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
-alignEventDateStr = '20200528';
+alignEventDateStr = '20200608';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
 alignEventName = 'odor';
@@ -28,20 +28,20 @@ end
 baseFilterDefs = alignObj.create_filterDefs();
 
 % General fields
-baseFilterDefs.expID = [];
+baseFilterDefs.expID = [];%'20180414-1|20180623-3|20181120-1|2019031503';
 baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = 'TypeD';
+baseFilterDefs.roiName = 'TypeF';
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
 baseFilterDefs.grooming = 0;
 baseFilterDefs.isolatedmovement = 0;
 baseFilterDefs.locomotion = 0;
-baseFilterDefs.flailing = 0;
-baseFilterDefs.odor = [];
+baseFilterDefs.flailing = [];
+baseFilterDefs.odor = -1;
 baseFilterDefs.optostim = 0;
 baseFilterDefs.panelsflash = 0;
 baseFilterDefs.soundstim = 0;
@@ -57,7 +57,7 @@ baseFilterDefs.bathTemp = [];
 
 % Alignment event-specific fields
 if strcmp(alignObj.alignEventName, 'odor')
-    baseFilterDefs.odorName = [];
+    baseFilterDefs.odorName = [];%['^.(?!.*background)(?!.*Oil)(?!.*Stop)'];
     baseFilterDefs.concentration = [];
 end
 % 
@@ -74,7 +74,6 @@ transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '201
 expIDList = unique(dt.subset.expID);
 plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 
-plotVarList = plotVarList(50:end);
 % expIDsOfInterest = {'20180207-2', '20180207-3', '20180209-1', '20180228-1', '20180228-3', '20180307-3', ...
 %         '20180314-1', '20180316-2', '20180323-1', ...
 %         '20180328-2', '20180329-1', '20180426-1', '20180525-1', '20180623-1', ...
@@ -90,7 +89,7 @@ plotVarList = plotVarList(50:end);
 % groupVarColors = lines(numel(groupVarList));
 
 groupVar = 'odorName';
-groupVarList = unique(dt.subset.odorName)'; % {'TypeD', 'TypeB', 'TypeF'}; %
+groupVarList =  unique(dt.subset.odorName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
 groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
 
 % Pre-calculate filter vectors so it's not being done repeatedly in a loop during plotting  
@@ -115,8 +114,10 @@ groupVarFilterTable = table(groupVarList', groupVarFilters', 'VariableNames', ..
         {groupVar, 'filterVec'});
     
 disp('Plot and group filters ready')    
-    
+
 %% GENERATE PLOTS
+
+disp(unique(dt.subset.odorName))
 
 % Set plotting options
 smWin = 1;
@@ -124,9 +125,11 @@ singleTrials = 0;
 shadeStim = [];
 includeNaN = 0;
 shadeSEM = 1;
-minTrials = 5;
-matchYLims = 1;
+minTrials = 1;
+matchYLims = 0;
 useLegend = 1;
+manualYLims = [];
+minPlotGroups = 1;
 
 % Configure plot spacing and margins
 SV = 0.05;
@@ -136,6 +139,8 @@ MR = 0.015;
 MT = 0.03;
 MB = 0.06;
 
+try 
+    
 % Get plot and group numbers
 nPlots = size(plotVarFilterTable, 1);
 nGroups = size(groupVarFilterTable, 1);
@@ -147,6 +152,7 @@ clear ax;
 subplotDims = numSubplots(nPlots);
 emptyAxes = zeros(nPlots, 1);
 globalYLims = [];
+nPlottedGroups = zeros(nPlots, 1);
 for iPlot = 1:nPlots
  
     ax(iPlot) = subaxis(subplotDims(1), subplotDims(2), iPlot);
@@ -171,6 +177,7 @@ for iPlot = 1:nPlots
             if ~isempty(currSubset)
                 volTimes = currSubset.volTimes{1};
             end
+            nPlottedGroups(iPlot) = nPlottedGroups(iPlot) + 1;
             
             fl = cell2mat(currSubset.eventFl');
             bl = repmat(mean(fl(volTimes < 0, :), 1, 'omitnan'), size(fl, 1), 1);
@@ -236,12 +243,13 @@ for iPlot = 1:nPlots
             end
         end    
         if shadeStim
-            plot_stim_shading([0 unique(stimDur)]);
+            plot_stim_shading([0 unique(allStimDurs(end))]);
         else
             plot([0, 0], [-100, 100], 'color', 'r', 'linewidth', 3); % Huge in case I change yLims later
         end
-        ylim(yL); xlim(xL);
-        title(titleStr);
+        ylim(yL); 
+        xlim(xL);
+        title([titleStr]);
         box off
     end
 
@@ -251,6 +259,9 @@ end%iExp
 newFig = figure(2);
 newFig.Color = [1 1 1];
 clf;
+
+emptyAxes(nPlottedGroups < minPlotGroups) = 1;
+
 subplotDims = numSubplots(sum(~emptyAxes));
 if all(subplotDims == [1 3])
    subplotDims = [2 2]; 
@@ -272,34 +283,39 @@ for iAx = 1:numel(goodAxes)
     if iAx > (subplotDims(2) * (subplotDims(1) - 1))
         newAxes(iAx).XLabel.String = 'Time (sec)';
     end
-    if matchYLims
+    if ~isempty(manualYLims)
+        ylim(newAxes(iAx), manualYLims);
+    elseif matchYLims
         ylim(newAxes(iAx), globalYLims);
     end
-    if iAx == numel(goodAxes) && useLegend
-        handles = legendUnq(newFig);
-        legend(newAxes(end), handles, 'location', 'best', 'autoupdate', 'off');
-    end    
+    
+%    if iAx == numel(goodAxes) && useLegend
+%         handles = legendUnq(newFig);
+%         legend(newAxes(end), handles, 'location', 'best', 'autoupdate', 'off');
+%     end    
 end
 % close(f);
 
-% % Plot legend on an empty axes in an unused part of the figure 
-% tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, ...
-%             'sv', SV, 'sh', SH);
-% if  useLegend
-%     handles = legendUnq(newFig);
-%     legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
-%     set(gca, 'FontSize', 14)
-%     axis off;
-% end
+% Plot legend on an empty axes in an unused part of the figure 
+tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, ...
+            'sv', SV, 'sh', SH);
+if  useLegend
+    handles = legendUnq(newFig);
+    legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
+    set(gca, 'FontSize', 14)
+    axis off;
+end
 
 % Reset filter mat and filterDefs
 dt.filterMat = baseFilterMat;
 dt.filterDefs = baseFilterDefs;
 
+catch ME; rethrow(ME); end
+
 %% Save current figure
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
-fileName = 'TypeD_odor_response_comparison';
+fileName = 'odorOnset_response_noMove_TypeF';
 
 save_figure(newFig, saveDir, fileName)
 

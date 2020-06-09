@@ -64,31 +64,31 @@ methods
 %           -2: remove events with any post-onset occurance of the filter event
 %           1: remove events withOUT any pre-onset occurance of the filter event
 %           2: remove events withOUT any post-onset occurance of the filter event
-        
-    % Reset filterMat
-    obj.filterMat = true(size(obj.sourceData));
-    
-    % Create new filters
+
+        % Reset filterMat
+        obj.filterMat = true(size(obj.sourceData));
+
+        % Create new filters
         filtNames = fieldnames(filterDefs);
 
         for iFilt = 1:numel(filtNames)
-            
+
             % Get current filter info
             filtName = filtNames{iFilt};
             filtValue = filterDefs.(filtName);
             filtData = obj.sourceData.(filtName);
-            
+
             % ------ Create the filter ------
             if ~isempty(filtValue)
-                
+
                 currFiltVec = parse_filter(obj, filtValue, filtData);
-                
+
                 % Update appropriate column of filterMat
                 obj.filterMat(:, strcmp(fieldnames(obj.sourceData), filtName)) = currFiltVec;
 
             end
         end%iFilt
-        
+
         obj.filterDefs = filterDefs;
     end
     
@@ -200,13 +200,6 @@ end
 % Decide how to interpret a filter and return the appropriate logical vector
 function currFiltVec = parse_filter(obj, filtValue, filtData)
 
-% Check for alignment event name
-if ismember(fieldnames(obj.customProps), 'alignEventName')
-    alignEventName = obj.customProps.alignEventName;
-else
-    alignEventName = [];
-end
-
 % Determine the data type of the filter value and the table field to be filtered
 filterType = get_filter_type(filtValue);
 dataType = get_data_type(filtData);
@@ -231,22 +224,7 @@ elseif strcmp(filterType, 'numericScalar') && strcmp(dataType, 'numericVector')
     onsetVols = cellfun(@(x) argmin(abs(x)), obj.sourceData.volTimes);
     onsetVols = mat2cell(onsetVols, ones(size(onsetVols)));
     
-    if ismember(fieldnames(obj.customProps), 'alignEventName') & strcmp(filtName, ...
-            alignEventName)
-        
-        % Filter out events with a pre-onset occurance of the alignment event type
-        if filtValue < 1
-            
-            currFiltVec = ~cellfun(@(x, y) any(x(1:(y - 1))), filtData, onsetVols);
-            
-            % Filter out events withOUT a pre-onset occurance of the alignment event time
-        elseif filtValue == 1
-            
-            currFiltVec = cellfun(@(x, y) any(x(1:(y - 1))), filtData, onsetVols);
-        end
-        
-        % Filter out events with any occurance of the filter event type
-    elseif filtValue == 0
+    if filtValue == 0
         currFiltVec = ~cellfun(@any, filtData);
         
         % Filter out events with any pre-onset occurance of the filter event type
