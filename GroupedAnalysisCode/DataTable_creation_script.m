@@ -1,7 +1,7 @@
 %% Load a base aligned data object
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
-alignEventDateStr = '20200608';
+alignEventDateStr = '20200609';
 
 
 
@@ -19,8 +19,8 @@ for iEvent = 1:numel(eventNames)
         alignEventName, '.mat']));
     
     % Save data tables with several different common alignment windows
-    preStimWinSizes = [2];
-    postStimWinSizes = [1 2 3 4];
+    preStimWinSizes = [1 2];
+    postStimWinSizes = [1 2 3 4 5];
     
     for iPre = 1:numel(preStimWinSizes)
         for iPost = 1:numel(postStimWinSizes)

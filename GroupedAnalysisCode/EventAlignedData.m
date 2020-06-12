@@ -159,7 +159,7 @@ classdef EventAlignedData
             % Set any volumes when the PMT was turned off to 'nan'
             for iTrial = 1:size(sourceFlData, 1)
                 shutoffVols = sourceFlData.pmtShutoffVols{iTrial};
-                if ~isempty(shutoffVols)
+                if ~isempty(shutoffVols) & ~all(isnan(shutoffVols))
                     sourceFlData.rawFl{iTrial}(shutoffVols) = nan;
                 end
             end

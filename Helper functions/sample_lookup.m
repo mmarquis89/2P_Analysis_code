@@ -1,7 +1,7 @@
 classdef sample_lookup
 % Converts between sample indices of data with different sampling rates
 % e.g. 
-%   frame2vol = sample_lookup(volumeRate, frameRate);
+%   vol2frame = sample_lookup(volumeRate, frameRate);
 %   stimStartFrames = frame2vol.convert(stimStartVols);  
 % 
     properties
