@@ -25,15 +25,10 @@ for iExp = 1:size(expList, 1)
         expMd = readtable(expMdFile, 'delimiter', ',');
         load(trialMdFile, 'trialMetadata');
         trialMd = trialMetadata;
-        if exist(odorEventFile, 'file')
-            odorEvents = readtable(odorEventFile, 'delimiter', ',');
-            currData = inner_join(expMd, trialMd, roiData, ftData);
-            allExpData = [allExpData; outerjoin(currData, odorEvents, 'type', 'left', ...
-                    'mergekeys', 1)];
-        else
-            allExpData = [allExpData; inner_join(expMd, trialMd, roiData, ftData)];
+
+        allExpData = [allExpData; inner_join(expMd, trialMd, roiData, ftData)];
             
-        end         
+       
     end    
 end
 
@@ -119,7 +114,7 @@ for iTrial = 1:size(subsetData, 1)
     volTimes = calc_volTimes(currData.nVolumes, currData.volumeRate, currData.trialDuration, ...
             currData.originalTrialCount);
 
-    % Get smoothed move and yaw speed data
+    % Get smoothed move speed data
     moveSpeedData = currData.moveSpeed{:};
     moveSpeedData(moveSpeedData == 0) = nan; % Needed for 20181020-1 for some reason
     smMoveSpeed = repeat_smooth(moveSpeedData, nReps, 'Dim', 1, 'smWin', smWinFrames);
