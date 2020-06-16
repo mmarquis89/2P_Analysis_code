@@ -1,238 +1,151 @@
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
+%% Create analysis object
+expList = load_expList;
+expList = expList(contains(expList.expName, 'PPM2'), :);
+a = MoveSpeedAnalysis(expList);
 
-expList = load_expList();
+%% Set params and run analysis
 
-% Load metadata, FicTrac data, ROI data for all experiments
-allExpData = [];
-for iExp = 1:size(expList, 1)
-    
-    currExpID = expList.expID{iExp};
-    disp(currExpID);
-    
-    roiFileName = [currExpID, '_roiData.mat'];
-    roiFile = fullfile(parentDir, roiFileName);
-    
-    ftFileName = [currExpID, '_ficTracData.mat'];
-    ftFile = fullfile(parentDir, ftFileName);
+expNum = 2;
 
-    
-    expMdFile = fullfile(parentDir, [currExpID, '_expMetadata.csv']);
-    trialMdFile = fullfile(parentDir, [currExpID, '_trialMetadata.mat']);
+% DataTable filter values
+roiName = 'TypeF';
+expID = expList.expID{expNum};
 
-    if exist(roiFile, 'file') && exist(ftFile, 'file') && exist(expMdFile, 'file')
-        load(roiFile, 'roiData');
-        load(ftFile, 'ftData');
-        expMd = readtable(expMdFile, 'delimiter', ',');
-        load(trialMdFile, 'trialMetadata');
-        trialMd = trialMetadata;
-
-        allExpData = [allExpData; inner_join(expMd, trialMd, roiData, ftData)];
-            
-       
-    end    
-end
-
-
-% Add odor stim timing where appropriate
-odorData = [];
-for iExp = 1:size(expList, 1)
-    
-    currExpID = expList.expID{iExp};
-    disp(currExpID);
-    
-    odorEventFileName = [currExpID, '_event_data_odor.csv'];
-    odorEventFile = fullfile(parentDir, odorEventFileName);
-    
-    if exist(odorEventFile, 'file')
-        odorData = [odorData; readtable(odorEventFile, 'delimiter', ',')];
-    end    
-end
-
-%%
-
-dt = DataTable(allExpData);
-filterDefs = struct();
-filterDefs.roiName = 'TypeF';
-filterDefs.expID = '20190226-3';%[regexclude('0226-3')];   
-skipTrials = [2];
-
-max_moveSpeed = 300;
-excludeOdorVols = 1;
-odorOffsetExcludeTime = 2;
-smWinVols = 1;
-smWinFrames = 1;
-nReps = 15;
+% Analysis parameters
+smWinVols = 4;
+smWinFrames = 6;
+nSmoothReps = 15;
 lagVols = 2;
+flType = 'expDff';
+max_moveSpeed = 20;
+skipTrials = [];
+analysisWinDur = 60;
 
-nHistBins = 50;
-plotting_minSpeed = 0;
+% Plotting parameters
+a.params.nHistBins = 50;
+a.params.maxBinCount = 80;
+a.params.plotting_minSpeed = 0;
+overlayTimeSec = [40];
 
+% Analysis exclusion events
+odor = 2;
+optostim = 1;
+soundstim = 1;
+grooming = 0;
+isolatedmovement = 0;
+locomotion = 0;
+quiescence = 0;
 
-dt = dt.initialize_filters(filterDefs);
+% Primary analysis plot spacing and margins
+SV = 0.05;
+SH = 0.05;
+ML = 0.05;
+MR = 0.015;
+MT = 0.06;
+MB = 0.07;
 
+try 
+disp(expID)
+
+% Set params
+a.params.smWinVols = smWinVols;
+a.params.smWinFrames = smWinFrames;
+a.params.nSmoothReps = nSmoothReps;
+a.params.lagVols = lagVols;
+a.params.flType = flType;
+a.params.max_moveSpeed = max_moveSpeed;
+a.params.odor = odor;
+a.params.optostim = optostim;
+a.params.soundstim = soundstim;
+a.params.grooming = grooming;
+a.params.isolatedmovement = isolatedmovement;
+a.params.locomotion = locomotion;
+a.params.quiescence = quiescence;
 if skipTrials == 0
    skipTrials = []; 
 end
-
-% plots to visualize overall speed data
-try
-speedMat = cell2mat(dt.subset.moveSpeed')';
-speedMat = repeat_smooth(speedMat, nReps, 'Dim', 2, 'smWin', smWinFrames);
-speedMat = speedMat * 25 * 4.5;
-speedMat(speedMat > max_moveSpeed) = max_moveSpeed;
-figure(7); clf; 
-imagesc(speedMat)
-colorbar()
-figure(8);clf; hold on;
-plot(sort(speedMat(:)));
-plot([0, numel(speedMat)], [1 1] * plotting_minSpeed, 'color', 'r', 'linewidth', 2)
-xlim([0 numel(speedMat)])
-ylabel('Sorted moveSpeed (mm/sec)');
-
-% Plot to visualize overall raw fluorescence
-figure(9);clf;
-flMat = cell2mat(dt.subset.rawFl')';
-flMat = smoothdata(flMat, 2, 'gaussian', smWinVols);
-imagesc(flMat)
-colorbar
-catch
-end
-
-plotX = [];
-plotY = [];
-subsetData = dt.subset;
-if ~isempty(skipTrials)
-   subsetData(skipTrials, :) = []; 
-end
-        
-r = []; lags = [];
-for iTrial = 1:size(subsetData, 1)
-    disp(iTrial)
-    currData = subsetData(iTrial, :);
-
-    % Calculate volume times
-    volTimes = calc_volTimes(currData.nVolumes, currData.volumeRate, currData.trialDuration, ...
-            currData.originalTrialCount);
-
-    % Get smoothed move speed data
-    moveSpeedData = currData.moveSpeed{:};
-    moveSpeedData(moveSpeedData == 0) = nan; % Needed for 20181020-1 for some reason
-    smMoveSpeed = repeat_smooth(moveSpeedData, nReps, 'Dim', 1, 'smWin', smWinFrames);
+a.params.skipTrials = skipTrials;
     
-    % Convert move speed from rad/frame to mm/sec 
-    smMoveSpeed = smMoveSpeed * 25 * 4.5;
+% Initialize filters    
+a.filterDefs.expID = expID;
+a.filterDefs.roiName = roiName;
+a = a.init_filters();
 
-    smMoveSpeed(smMoveSpeed > max_moveSpeed) = max_moveSpeed;
+% Run analysis
+a = a.analyze();
+
+% Plot intial summaries
+a.plot_speedMat();
+a.plot_sortedSpeed();
+a.plot_flMat();
+
+a.sourceDataTable.subset.roiName
+
+a.params.nAnalysisBins = round((numel(a.analysisOutput.flData) / ...
+        a.sourceDataTable.subset.volumeRate(1)) / analysisWinDur);
     
-    % Downsample smoothed data to match volTimes    
-    frameRate = 1 / median(diff(currData.frameTimes{:}));
-    frameTimes = calc_volTimes(numel(currData.frameTimes{:}), frameRate, currData.trialDuration, ...
-            currData.originalTrialCount); 
-    speedDataVols = [];
-    for iVol = 1:numel(volTimes)
-        speedDataVols(iVol) = smMoveSpeed(argmin(abs(currData.frameTimes{:} - volTimes(iVol))));
-    end
-    speedDataVols = smoothdata(speedDataVols', 1, 'gaussian', smWinVols);
+% ------ Plot data from the analysis ------
 
-    % Get smoothed fl data
-    smFl = smoothdata(currData.rawFl{:}, 1, 'gaussian', smWinVols);
+% Post-analysis summaries
+a.xcorr_plot();
+a.norm_data_overlay(overlayTimeSec);
 
-    % Drop any nan volumes
-    if ~isempty(currData.pmtShutoffVols{:}) && ~any(isnan(currData.pmtShutoffVols{:}))
-        speedDataVols(currData.pmtShutoffVols{:}) = nan;
-        smFl(currData.pmtShutoffVols{:}) = nan;
-    end
-    
-    % Exclude odor response volumes
-    if excludeOdorVols
-        currOdorData = innerjoin(currData(:, {'expID', 'trialNum'}), odorData);
-        for iStim = 1:size(currOdorData, 1)
-            excludeVols = (volTimes > currOdorData(iStim, :).onsetTime & volTimes < ...
-                    (currOdorData(iStim, :).offsetTime + odorOffsetExcludeTime));
-            speedDataVols(excludeVols) = nan;
-            smFl(excludeVols) = nan;
-        end        
-    end
-    
-    % Calculate cross-correlation between Fl data and moveSpeed
-    [r(iTrial, :), lags(iTrial, :)] = xcorr(smFl(~isnan(smFl+speedDataVols)), speedDataVols(~isnan(smFl+speedDataVols)), 5); 
-%     [r(iTrial, :), lags(iTrial, :)] = xcorr(smFl(~isnan(smFl) & speedDataVols > 1), speedDataVols(~isnan(smFl) & speedDataVols > 1), 5);
+% Main analysis plots
+a.plot_2D_hist();
+a = a.generate_binned_flData();
+a.plot_binned_fl();
 
-    % Apply a lag to the speed data
-    speedDataVols = speedDataVols(1:end - (lagVols));
-    smFl = smFl((lagVols + 1):end);
-    
-    % Calculate dF/F
-    dff = (smFl - currData.trialBaseline) ./ currData.trialBaseline;
-    
-    plotX = [plotX; speedDataVols];
-    plotY = [plotY; dff];
-end
+% Plot several primary output plots in one figure
+f = figure(8); clf;
+f.Color = [1 1 1];
 
-% selectVols = 1:4000;
-% plotX = plotX(selectVols);
-% plotY = plotY(selectVols);
+% Standard dF/F data
+ax = subaxis(2, 3, 1, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, 'sv', SV, 'sh', SH);
+a.plot_2D_hist(ax);
+ax.FontSize = 14;
+ax.XLabel.String = '';
+titleStr = {[expID, ' — ', roiName, ' — ', a.analysisOutput.paramSnapshot.flType, ' vs. moveSpeed'], ...
+        ['2D hist and binned mean ', a.analysisOutput.paramSnapshot.flType]};
+title(ax, titleStr);
+ax = subaxis(2, 3, 4);
+a = a.generate_binned_flData();
+a.plot_binned_fl(ax);
+ax.FontSize = 14;
 
-figure(10);clf; hold on;
-% plot(lags', r')
-plot(lags(1, :), mean(r, 1, 'omitnan'), 'linewidth', 3, 'color', 'k')
-set(gca, 'XAxisLocation', 'top')
-%
-nanVols = isnan(plotX) | isnan(plotY);
-plotX(nanVols) = [];
-plotY(nanVols) = [];
+% Sliding-window dF/F
+ax = subaxis(2, 3, 2);
+a.plot_2D_hist(ax, 'slidingbaseline');
+ax.FontSize = 14;
+ax.XLabel.String = '';
+titleStr = ['dF/F calculated in sliding ', num2str(analysisWinDur), '-sec window'];
+title(ax, titleStr);
+ax = subaxis(2, 3, 5);
+a = a.generate_binned_flData('slidingbaseline');
+a.plot_binned_fl(ax);
+ax.FontSize = 14;
+ax.YLabel.String = 'Mean sliding dF/F';
 
-% Overlay normalized data
-figure(1);clf;hold on
-set(gcf, 'Color', [1 1 1]);
-plot(plotX ./ max(plotX));
-plot(plotY ./ max(plotY));
-% xlim(xL);
+% Sliding-window normalized Fl and moveSpeed
+ax = subaxis(2, 3, 3);
+a.plot_2D_hist(ax, 'normalized', 1);
+ax.FontSize = 14;
+ax.XLabel.String = '';
+titleStr = ['Fl and move speed normalized in sliding ', num2str(analysisWinDur), '-sec win'];
+title(ax, titleStr);
+ax = subaxis(2, 3, 6);
+a = a.generate_binned_flData('normalized', 1);
+a.plot_binned_fl(ax);
+ax.FontSize = 14;
 
-% Scatterplot
-figure(2);clf;
-set(gcf, 'Color', [1 1 1]);
-plot(plotX, plotY, '.')
-xlabel('moveSpeed (mm/sec)'); ylabel('dF/F'); 
+catch ME; rethrow(ME); end
 
-% 2D histogram
-figure(3);clf;
-set(gcf, 'Color', [1 1 1]);
-plotY(plotX < plotting_minSpeed) = nan;
-plotX(plotX < plotting_minSpeed) = nan;
-histogram2(plotX, plotY, nHistBins, 'displaystyle', 'tile')
-xlabel('moveSpeed (mm/sec)'); ylabel('dF/F'); 
+%% Save current figure
 
-% Separate data into equal-sized moveSpeed bins
-plotDataTable = table(plotX, plotY, 'variableNames', {'moveSpeed', 'fl'});
-plotDataSort = sortrows(plotDataTable, 'moveSpeed');
-binSize = round(size(plotDataSort, 1) / 50);
-binEdges = 1:binSize:size(plotDataSort, 1);
-flBinMeans = []; SEM = [];
-binEdgeMoveSpeeds = [];
-for iBin = 1:numel(binEdges)
-    if iBin < numel(binEdges)
-        binInds = binEdges(iBin):(binEdges(iBin + 1) - 1);
-    else 
-        binInds = binEdges(iBin):size(plotDataSort, 1);
-    end
-    binEdgeMoveSpeeds(iBin) = plotDataSort{binInds(end), 'moveSpeed'};
-    flBinMeans(iBin) = mean(plotDataSort{binInds, 'fl'}, 'omitnan');
-    SEM(iBin) = std_err(plotDataSort{binInds, 'fl'});
-end
+saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
+fileName = '';
 
-figure(4);clf; 
-plot(binEdgeMoveSpeeds, 'o')
-xlabel('Bin number')
-ylabel('moveSpeed (mm/sec)')
+save_figure(f, saveDir, fileName)
 
-figure(5);clf; 
-plot(binEdgeMoveSpeeds, flBinMeans, '-o')
-errorbar(binEdgeMoveSpeeds, flBinMeans, SEM, '-o');
-xlabel('binned moveSpeed (mm/sec)')
-ylabel('mean bin trial dF/F')
 
-% figure(6);clf; 
-% plot(binEdgeMoveSpeeds(1:end-1), flBinMeans(1:end-1), '-o')
 
 
