@@ -1,30 +1,31 @@
 %% Create analysis object
 expList = load_expList;
-expList = expList(contains(expList.expName, 'PPM2'), :);
+expList = expList(contains(expList.expName, 'D-ANT'), :);
 a = MoveSpeedAnalysis(expList);
 
 %% Set params and run analysis
 
-expNum = 2;
+expNum = 35;
 
 % DataTable filter values
-roiName = 'TypeF';
+roiName = 'TypeD-R';
 expID = expList.expID{expNum};
 
 % Analysis parameters
-smWinVols = 4;
-smWinFrames = 6;
+smWinVols = 3;
+smWinFrames = 3;
 nSmoothReps = 15;
 lagVols = 2;
 flType = 'expDff';
-max_moveSpeed = 20;
+                        max_moveSpeed = 2000;
 skipTrials = [];
-analysisWinDur = 60;
+slidingWinDur = 60;
+                        nAnalysisBins = 40;
 
 % Plotting parameters
 a.params.nHistBins = 50;
-a.params.maxBinCount = 80;
-a.params.plotting_minSpeed = 0;
+                        a.params.maxHistBinCount = 70;
+a.params.plotting_minSpeed = -100;
 overlayTimeSec = [40];
 
 % Analysis exclusion events
@@ -65,6 +66,7 @@ if skipTrials == 0
    skipTrials = []; 
 end
 a.params.skipTrials = skipTrials;
+a.params.nAnalysisBins = nAnalysisBins;
     
 % Initialize filters    
 a.filterDefs.expID = expID;
@@ -81,9 +83,10 @@ a.plot_flMat();
 
 a.sourceDataTable.subset.roiName
 
-a.params.nAnalysisBins = round((numel(a.analysisOutput.flData) / ...
-        a.sourceDataTable.subset.volumeRate(1)) / analysisWinDur);
-    
+a.params.slidingWinDur = slidingWinDur;
+a.params.slidingWinSize = round(slidingWinDur * a.sourceDataTable.subset.volumeRate(1));
+a.params.nAnalysisBins = nAnalysisBins;
+
 % ------ Plot data from the analysis ------
 
 % Post-analysis summaries
@@ -117,7 +120,7 @@ ax = subaxis(2, 3, 2);
 a.plot_2D_hist(ax, 'slidingbaseline');
 ax.FontSize = 14;
 ax.XLabel.String = '';
-titleStr = ['dF/F calculated in sliding ', num2str(analysisWinDur), '-sec window'];
+titleStr = ['dF/F calculated in sliding ', num2str(slidingWinDur), '-sec window'];
 title(ax, titleStr);
 ax = subaxis(2, 3, 5);
 a = a.generate_binned_flData('slidingbaseline');
@@ -130,7 +133,7 @@ ax = subaxis(2, 3, 3);
 a.plot_2D_hist(ax, 'normalized', 1);
 ax.FontSize = 14;
 ax.XLabel.String = '';
-titleStr = ['Fl and move speed normalized in sliding ', num2str(analysisWinDur), '-sec win'];
+titleStr = ['Fl and move speed normalized in sliding ', num2str(slidingWinDur), '-sec win'];
 title(ax, titleStr);
 ax = subaxis(2, 3, 6);
 a = a.generate_binned_flData('normalized', 1);
@@ -142,8 +145,9 @@ catch ME; rethrow(ME); end
 %% Save current figure
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
-fileName = '';
+fileName = ['MoveSpeedAnalysis_binned_', expID, '_', roiName];
 
+f.UserData.analysisParams = a.params;
 save_figure(f, saveDir, fileName)
 
 

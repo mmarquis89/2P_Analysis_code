@@ -101,8 +101,6 @@ methods
         end
         
         r = []; lags = [];
-corrTestFl = [];
-corrTestSpeed = [];
         for iTrial = 1:size(sData, 1)
             if ~mod(iTrial, 10)
                 disp([num2str(iTrial), ' of ', num2str(size(sData, 1))])
@@ -127,13 +125,16 @@ corrTestSpeed = [];
             speedDataVols = speedDataVols';
             speedDataVols = [speedDataVols; nan(numel(currFlData) - numel(speedDataVols), 1)];
             
-corrTestFl(:, iTrial) = currFlData;
-corrTestSpeed(:, iTrial) = speedDataVols;
-            
             % Exclude PMT shutoff vols
             if ~isempty(tData.pmtShutoffVols{:}) && ~any(isnan(tData.pmtShutoffVols{:}))
-                speedDataVols(tData.pmtShutoffVols{:}) = nan;
-                currFlData(tData.pmtShutoffVols{:}) = nan;
+                shutoffVols = tData.pmtShutoffVols{:};
+                if max(shutoffVols) > numel(currFlData)
+                   disp(['PMT shutoff vols: ', num2str(shutoffVols)])
+                   disp(['Trial ', num2str(iTrial), ' nVolumes = ' num2str(numel(currFlData))]); 
+                end
+                shutoffVols = shutoffVols(shutoffVols <= numel(currFlData));
+                speedDataVols(shutoffVols) = nan;
+                currFlData(shutoffVols) = nan;
             end
             
             % Exclude event volumes as neccessary
@@ -142,11 +143,31 @@ corrTestSpeed(:, iTrial) = speedDataVols;
                 if obj.params.(currEvent)
                     currEventData = innerjoin(tData(:, {'expID', 'trialNum'}), ...
                         obj.eventObjects.(currEvent).eventData);
+                    
                     for iEvent = 1:size(currEventData, 1)
-                        excludeVols = (volTimes > currEventData(iEvent, :).onsetTime & volTimes < ...
-                                (currEventData(iEvent, :).offsetTime + obj.params.(currEvent)));
-                        speedDataVols(find(excludeVols)) = nan; %#ok<*FNDSB>
-                        currFlData(find(excludeVols)) = nan;
+                        if strcmp(currEvent, 'locomotion')
+                            % Get rid of volumes on either side of the onset or offset of an event
+                            currOnsetTime = currEventData(iEvent, :).onsetTime;
+                            currOffsetTime = currEventData(iEvent, :).offsetTime;
+                            excludeDur = obj.params.(currEvent);
+                            onsetExcludeVols = (volTimes > (currOnsetTime - excludeDur)) & ...
+                                    volTimes < (currOnsetTime + excludeDur);
+                            offsetExcludeVols = (volTimes > (currOffsetTime - excludeDur)) & ...
+                                    volTimes < (currOffsetTime + excludeDur);
+                            speedDataVols(find(onsetExcludeVols | offsetExcludeVols)) = nan;
+                            currFlData(find(onsetExcludeVols | offsetExcludeVols)) = nan;
+                            
+                            
+                        else
+                            % Get rid of volumes during or just after an event (i.e. sensory stim)
+                            excludeVols = (volTimes > currEventData(iEvent, :).onsetTime & ...
+                                volTimes < (currEventData(iEvent, :).offsetTime + ...
+                                obj.params.(currEvent)));
+                            speedDataVols(find(excludeVols)) = nan; %#ok<*FNDSB>
+                            currFlData(find(excludeVols)) = nan;
+                            
+                            
+                        end
                     end
                 end                
             end
@@ -160,7 +181,6 @@ corrTestSpeed(:, iTrial) = speedDataVols;
             currFlData = currFlData((obj.params.lagVols + 1):end);
             currRawFlData = currRawFlData((obj.params.lagVols + 1):end);
             volTimes = volTimes(1:end - obj.params.lagVols);
-            
             % Add to plotting vectors
             speedData = [speedData; speedDataVols];
             flData = [flData; currFlData];
@@ -185,8 +205,6 @@ corrTestSpeed(:, iTrial) = speedDataVols;
         output.lags = lags;
         output.binnedData = [];
         output.paramSnapshot = obj.params;
-output.corrTestFl = corrTestFl;
-output.corrTestSpeed = corrTestSpeed;
         obj.analysisOutput = output;
         
     end
@@ -194,27 +212,31 @@ output.corrTestSpeed = corrTestSpeed;
     % Calculate mean fl value in equal-sized bins of analyzed moveSpeed data
     function obj = generate_binned_flData(obj, flType, speedNorm)
         aData = obj.analysisOutput;
-        binSize = floor(numel(aData.rawFlData) / obj.params.nAnalysisBins);
+        if ~isempty(obj.params.slidingWinSize)
+            slidingWinSize = obj.params.slidingWinSize;
+        else
+            slidingWinSize = floor(numel(aData.rawFlData) / obj.params.nAnalysisBins);
+        end
         if nargin < 2
             flType = obj.analysisOutput.paramSnapshot.flType;
         end
         if strcmpi(flType, 'slidingBaseline')
-            base = mov_percentile(aData.rawFlData, round(binSize / 2), 0.05)';
+            base = mov_percentile(aData.rawFlData, slidingWinSize, 0.05)';
             flData = (aData.rawFlData - base) ./ base;
         elseif strcmpi(flType, 'normalized')
-            flData = mov_norm(aData.rawFlData, binSize)';
+            flData = mov_norm(aData.rawFlData, slidingWinSize)';
         else
             flData = aData.flData;
         end
         if nargin == 3 && speedNorm == 1
-            speedData = mov_norm(aData.speedData, binSize)';  
+            speedData = mov_norm(aData.speedData, slidingWinSize)';  
         else
             speedData = aData.speedData;
             speedNorm = 0;
         end
         
         
-        [speedBinMidpoints, flBinMeans, SEM] = bin_data(speedData, flData, ...
+        [speedBinMidpoints, flBinMeans, SEM] = obj.bin_data(speedData, flData, ...
                 obj.params.nAnalysisBins, obj.params.plotting_minSpeed);
 
         obj.analysisOutput.binnedData.speedBinMidpoints = speedBinMidpoints;
@@ -294,13 +316,13 @@ output.corrTestSpeed = corrTestSpeed;
         plot(ax, obj.analysisOutput.lags(1, :), mean(obj.analysisOutput.r, 1, 'omitnan'), ...
                 '-o', 'color', 'k', 'linewidth', 2);
         hold on;
-yyaxis right
-a = obj.analysisOutput.corrTestFl(:);
-b = obj.analysisOutput.corrTestSpeed(:);
-c = isnan(a) | isnan(b);
-[r, lags] = xcorr(a(~c), b(~c), 6);
-plot(ax, lags, r, '-o', 'color', 'r', 'linewidth', 2);
-legend({'trial-averaged', 'concatenated'}, 'autoupdate', 'off', 'location', 'nw')
+% yyaxis right
+% a = obj.analysisOutput.corrTestFl(:);
+% b = obj.analysisOutput.corrTestSpeed(:);
+% c = isnan(a) | isnan(b);
+% [r, lags] = xcorr(a(~c), b(~c), 6);
+% plot(ax, lags, r, '-o', 'color', 'r', 'linewidth', 2);
+% legend({'trial-averaged', 'concatenated'}, 'autoupdate', 'off', 'location', 'nw')
         yL = ylim();
         plot([0 0], yL, '--', 'color', 'b')
         ax.XAxisLocation = 'top';
@@ -344,17 +366,21 @@ legend({'trial-averaged', 'concatenated'}, 'autoupdate', 'off', 'location', 'nw'
         if nargin < 3 || isempty(flType)
             flType = aData.paramSnapshot.flType;
         end
-        winSize = floor(numel(aData.rawFlData) / obj.params.nAnalysisBins);
+        if ~isempty(obj.params.slidingWinSize)
+            slidingWinSize = obj.params.slidingWinSize;
+        else
+            slidingWinSize = floor(numel(aData.rawFlData) / obj.params.nAnalysisBins);
+        end
         if strcmpi(flType, 'slidingBaseline')
-            base = mov_percentile(aData.rawFlData, round(winSize / 2), 0.05)';
+            base = mov_percentile(aData.rawFlData, slidingWinSize, 0.05)';
             flData = (aData.rawFlData - base) ./ base;
         elseif strcmpi(flType, 'normalized')
-            flData = mov_norm(aData.rawFlData, winSize)';
+            flData = mov_norm(aData.rawFlData, slidingWinSize)';
         else
             flData = aData.flData;
         end
         if nargin == 4 && speedNorm == 1
-            speedData = mov_norm(aData.speedData, winSize)';
+            speedData = mov_norm(aData.speedData, slidingWinSize)';
         else
             speedData = aData.speedData;
             speedNorm = 0;
@@ -365,8 +391,8 @@ legend({'trial-averaged', 'concatenated'}, 'autoupdate', 'off', 'location', 'nw'
         xEdges = h.XBinEdges; 
         yEdges = h.YBinEdges;
         binCounts = h.BinCounts;
-        if ~isempty(obj.params.maxBinCount)
-            binCounts(binCounts > obj.params.maxBinCount) = obj.params.maxBinCount;
+        if ~isempty(obj.params.maxHistBinCount)
+            binCounts(binCounts > obj.params.maxHistBinCount) = obj.params.maxHistBinCount;
         end
         histogram2(ax, 'XBinEdges', xEdges, 'YBinEdges', yEdges, 'BinCounts', ...
                 binCounts, 'displaystyle', 'tile');
@@ -405,9 +431,36 @@ legend({'trial-averaged', 'concatenated'}, 'autoupdate', 'off', 'location', 'nw'
             ylabel(['Mean ', binnedData.flType]);
         end
     end
-    
-    
-end%methods
+end%methods  
+
+methods(Static)
+    % Separate fluorescence data sorted by moveSpeed into equal-size bins and average across them
+    function [binMidpoints, binMeans, binSEM] = bin_data(xData, yData, nBins, minX)
+        if nargin < 4
+           minX = -100; 
+        end
+        plotDataTable = table(xData, yData, 'variableNames', {'speed', 'fl'});
+        plotDataSort = sortrows(plotDataTable, 'speed');
+        plotDataSort = plotDataSort(plotDataSort.speed > minX, :);
+        binSize = round(size(plotDataSort, 1) / nBins);
+        binEdges = 1:binSize:(size(plotDataSort, 1) - 1);
+        flBinMeans = []; SEM = []; speedBinMidpoints = [];
+        for iBin = 1:numel(binEdges)
+            if iBin < numel(binEdges)
+                binInds = binEdges(iBin):(binEdges(iBin + 1) - 1);
+            else
+                binInds = binEdges(iBin):size(plotDataSort, 1);
+            end
+            flBinMeans(iBin) = mean(plotDataSort{binInds, 'fl'}, 'omitnan');
+            SEM(iBin) = std_err(plotDataSort{binInds, 'fl'});
+            speedBinMidpoints(iBin) = plotDataSort{binInds(round(numel(binInds) / 2)), 'speed'};
+        end
+        binMidpoints = speedBinMidpoints;
+        binMeans = flBinMeans;
+        binSEM = SEM;
+    end
+end
+
 
 end%class
 
@@ -422,11 +475,14 @@ function paramStruct = initialize_analysis_params(obj)
     paramStruct.nSmoothRepsFrames = 15;
     paramStruct.lagVols = 2;
     paramStruct.nHistBins = 50;
+    paramStruct.maxHistBinCount = [];
     paramStruct.nAnalysisBins = 100; 
     paramStruct.plotting_minSpeed = 0;
     paramStruct.skipTrials = [];
+    paramStruct.nAnalysisBins = 30;
     paramStruct.flDataType = 'rawFl';
-    paramStruct.excludeEvents = struct();
+    paramStruct.slidingWinDur = 60;
+    paramStruct.slidingWinSize = [];
     for iType = 1:numel(obj.eventNames)
         paramStruct.(obj.eventNames{iType}) = 0;
     end
@@ -451,10 +507,10 @@ end
 function outputMat = generate_speedMat(obj)
     currSubset = obj.sourceDataTable.subset;
     p = obj.params;
-    outputMat = cell2padded_mat(currSubset.moveSpeed); % --> [frame, trial]
+    outputMat = cell2padded_mat(currSubset.fwSpeed); % --> [frame, trial]
     outputMat = outputMat * 25 * 4.5; % Convert from rad/frame to mm/sec
     outputMat = repeat_smooth(outputMat, p.nSmoothReps, 'dim', 1, 'smWin', p.smWinFrames);
-    outputMat(outputMat > p.max_moveSpeed) = p.max_moveSpeed;
+    outputMat(outputMat > p.max_moveSpeed) = nan;
 end
 
 % Generate a matrix containing smoothed and padded fluorescence data for all trials in subset
@@ -473,34 +529,6 @@ function outputMat = generate_flMat(obj, flType)
         outputMat = (outputMat - baseF) ./ baseF;
     end
 end
-
-% Separate fluorescence data sorted by moveSpeed into equal-size bins and average across them
-function [binMidpoints, binMeans, binSEM] = bin_data(xData, yData, nBins, minX)
-        
-        plotDataTable = table(xData, yData, 'variableNames', {'speed', 'fl'});
-        plotDataSort = sortrows(plotDataTable, 'speed');
-        plotDataSort = plotDataSort(plotDataSort.speed > minX, :);
-        binSize = round(size(plotDataSort, 1) / nBins);
-        binEdges = 1:binSize:(size(plotDataSort, 1) - 1);
-        flBinMeans = []; SEM = []; speedBinMidpoints = [];
-        for iBin = 1:numel(binEdges)
-            if iBin < numel(binEdges)
-                binInds = binEdges(iBin):(binEdges(iBin + 1) - 1);
-            else
-                binInds = binEdges(iBin):size(plotDataSort, 1);
-            end
-            flBinMeans(iBin) = mean(plotDataSort{binInds, 'fl'}, 'omitnan');
-            SEM(iBin) = std_err(plotDataSort{binInds, 'fl'});
-            speedBinMidpoints(iBin) = plotDataSort{binInds(round(numel(binInds) / 2)), 'speed'};
-        end
-        binMidpoints = speedBinMidpoints;
-        binMeans = flBinMeans;
-        binSEM = SEM;
-end
-
-
-
-
 
 
 
