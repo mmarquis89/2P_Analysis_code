@@ -85,17 +85,23 @@ methods
     % Run the analysis processing steps on the data from the current subset
     function obj = analyze(obj)
         
-        speedData = [];
+        allSpeedData = [];
         flData = []; rawFlData = [];
         allVolTimes = [];
         sData = obj.sourceDataTable.subset;
-        speedMat = generate_speedMat(obj);
+        fwSpeedMat = generate_speedMat(obj, 'forward');
+        moveSpeedMat = generate_speedMat(obj, 'move');
+        yawSpeedMat = generate_speedMat(obj, 'yaw');
+        sideSpeedMat = generate_speedMat(obj, 'side');
         flMat = generate_flMat(obj);
         rawFlMat = generate_flMat(obj, 'rawFl');
         
         if ~isempty(obj.params.skipTrials)
             sData(obj.params.skipTrials, :) = [];
-            speedMat(:, obj.params.skipTrials) = [];
+            fwSpeedMat(:, obj.params.skipTrials) = [];
+            moveSpeedMat(:, obj.params.skipTrials) = [];
+            yawSpeedMat(:, obj.params.skipTrials) = [];
+            sideSpeedMat(:, obj.params.skipTrials) = [];
             flMat(:, obj.params.skipTrials) = [];
             rawFlMat(:, obj.params.skipTrials) = [];
         end
@@ -108,7 +114,10 @@ methods
             
             % Get data for current trial
             tData = sData(iTrial, :);
-            speedDataFrames = speedMat(:, iTrial);
+            speedDataFrames = fwSpeedMat(:, iTrial);
+            moveSpeedFrames = moveSpeedMat(:, iTrial);
+            yawSpeedFrames = yawSpeedMat(:, iTrial);
+            sideSpeedFrames = sideSpeedMat(:, iTrial);
             currFlData = flMat(:, iTrial);
             currRawFlData = rawFlMat(:, iTrial);
             
@@ -117,13 +126,27 @@ methods
                 tData.originalTrialCount);
             
             % Downsample moveSpeed data to match volTimes
-            speedDataVols = [];
+            fwSpeedVols = [];
+            moveSpeedVols = [];
+            yawSpeedVols = [];
+            sideSpeedVols = [];
             for iVol = 1:numel(volTimes)
-                speedDataVols(iVol) = speedDataFrames(argmin(abs(tData.frameTimes{:} - ...
-                        volTimes(iVol))));
+                dsFrames = argmin(abs(tData.frameTimes{:} - volTimes(iVol)));
+                fwSpeedVols(iVol) = speedDataFrames(dsFrames);
+                moveSpeedVols(iVol) = moveSpeedFrames(dsFrames);
+                yawSpeedVols(iVol) = yawSpeedFrames(dsFrames);
+                sideSpeedVols(iVol) = sideSpeedFrames(dsFrames);
             end
-            speedDataVols = speedDataVols';
-            speedDataVols = [speedDataVols; nan(numel(currFlData) - numel(speedDataVols), 1)];
+            
+            fwSpeedVols = fwSpeedVols';
+            fwSpeedVols = [fwSpeedVols; nan(numel(currFlData) - numel(fwSpeedVols), 1)];
+            moveSpeedVols = moveSpeedVols';
+            moveSpeedVols = [moveSpeedVols; nan(numel(currFlData) - numel(moveSpeedVols), 1)];
+            yawSpeedVols = yawSpeedVols';
+            yawSpeedVols = [yawSpeedVols; nan(numel(currFlData) - numel(yawSpeedVols), 1)];
+            sideSpeedVols = sideSpeedVols';
+            sideSpeedVols = [sideSpeedVols; nan(numel(currFlData) - numel(sideSpeedVols), 1)];
+            allSpeedVols = [fwSpeedVols, moveSpeedVols, yawSpeedVols, sideSpeedVols];            
             
             % Exclude PMT shutoff vols
             if ~isempty(tData.pmtShutoffVols{:}) && ~any(isnan(tData.pmtShutoffVols{:}))
@@ -133,7 +156,7 @@ methods
                    disp(['Trial ', num2str(iTrial), ' nVolumes = ' num2str(numel(currFlData))]); 
                 end
                 shutoffVols = shutoffVols(shutoffVols <= numel(currFlData));
-                speedDataVols(shutoffVols) = nan;
+                allSpeedVols(shutoffVols, :) = nan;
                 currFlData(shutoffVols) = nan;
             end
             
@@ -154,50 +177,52 @@ methods
                                     volTimes < (currOnsetTime + excludeDur);
                             offsetExcludeVols = (volTimes > (currOffsetTime - excludeDur)) & ...
                                     volTimes < (currOffsetTime + excludeDur);
-                            speedDataVols(find(onsetExcludeVols | offsetExcludeVols)) = nan;
-                            currFlData(find(onsetExcludeVols | offsetExcludeVols)) = nan;
-                            
-                            
+                            allSpeedVols(find(onsetExcludeVols | offsetExcludeVols), :) = nan;
+                            currFlData(find(onsetExcludeVols | offsetExcludeVols)) = nan;                            
                         else
                             % Get rid of volumes during or just after an event (i.e. sensory stim)
                             excludeVols = (volTimes > currEventData(iEvent, :).onsetTime & ...
                                 volTimes < (currEventData(iEvent, :).offsetTime + ...
                                 obj.params.(currEvent)));
-                            speedDataVols(find(excludeVols)) = nan; %#ok<*FNDSB>
-                            currFlData(find(excludeVols)) = nan;
-                            
-                            
+                            allSpeedVols(find(excludeVols), :) = nan; %#ok<*FNDSB>
+                            currFlData(find(excludeVols)) = nan;                            
                         end
                     end
                 end                
             end
             
             % Calculate cross-correlation between Fl data and moveSpeed
-            [r(iTrial, :), lags(iTrial, :)] = xcorr(currFlData(~isnan(currFlData + speedDataVols)), ...
-                    speedDataVols(~isnan(currFlData + speedDataVols)), 6); 
+            [r(iTrial, :), lags(iTrial, :)] = xcorr(currFlData(~isnan(currFlData + ...
+                    allSpeedVols(:, 2))), allSpeedVols(~isnan(currFlData + fwSpeedVols), 2), 6); 
             
             % Apply a lag to the speed data if necessary
-            speedDataVols = speedDataVols(1:end - obj.params.lagVols);
+            allSpeedVols = allSpeedVols(1:end - obj.params.lagVols, :);
             currFlData = currFlData((obj.params.lagVols + 1):end);
             currRawFlData = currRawFlData((obj.params.lagVols + 1):end);
             volTimes = volTimes(1:end - obj.params.lagVols);
+            
             % Add to plotting vectors
-            speedData = [speedData; speedDataVols];
+            allSpeedData = [allSpeedData; allSpeedVols];
             flData = [flData; currFlData];
             rawFlData = [rawFlData; currRawFlData];
             allVolTimes = [allVolTimes; volTimes' + (tData.trialDuration * (iTrial - 1))];
         end
         
         % Drop volumes where either fl or speed data is NaN
-        nanVols = isnan(flData) | isnan(speedData) | flData == 0 | speedData == 0;
-        speedData(nanVols) = [];
+        nanVols = isnan(flData) | isnan(sum(allSpeedData, 2)) | flData == 0 | ...
+                sum(allSpeedData, 2) == 0;
+        allSpeedData(nanVols, :) = [];
         flData(nanVols) = [];
         rawFlData(nanVols) = [];
-%         allVolTimes(nanVols) = [];
         
         % Save processed data
         output = struct();
-        output.speedData = speedData;
+        output.fwSpeedData = (allSpeedData(:, 1));
+        output.moveSpeedData = allSpeedData(:, 2);
+        output.yawSpeedData = abs(allSpeedData(:, 3));
+        output.sideSpeedData = (allSpeedData(:, 4));
+        output.calculatedMoveSpeedData = (output.fwSpeedData .^ 2 + output.sideSpeedData .^ 2) ...
+                .^ 0.5;
         output.flData = flData;
         output.rawFlData = rawFlData;
         output.volTimes = allVolTimes;
@@ -210,15 +235,18 @@ methods
     end
     
     % Calculate mean fl value in equal-sized bins of analyzed moveSpeed data
-    function obj = generate_binned_flData(obj, flType, speedNorm)
+    function obj = generate_binned_flData(obj, flType, speedType, speedNorm)
+        if nargin < 2
+            flType = obj.analysisOutput.paramSnapshot.flType;
+        end
+        if nargin < 3 || isempty(speedType)
+           speedType = 'move'; 
+        end        
         aData = obj.analysisOutput;
         if ~isempty(obj.params.slidingWinSize)
             slidingWinSize = obj.params.slidingWinSize;
         else
             slidingWinSize = floor(numel(aData.rawFlData) / obj.params.nAnalysisBins);
-        end
-        if nargin < 2
-            flType = obj.analysisOutput.paramSnapshot.flType;
         end
         if strcmpi(flType, 'slidingBaseline')
             base = mov_percentile(aData.rawFlData, slidingWinSize, 0.05)';
@@ -228,13 +256,21 @@ methods
         else
             flData = aData.flData;
         end
-        if nargin == 3 && speedNorm == 1
-            speedData = mov_norm(aData.speedData, slidingWinSize)';  
+        switch speedType
+            case 'forward'
+                speedData = aData.fwSpeedData; 
+            case 'move'
+                speedData = aData.moveSpeedData;
+            case 'yaw'
+                speedData = aData.yawSpeedData;
+            case 'calculatedMove'
+                speedData = aData.calculatedMoveSpeedData;
+        end
+        if nargin == 4 && speedNorm == 1
+            speedData = mov_norm(speedData, slidingWinSize)';  
         else
-            speedData = aData.speedData;
             speedNorm = 0;
         end
-        
         
         [speedBinMidpoints, flBinMeans, SEM] = obj.bin_data(speedData, flData, ...
                 obj.params.nAnalysisBins, obj.params.plotting_minSpeed);
@@ -243,33 +279,47 @@ methods
         obj.analysisOutput.binnedData.flBinMeans = flBinMeans;
         obj.analysisOutput.binnedData.flBinSEM = SEM;
         obj.analysisOutput.binnedData.flType = flType;
+        obj.analysisOutput.binnedData.speedType = speedType;
         obj.analysisOutput.binnedData.speedNorm = speedNorm;
     end
     
     % ---------- Generate summary plots (pre-analysis) ----------
-    function ax = plot_speedMat(obj, ax)
-        if nargin < 2
+    function ax = plot_speedMat(obj, speedType, ax)
+        if nargin < 3 
             f = figure(1); clf;
             f.Color = [1 1 1];
             ax = axes();
         end
-        speedMat = generate_speedMat(obj); % --> [frame, trial]
+        if nargin < 2 || isempty(speedType)
+            speedType = 'move';
+        end
+        speedMat = generate_speedMat(obj, speedType); % --> [frame, trial]
         if ~isempty(obj.params.skipTrials)
             speedMat(:, obj.params.skipTrials) = [];
         end
         imagesc(ax, speedMat');
         colorbar()
-        title('MoveSpeed (mm/sec)')
+        switch speedType
+            case 'move'
+                title('Move speed (mm/sec)')
+            case 'forward'
+                title('Forward speed (mm/sec)')                
+            case 'yaw'
+                title('Yaw speed (deg/sec)')
+        end
         xlabel('Frame')
         ylabel('Trial')
     end
-    function ax = plot_sortedSpeed(obj, ax)
-        if nargin < 2
-            f = figure(2); clf;
+    function ax = plot_sortedSpeed(obj, speedType, ax)
+        if nargin < 3 
+            f = figure(1); clf;
             f.Color = [1 1 1];
             ax = axes();
         end
-        speedMat = generate_speedMat(obj); % --> [frame, trial]
+        if nargin < 2 || isempty(speedType)
+            speedType = 'move';
+        end
+        speedMat = generate_speedMat(obj, speedType); % --> [frame, trial]
         if ~isempty(obj.params.skipTrials)
             speedMat(:, obj.params.skipTrials) = [];
         end
@@ -279,8 +329,15 @@ methods
         yy = [1 1] * obj.params.plotting_minSpeed; 
         plot(xL, yy, 'color', 'r', 'linewidth', 2)
         xlim(xL)
-        ylabel('Sorted moveSpeed (mm/Sec)')
-    end  
+        switch speedType
+            case 'move'
+                 ylabel('Sorted move speed (mm/sec)')
+            case 'forward'
+                 ylabel('Sorted forward speed (mm/sec)')
+            case 'yaw'
+                 ylabel('Sorted yaw speed (deg/sec)')
+        end
+    end
     function ax = plot_flMat(obj, ax)
         if nargin < 3
             f = figure(3); clf;
@@ -329,19 +386,32 @@ methods
         xlabel('Lag (volumes)')
         ylabel ('r value')
     end
-    function ax = norm_data_overlay(obj, nSamples, ax)
-        if nargin < 3
+    function ax = norm_data_overlay(obj, nSamples, speedType, ax)
+        if nargin < 4
             f = figure(5); clf;
             f.Color = [1 1 1];
             ax = axes();
         end
-        speedData = obj.analysisOutput.speedData;
+        if nargin < 3 || isempty(speedType)
+            speedType = 'move';
+        end
+        switch speedType
+            case 'forward'
+                speedData = obj.analysisOutput.fwSpeedData;
+                labelStr = 'Forward speed (mm/sec)';
+            case 'move'
+                speedData = obj.analysisOutput.moveSpeedData;
+                labelStr = 'Move speed (mm/sec)';
+            case 'yaw'
+                speedData = obj.analysisOutput.yawSpeedData;
+                labelStr = 'Yaw speed (deg/sec)';
+        end
         flData = obj.analysisOutput.flData;
         volTimes = obj.analysisOutput.volTimes;
         medVolDur = median(diff(volTimes), 'omitnan');
         plotVolTimes = (1:numel(speedData)) * medVolDur;
         plot(plotVolTimes, speedData, 'color', 'b');
-        ylabel('Speed (mm/sec)')
+        ylabel(labelStr)
         xlabel('Time (sec)')
         hold on;
         plot(plotVolTimes, ones(size(plotVolTimes)), 'color', 'k')
@@ -352,11 +422,11 @@ methods
             nSamples = numel(speedData);
         end
         xlim([0 nSamples]);
-        legend({'moveSpeed', obj.analysisOutput.paramSnapshot.flType})
+        legend({[upper(speedType(1)), speedType(2:end)], obj.analysisOutput.paramSnapshot.flType})
     end
     
     % ---------- Generate primary analysis plots ----------
-    function ax = plot_2D_hist(obj, ax, flType, speedNorm)
+    function ax = plot_2D_hist(obj, ax, flType, speedType, speedNorm)
         if nargin < 2
             f = figure(6); clf;
             f.Color = [1 1 1];
@@ -379,10 +449,22 @@ methods
         else
             flData = aData.flData;
         end
-        if nargin == 4 && speedNorm == 1
-            speedData = mov_norm(aData.speedData, slidingWinSize)';
+        if nargin < 4 || isempty(speedType)
+            speedType = 'move';
+        end
+        switch speedType
+            case 'forward'
+                speedData = (aData.fwSpeedData); 
+            case 'move'
+                speedData = aData.moveSpeedData;
+            case 'yaw'
+                speedData = aData.yawSpeedData;
+            case 'calculatedMove'
+                speedData = aData.calculatedMoveSpeedData;
+        end
+        if nargin == 5 && speedNorm == 1
+            speedData = mov_norm(speedData, slidingWinSize)';
         else
-            speedData = aData.speedData;
             speedNorm = 0;
         end
         speedData(speedData < obj.params.plotting_minSpeed) = nan;
@@ -398,10 +480,20 @@ methods
                 binCounts, 'displaystyle', 'tile');
         ax.XGrid = 'off';
         ax.YGrid = 'off';
+        switch speedType
+            case 'forward'
+                labelStr = 'Forward speed (mm/sec)';
+            case 'move'
+                labelStr = 'Move speed (mm/sec)';
+            case 'yaw'
+                labelStr = 'Yaw speed (deg/sec)';
+            case 'calculatedMove'
+                labelStr = 'Calc. move speed (mm/sec)';
+        end
         if speedNorm
-            xlabel('Normalized moveSpeed');
+            xlabel(['Normalized ', lower(labelStr)]);
         else
-            xlabel('moveSpeed (mm/sec)')
+            xlabel(labelStr)
         end
         if strcmpi(flType, 'normalized')
             ylabel('Normalized F');
@@ -419,11 +511,21 @@ methods
         end    
         binnedData = obj.analysisOutput.binnedData;
         errorbar(ax, binnedData.speedBinMidpoints, binnedData.flBinMeans, binnedData.flBinSEM, ...
-                '-o', 'color', 'k', 'linewidth', 1);
+                '-o', 'color', 'k', 'linewidth', 1);    
+        switch binnedData.speedType
+            case 'forward'
+                labelStr = 'Forward speed (mm/sec)';
+            case 'move'
+                labelStr = 'Move speed (mm/sec)';
+            case 'yaw'
+                labelStr = 'Yaw speed (deg/sec)';
+            case 'calculatedMove'
+                labelStr = 'Calc. move speed (mm/sec)';
+        end
         if binnedData.speedNorm
-            xlabel('Normalized moveSpeed');
+            xlabel(['Normalized ', lower(labelStr)]);
         else
-            xlabel('moveSpeed (mm/sec)')
+            xlabel(labelStr)
         end
         if strcmpi(binnedData.flType, 'normalized')
             ylabel('Mean normalized F');
@@ -470,6 +572,7 @@ end%class
 function paramStruct = initialize_analysis_params(obj)
     paramStruct = struct();
     paramStruct.max_moveSpeed = 100;
+    paramStruct.max_yawSpeed = 1000;
     paramStruct.smWinVols = 1;
     paramStruct.smWinFrames = 1;
     paramStruct.nSmoothRepsFrames = 15;
@@ -504,13 +607,31 @@ function outputMat = cell2padded_mat(inputCell)
 end
 
 % Generate a matrix containing smoothed, padded, and capped moveSpeed data for all trials in subset
-function outputMat = generate_speedMat(obj)
+function outputMat = generate_speedMat(obj, speedType)
+    if nargin < 2
+        speedType = 'move';
+    end
     currSubset = obj.sourceDataTable.subset;
     p = obj.params;
-    outputMat = cell2padded_mat(currSubset.fwSpeed); % --> [frame, trial]
-    outputMat = outputMat * 25 * 4.5; % Convert from rad/frame to mm/sec
+    switch speedType
+        case 'forward'
+            outputMat = cell2padded_mat(currSubset.fwSpeed); % --> [frame, trial]
+        case 'move'
+             outputMat = cell2padded_mat(currSubset.moveSpeed);
+        case 'yaw'
+            outputMat = cell2padded_mat(currSubset.yawSpeed);
+        case 'side'
+            outputMat = cell2padded_mat(currSubset.sideSpeed);
+    end
     outputMat = repeat_smooth(outputMat, p.nSmoothReps, 'dim', 1, 'smWin', p.smWinFrames);
-    outputMat(outputMat > p.max_moveSpeed) = nan;
+    switch speedType
+        case {'forward', 'move', 'side'}
+            outputMat = outputMat * 25 * 4.5; % Convert from rad/frame to mm/sec
+            outputMat(outputMat > p.max_moveSpeed) = nan;
+        case 'yaw'
+            outputMat = rad2deg(outputMat) * 25; % Convert from rad/frame to deg/sec
+            outputMat(abs(outputMat) > p.max_yawSpeed) = nan;
+    end
 end
 
 % Generate a matrix containing smoothed and padded fluorescence data for all trials in subset
