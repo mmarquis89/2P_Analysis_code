@@ -13,7 +13,11 @@ for i = 1:numel(inputVec)
        currWinEnd = numel(inputVec); 
     end
     currWinVals = sort(inputVec(currWinStart:currWinEnd));
-    output(i) = currWinVals(round(numel(currWinVals) .* percentile));
+    pctIndex = round(numel(currWinVals) .* percentile);
+    if pctIndex < 1
+        pctIndex = 1;
+    end
+    output(i) = currWinVals(pctIndex);
 end
 
 end

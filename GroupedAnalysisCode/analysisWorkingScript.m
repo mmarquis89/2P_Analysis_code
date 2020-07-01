@@ -1,7 +1,7 @@
 %% Load a base aligned data object
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
-alignEventDateStr = '20200608';
+alignEventDateStr = '20200609';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
 alignEventName = 'odor';
@@ -33,7 +33,7 @@ baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = 'TypeF';
+baseFilterDefs.roiName = 'TypeD';
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
@@ -57,7 +57,7 @@ baseFilterDefs.bathTemp = [];
 
 % Alignment event-specific fields
 if strcmp(alignObj.alignEventName, 'odor')
-    baseFilterDefs.odorName = [];%['^.(?!.*background)(?!.*Oil)(?!.*Stop)'];
+    baseFilterDefs.odorName = ['^.(?!.*background)(?!.*Oil)(?!.*Stop)(?!.*Air)'];%[];%
     baseFilterDefs.concentration = [];
 end
 % 
@@ -80,7 +80,9 @@ plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 %         '20180623-2', '20180627-1'};
 % plotVarList = expIDsOfInterest';
 
+
 % Will plot one overlay group per value in this variable list (if rows matching the filter exist)
+
 % groupVar = 'expID';
 % transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
 %         '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
@@ -125,7 +127,7 @@ singleTrials = 0;
 shadeStim = [];
 includeNaN = 0;
 shadeSEM = 1;
-minTrials = 1;
+minTrials = 2;
 matchYLims = 0;
 useLegend = 1;
 manualYLims = [];
@@ -291,7 +293,7 @@ for iAx = 1:numel(goodAxes)
     
 %    if iAx == numel(goodAxes) && useLegend
 %         handles = legendUnq(newFig);
-%         legend(newAxes(end), handles, 'location', 'best', 'autoupdate', 'off');
+%         legend(newAxes(end), handles, 'fontsize', 14, 'location', 'best', 'autoupdate', 'off');
 %     end    
 end
 % close(f);
@@ -303,7 +305,7 @@ if  useLegend
     handles = legendUnq(newFig);
     legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
     set(gca, 'FontSize', 14)
-    axis off;
+    axis off
 end
 
 % Reset filter mat and filterDefs
@@ -315,7 +317,7 @@ catch ME; rethrow(ME); end
 %% Save current figure
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
-fileName = 'odorOnset_response_noMove_TypeF';
+fileName = 'odorOnset_response_noMove_TypeD';
 
 save_figure(newFig, saveDir, fileName)
 

@@ -18,7 +18,7 @@ savedAnalysisObjects = [];
 
 %%
 
-expNums = [25:48];
+expNums = [40];
 
 xLim = [0 300];
 yLim = [];

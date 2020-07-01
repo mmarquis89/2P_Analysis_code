@@ -312,7 +312,7 @@ methods
     end
     function ax = plot_sortedSpeed(obj, speedType, ax)
         if nargin < 3 
-            f = figure(1); clf;
+            f = figure(2); clf;
             f.Color = [1 1 1];
             ax = axes();
         end

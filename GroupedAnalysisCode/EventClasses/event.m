@@ -170,7 +170,8 @@ classdef event
         
         % CONVERT EVENT TIME INTO LOGICAL ARRAY 
         function outputArr = create_logical_array(obj, nSamples, sampTimes, trialList)
-            % TrialList = table with columns [expID][trialNum][onsetTime][offsetTime]
+            % TrialList = table with columns [expID][trialNum], output array will have 
+            % one column for each trial in trialList
             if nargin < 4
                 trialList = obj.trialList;
             end
@@ -178,24 +179,26 @@ classdef event
                error('Number of elements in sampTimes must equal nSamples') 
             end
             nTrials = size(trialList, 1);
-                
+            
             outputArr = zeros(nSamples, nTrials); % --> [sample, trial]
-            for iTrial = 1:nTrials
-                currTrialEvents = innerjoin(trialList(iTrial, :), obj.eventData);
-                onsetSamples = [];
-                offsetSamples = [];
-                for iEvent = 1:size(currTrialEvents, 1)
-                    onsetSamples(iEvent) = argmin(abs(sampTimes - ...
-                            currTrialEvents.onsetTime(iEvent)));
-                    offsetSamples(iEvent) = argmin(abs(sampTimes - ...
-                            currTrialEvents.offsetTime(iEvent)));
+            if nTrials > 0
+                for iTrial = 1:size(trialList, 1)
+                    currTrialEvents = innerjoin(trialList(iTrial, :), obj.eventData);
+                    onsetSamples = [];
+                    offsetSamples = [];
+                    for iEvent = 1:size(currTrialEvents, 1)
+                        onsetSamples(iEvent) = argmin(abs(sampTimes - ...
+                                currTrialEvents.onsetTime(iEvent)));
+                        offsetSamples(iEvent) = argmin(abs(sampTimes - ...
+                                currTrialEvents.offsetTime(iEvent)));
+                    end
+                    onsetSamples(onsetSamples < 1) = 1;
+                    offsetSamples(offsetSamples > nSamples) = nSamples;
+                    for iEvent = 1:numel(onsetSamples)
+                        outputArr(onsetSamples(iEvent):offsetSamples(iEvent), iTrial) = 1;
+                    end
                 end
-                onsetSamples(onsetSamples < 1) = 1;
-                offsetSamples(offsetSamples > nSamples) = nSamples;
-                for iEvent = 1:numel(onsetSamples)
-                    outputArr(onsetSamples(iEvent):offsetSamples(iEvent), iTrial) = 1;
-                end
-            end            
+            end
         end
         
     end%Methods

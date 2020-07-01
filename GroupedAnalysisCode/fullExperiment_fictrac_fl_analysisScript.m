@@ -1,6 +1,7 @@
 %% Create analysis object
 expList = load_expList;
 expList = expList(contains(expList.expName, 'PPM2'), :);
+% expList = expList(contains(expList.groupName, 'gapless'), :);
 a = MoveSpeedAnalysis(expList);
 
 allPlotParams = [];
@@ -10,16 +11,16 @@ allPlotParams = [];
 expNum = 9;
 
 % DataTable filter values
-roiName = 'TypeF-';
+roiName = 'TypeF';
 expID = expList.expID{expNum};
 
 % Analysis parameters
 smWinVols = 3;
-smWinFrames = 3;
+smWinFrames = 5;
 nSmoothReps = 15;
 lagVols = 2;
-flType = 'expDff';
-                        max_moveSpeed = 25;
+flType = 'rawFl';
+                        max_moveSpeed = 35;
                         max_yawSpeed = 1000;
 skipTrials = [];
 slidingWinDur = 60;
@@ -27,7 +28,7 @@ slidingWinDur = 60;
 
 % Plotting parameters
 a.params.nHistBins = 50;
-                        a.params.maxHistBinCount = 70;
+                        a.params.maxHistBinCount = 100;
 a.params.plotting_minSpeed = -100;
 overlayTimeSec = [40];
 
@@ -37,7 +38,7 @@ optostim = 1;
 soundstim = 1;
 grooming = 0;
 isolatedmovement = 0;
-locomotion = 1;
+locomotion = 0;
 quiescence = 0;
 
 % Primary analysis plot spacing and margins
@@ -148,10 +149,10 @@ catch ME; rethrow(ME); end
 
 %% MoveSpeed-fwSpeed-yawSpeed analysis comparison
 
-expNum = 10;
+expNum = 9;
 
 % DataTable filter values
-roiName = 'TypeF-R';
+roiName = 'TypeF';
 expID = expList.expID{expNum};
 
 % Analysis parameters
@@ -159,11 +160,11 @@ smWinVols = 3;
 smWinFrames = 5;
 nSmoothReps = 15;
 lagVols = 2;
-                        max_moveSpeed = 30;
+                        max_moveSpeed = 35;
                         max_yawSpeed = 1000;
-skipTrials = [];
+skipTrials = [1:60];
 slidingWinDur = 60;
-                        nAnalysisBins = 50;
+                        nAnalysisBins = 30;
 
 % Plotting parameters
 a.params.nHistBins = 50;
