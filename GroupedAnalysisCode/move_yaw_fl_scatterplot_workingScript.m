@@ -12,7 +12,6 @@ ylabel('yaw speed');
 
 
 % Plot 2D tiled speed vs. yaw plot colored by fluorescence 
-
 nBins = 30;
 figure(16);clf;
 h = histogram2(testSpeed, testYaw, nBins, 'displaystyle', 'tile');

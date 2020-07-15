@@ -211,9 +211,12 @@ methods
         % Drop volumes where either fl or speed data is NaN
         nanVols = isnan(flData) | isnan(sum(allSpeedData, 2)) | flData == 0 | ...
                 sum(allSpeedData, 2) == 0;
-        allSpeedData(nanVols, :) = [];
-        flData(nanVols) = [];
-        rawFlData(nanVols) = [];
+%         allSpeedData(nanVols, :) = [];
+%         flData(nanVols) = [];
+%         rawFlData(nanVols) = [];
+        allSpeedData(nanVols, :) = nan;
+        flData(nanVols) = nan;
+        rawFlData(nanVols) = nan;
         
         % Save processed data
         output = struct();

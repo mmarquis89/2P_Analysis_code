@@ -1,6 +1,6 @@
 %% Create analysis object
 expList = load_expList;
-expType = 'D-ANT';
+expType = 'TH-C';
 expList = expList(contains(expList.expName, expType), :);
 a = MoveSpeedAnalysis(expList);
 
@@ -18,11 +18,12 @@ savedAnalysisObjects = [];
 
 %%
 
-expNums = [40];
+expNums = [1];
 
 xLim = [0 300];
 yLim = [];
 fontSize = 12;
+useSavedObj = 0;
 
 % Adjust plot spacing and margins
 SV = 0.07;
@@ -40,25 +41,31 @@ if numel(expNums) == 3
 else
     plotLayoutDims = numSubplots(numel(expNums));
 end
-if isempty(savedAnalysisObjects)
+if isempty(savedAnalysisObjects) || ~useSavedObj
     savedAnalysisObjects = allPlotParams;
     savedAnalysisObjects.obj = repmat({[]}, size(allPlotParams, 1), 1);
 end
 f = figure(1); clf;
 f.Color = [1 1 1];
-for iExp = 1:numel(expNums)
+for iExp = 1:numel(expNums)    
     
     % Get current expID and params
     currExpID = allPlotParams.expID{expNums(iExp)};
     disp(currExpID);
     currPlotParams = allPlotParams.params{expNums(iExp)};
+    
+    currPlotParams.locomotion = 0;
+    currPlotParams.odor = 1;
+    currPlotParams.roiName = 'TypeD';
+    currPlotParams.ballstop = 0;
+    
     a.params = currPlotParams;
     
     % Create axes for current plot
     ax = subaxis(plotLayoutDims(1), plotLayoutDims(2), iExp, ...
             'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, 'sv', SV, 'sh', SH);
         
-    if isempty(savedAnalysisObjects.obj{expNums(iExp)})
+    if isempty(savedAnalysisObjects.obj{expNums(iExp)}) || ~useSavedObj
     
         % Initialize filters
         a.filterDefs.expID = currExpID;

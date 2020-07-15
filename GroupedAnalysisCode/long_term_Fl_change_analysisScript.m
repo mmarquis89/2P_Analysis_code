@@ -111,7 +111,7 @@ if all(subsetData.trialNum == subsetData.acqNum)
         currBlockData_compROI = subsetData_compROI(subsetData_compROI.acqNum == iBlock, :);
         flData = currBlockData.rawFl{:};
         flData_compROI = currBlockData_compROI.rawFl{:};
-        if ~isempty(currBlockData.pmtShutoffVols{:}) & ~isnan(currBlockData.pmtShutoffVols{:}) %#ok<AND2>
+        if ~isempty(currBlockData.pmtShutoffVols{:}) & ~isnan(currBlockData.pmtShutoffVols{:})
             flData(currBlockData.pmtShutoffVols{:}) = nan;
             flData_compROI(currBlockData_compROI.pmtShutoffVols{:}) = nan;
         end

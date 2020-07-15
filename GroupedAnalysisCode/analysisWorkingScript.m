@@ -4,14 +4,14 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
 alignEventDateStr = '20200609';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
-alignEventName = 'odor';
+alignEventName = 'grooming';
 
 load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_AlignEventObj_', ...
         alignEventName, '.mat']));
 
 %% Generate or load aligned event data table
 
-analysisWin = [2 5];
+analysisWin = [2 4];
 
 saveFileName = [alignObj.alignEventName, '_pre_', num2str(analysisWin(1)), '_post_', ...
         num2str(analysisWin(2)), '.mat'];
@@ -33,15 +33,15 @@ baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = 'TypeD';
+baseFilterDefs.roiName = 'TypeB';
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
-baseFilterDefs.grooming = 0;
-baseFilterDefs.isolatedmovement = 0;
+baseFilterDefs.grooming = [];
+baseFilterDefs.isolatedmovement = [];
 baseFilterDefs.locomotion = 0;
-baseFilterDefs.flailing = [];
-baseFilterDefs.odor = -1;
+baseFilterDefs.flailing = 0;
+baseFilterDefs.odor = 0;
 baseFilterDefs.optostim = 0;
 baseFilterDefs.panelsflash = 0;
 baseFilterDefs.soundstim = 0;
@@ -65,7 +65,7 @@ dt = dt.initialize_filters(baseFilterDefs);
 baseFilterMat = dt.filterMat;
 
 
-%% SETUP PLOTTING VARIABLES
+% SETUP PLOTTING VARIABLES
 
 % Will make one subplot per value in this variable list
 plotVar = 'expID';
@@ -90,8 +90,8 @@ plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 % groupVarList = expIDList(~ismember(expIDList, transectionExpts));
 % groupVarColors = lines(numel(groupVarList));
 
-groupVar = 'odorName';
-groupVarList =  unique(dt.subset.odorName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
+groupVar = 'roiName';
+groupVarList =  unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
 groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
 
 % Pre-calculate filter vectors so it's not being done repeatedly in a loop during plotting  
@@ -117,21 +117,21 @@ groupVarFilterTable = table(groupVarList', groupVarFilters', 'VariableNames', ..
     
 disp('Plot and group filters ready')    
 
-%% GENERATE PLOTS
+% GENERATE PLOTS
 
-disp(unique(dt.subset.odorName))
+% disp(unique(dt.subset.odorName))
 
 % Set plotting options
-smWin = 1;
-singleTrials = 0;
-shadeStim = [];
+smWin = 3;
+singleTrials = 1;
+shadeStim = 0;
 includeNaN = 0;
 shadeSEM = 1;
-minTrials = 2;
+minTrials = 1;
 matchYLims = 0;
 useLegend = 1;
 manualYLims = [];
-minPlotGroups = 1;
+minPlotGroups = 0;
 
 % Configure plot spacing and margins
 SV = 0.05;
@@ -317,7 +317,7 @@ catch ME; rethrow(ME); end
 %% Save current figure
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
-fileName = 'odorOnset_response_noMove_TypeD';
+fileName = 'groomingOnset_response_TypeD';
 
 save_figure(newFig, saveDir, fileName)
 
