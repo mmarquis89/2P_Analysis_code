@@ -88,6 +88,7 @@ methods
         allSpeedData = [];
         flData = []; rawFlData = [];
         allVolTimes = [];
+        odorStimData = [];
         sData = obj.sourceDataTable.subset;
         fwSpeedMat = generate_speedMat(obj, 'forward');
         moveSpeedMat = generate_speedMat(obj, 'move');
@@ -147,6 +148,7 @@ methods
             sideSpeedVols = sideSpeedVols';
             sideSpeedVols = [sideSpeedVols; nan(numel(currFlData) - numel(sideSpeedVols), 1)];
             allSpeedVols = [fwSpeedVols, moveSpeedVols, yawSpeedVols, sideSpeedVols];            
+            odorStimVols = zeros(size(fwSpeedVols));
             
             % Exclude PMT shutoff vols
             if ~isempty(tData.pmtShutoffVols{:}) && ~any(isnan(tData.pmtShutoffVols{:}))
@@ -185,7 +187,11 @@ methods
                                 volTimes < (currEventData(iEvent, :).offsetTime + ...
                                 obj.params.(currEvent)));
                             allSpeedVols(find(excludeVols), :) = nan; %#ok<*FNDSB>
-                            currFlData(find(excludeVols)) = nan;                            
+                            currFlData(find(excludeVols)) = nan;   
+                            if strcmp(currEvent, 'odor')
+                                odorStimVols((volTimes > currEventData(iEvent, :).onsetTime & ...
+                                volTimes < (currEventData(iEvent, :).offsetTime))) = 1;
+                            end
                         end
                     end
                 end                
@@ -200,8 +206,10 @@ methods
             currFlData = currFlData((obj.params.lagVols + 1):end);
             currRawFlData = currRawFlData((obj.params.lagVols + 1):end);
             volTimes = volTimes(1:end - obj.params.lagVols);
+            odorStimVols = odorStimVols(1:end - obj.params.lagVols);
             
             % Add to plotting vectors
+            odorStimData = [odorStimData; odorStimVols];
             allSpeedData = [allSpeedData; allSpeedVols];
             flData = [flData; currFlData];
             rawFlData = [rawFlData; currRawFlData];
@@ -220,6 +228,7 @@ methods
         
         % Save processed data
         output = struct();
+        output.odorStimData = odorStimData;
         output.fwSpeedData = (allSpeedData(:, 1));
         output.moveSpeedData = allSpeedData(:, 2);
         output.yawSpeedData = abs(allSpeedData(:, 3));

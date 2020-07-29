@@ -1,29 +1,29 @@
 expList = load_expList();
-expList = expList(contains(expList.expName, 'TH-C'), :);
+expList = expList(contains(expList.expName, 'D-ANT'), :);
 expList = expList(~contains(expList.groupName, 'newExpts'), :);
 
 plt = SummaryPlotter2D(expList);
 
 %% Save SummaryPlotter object
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Saved_summaryPlotter2D_objects';
-fileName = 'TH-C_preFicTrac_Expts_SummaryPlotter.mat'; 
+fileName = 'SummaryPlotter.mat'; 
 save(fullfile(parentDir, fileName), 'plt');
 
 %%
 maxVals = [1500 1500 1500 1500];
 minVals = [0 0 0 0];
 
-expNum = 16;
+expNum = 61;
 
-plotVarNames = {'TypeD', 'TypeB', 'locomotion', 'isolatedmovement', 'ballstop', 'odor'};
+plotVarNames = {'TypeD', 'fwSpeed'};
 maxVals = [2000 200 2000, 200, 200, 200];
-minVals = [0 0 0 0 0 0];
+minVals = [-1000 0 0 0 0 0];
 spacerRowOverride = 0;
 ignoreSavedParams = 0;
 
-saveParams = 1;
-saveFig = 1;
-fileNameTag = 'TH-C';
+saveParams = 0;
+saveFig = 0;
+fileNameTag = 'D-ANT';
 
 SV = 0.06;
 SH = 0.045;

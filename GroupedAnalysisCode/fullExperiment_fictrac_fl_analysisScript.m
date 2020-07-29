@@ -1,6 +1,6 @@
 %% Create analysis object
 expList = load_expList;
-expList = expList(contains(expList.expName, 'PPM2'), :);
+expList = expList(contains(expList.expName, 'D-ANT'), :);
 % expList = expList(contains(expList.groupName, 'gapless'), :);
 a = MoveSpeedAnalysis(expList);
 
@@ -8,10 +8,10 @@ allPlotParams = [];
 
 %% Set params and run moveSpeed-only analysis
 
-expNum = 9;
+expNum = 61;
 
 % DataTable filter values
-roiName = 'TypeF';
+roiName = 'TypeD-L';
 expID = expList.expID{expNum};
 
 % Analysis parameters
@@ -24,7 +24,7 @@ flType = 'rawFl';
                         max_yawSpeed = 1000;
 skipTrials = [];
 slidingWinDur = 60;
-                        nAnalysisBins = 25;
+                        nAnalysisBins = 40;
 
 % Plotting parameters
 a.params.nHistBins = 50;
@@ -33,7 +33,7 @@ a.params.plotting_minSpeed = -100;
 overlayTimeSec = [40];
 
 % Analysis exclusion events
-odor = 2;
+odor = 0.01;
 optostim = 1;
 soundstim = 1;
 grooming = 0;
@@ -149,10 +149,10 @@ catch ME; rethrow(ME); end
 
 %% MoveSpeed-fwSpeed-yawSpeed analysis comparison
 
-expNum = 9;
+expNum = 24;
 
 % DataTable filter values
-roiName = 'TypeF';
+roiName = 'TypeD';
 expID = expList.expID{expNum};
 
 % Analysis parameters
@@ -162,9 +162,9 @@ nSmoothReps = 15;
 lagVols = 2;
                         max_moveSpeed = 35;
                         max_yawSpeed = 1000;
-skipTrials = [1:60];
+skipTrials = [];
 slidingWinDur = 60;
-                        nAnalysisBins = 30;
+                        nAnalysisBins = 15;
 
 % Plotting parameters
 a.params.nHistBins = 50;
@@ -178,7 +178,7 @@ optostim = 1;
 soundstim = 1;
 grooming = 0;
 isolatedmovement = 0;
-locomotion = 1;
+locomotion = 0;
 quiescence = 0;
 
 % Primary analysis plot spacing and margins

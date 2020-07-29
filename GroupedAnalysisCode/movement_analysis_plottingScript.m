@@ -1,6 +1,6 @@
 %% Create analysis object
 expList = load_expList;
-expType = 'TH-C';
+expType = 'PPM2';
 expList = expList(contains(expList.expName, expType), :);
 a = MoveSpeedAnalysis(expList);
 
@@ -12,13 +12,15 @@ elseif strcmp(expType, 'D-ANT')
     neuronType = 'TypeD';
     load(fullfile(figDir, 'allPlotParams_TypeD.mat'), 'allPlotParams');
 else
-    allPlotParams = [];
+    load(fullfile(figDir, 'allPlotParams_TypeD.mat'), 'allPlotParams');
+    allPlotParams = allPlotParams(1:size(expList, 1), :);
+    allPlotParams.expID = expList.expID;
 end
 savedAnalysisObjects = [];
 
 %%
 
-expNums = [1];
+expNums = [8];
 
 xLim = [0 300];
 yLim = [];
@@ -55,8 +57,8 @@ for iExp = 1:numel(expNums)
     currPlotParams = allPlotParams.params{expNums(iExp)};
     
     currPlotParams.locomotion = 0;
-    currPlotParams.odor = 1;
-    currPlotParams.roiName = 'TypeD';
+    currPlotParams.odor = 1.5;
+    currPlotParams.roiName = 'TypeF-R';
     currPlotParams.ballstop = 0;
     
     a.params = currPlotParams;

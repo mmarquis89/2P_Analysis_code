@@ -184,7 +184,14 @@ classdef SummaryPlotter2D
                 
                 % Extract the appropriate plot data
                 if strcmp(dataType, 'fl')
+                    
+                    
+                    
                     currPlotData = currTrialData.rawFl{:};
+                    
+% base = mov_percentile(currPlotData, 100, 0.05)';
+% currPlotData = (currPlotData - base) ./ base;
+                    
                     if ~isempty(currTrialData.pmtShutoffVols{:}) & ...
                                 ~isnan(currTrialData.pmtShutoffVols{:}) 
                             shutoffVols = currTrialData.pmtShutoffVols{:};

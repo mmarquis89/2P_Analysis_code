@@ -2,6 +2,10 @@ testSpeed = a.analysisOutput.moveSpeedData;
 testYaw = a.analysisOutput.yawSpeedData;
 testFl = a.analysisOutput.rawFlData;
 
+testFl = testFl(~isnan(testFl));
+testYaw = testYaw(~isnan(testFl));
+testSpeed = testSpeed(~isnan(testFl));
+
 intFl = round(testFl) - min(round(testFl)) + 1;
 cm = jet(round(max(intFl)));
 cm = cm(intFl, :) * 0.9;
@@ -35,6 +39,6 @@ set(gca, 'XTick', 1:numel(xEdges));
 set(gca, 'XTickLabel', xEdges);
 set(gca, 'YTick', 1:numel(yEdges));
 set(gca, 'YTickLabel', yEdges(end:-1:1));
-
+colormap(viridis)
 
 
