@@ -4,7 +4,7 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
 alignEventDateStr = '20200609';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
-alignEventName = 'grooming';
+alignEventName = 'odor';
 
 load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_AlignEventObj_', ...
         alignEventName, '.mat']));
@@ -28,12 +28,12 @@ end
 baseFilterDefs = alignObj.create_filterDefs();
 
 % General fields
-baseFilterDefs.expID = [];%'20180414-1|20180623-3|20181120-1|2019031503';
+baseFilterDefs.expID = '20180329-2';%'20180414-1|20180623-3|20181120-1|2019031503';
 baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = 'TypeB';
+baseFilterDefs.roiName = 'VLP-AMMC|TypeF';
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
@@ -41,7 +41,7 @@ baseFilterDefs.grooming = [];
 baseFilterDefs.isolatedmovement = [];
 baseFilterDefs.locomotion = 0;
 baseFilterDefs.flailing = 0;
-baseFilterDefs.odor = 0;
+baseFilterDefs.odor = [];
 baseFilterDefs.optostim = 0;
 baseFilterDefs.panelsflash = 0;
 baseFilterDefs.soundstim = 0;
@@ -80,6 +80,10 @@ plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 %         '20180623-2', '20180627-1'};
 % plotVarList = expIDsOfInterest';
 
+% plotVar = 'roiName';
+% plotVarList = {'VLP-AMMC'; 'TypeF'};
+
+
 
 % Will plot one overlay group per value in this variable list (if rows matching the filter exist)
 
@@ -117,14 +121,14 @@ groupVarFilterTable = table(groupVarList', groupVarFilters', 'VariableNames', ..
     
 disp('Plot and group filters ready')    
 
-% GENERATE PLOTS
+%% GENERATE PLOTS
 
 % disp(unique(dt.subset.odorName))
 
 % Set plotting options
-smWin = 3;
-singleTrials = 1;
-shadeStim = 0;
+smWin = 5;
+singleTrials = 0;
+shadeStim = 1;
 includeNaN = 0;
 shadeSEM = 1;
 minTrials = 1;
@@ -265,6 +269,7 @@ clf;
 emptyAxes(nPlottedGroups < minPlotGroups) = 1;
 
 subplotDims = numSubplots(sum(~emptyAxes));
+subplotDims(subplotDims == 0) = 1;
 if all(subplotDims == [1 3])
    subplotDims = [2 2]; 
 end
