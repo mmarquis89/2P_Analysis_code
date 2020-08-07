@@ -127,7 +127,7 @@ end
 % First plot percentages grouped by cell types
 ax = subaxis(2, 1, 1, 'ml', 0.14, 'mr', 0.14, 'sv', 0.07, 'mb', 0.07, 'mt', 0.04);
 xx = (1:numel(sort(groupedSub.connectionWeightPct))) ./ numel(sort(groupedSub.connectionWeightPct)); 
-plot(sort(groupedSub.connectionWeightPct), '-', 'linewidth', 1.5);
+plot(cumsum(sort(groupedSub.connectionWeightPct)), '-', 'linewidth', 1.5);
 ax.Children.Marker = '.';
 ax.Children.MarkerSize = 12;
 ax.FontSize = 13;
