@@ -84,7 +84,8 @@ for iType = 1:size((currTypeList), 1)
     end
     
     % Create another table that groups partners by cell type
-    groupedSub = groupsummary(sub, {'neuronID', 'neuronName', 'partnerDirection', 'partnerType'}, ...
+    groupedSub = groupsummary(sub, {'neuronID', 'neuronName', 'partnerDirection', 'partnerID', ...
+            'partnerType'}, ...
             'sum', {'synapseCount'});
 %     groupedSub = groupedSub(~strcmp(groupedSub.partnerType, 'NA'), :);
     groupedSub.connectionWeightPct = 100 * (groupedSub.sum_synapseCount ./ totalSynapses);
@@ -219,8 +220,17 @@ disp(cellTypeTbl_allTypes);
 % fileName = ['top_', partnerDirection, '_partner_cells.csv'];
 % writetable(singleCellTbl_allTypes, fullfile(parentDir, fileName));
 % 
+%%
+% tblDS = cellTypeTbl_allTypes;
 
+test = outerjoin(tblUS, tblDS, 'Keys', {'neuronID', 'partnerID'}, 'MergeKeys', 1, 'LeftVariables', ...
+        {'neuronID', 'neuronName', 'partnerID', 'partnerType', 'synapseCount'}, 'RightVariables', ...
+        {'neuronID', 'neuronName', 'partnerID', 'partnerType', 'synapseCount'});
 
+test2 = test(~isnan(test.synapseCount_tblUS) & ~isnan(test.synapseCount_tblDS), :);
+
+writetable(test2, fullfile('C:\Users\Wilson Lab\Google Drive\Lab Work\LH-DAN_connectomics_analysis', ...
+        'testRecipTable.csv'));
 %% Create scatter plots of summary variables
 tb = table(currTypeList.neuronName, totalSynapseCounts', partnerTypeCounts', maxSynapseCounts', ...
         'variablenames', {'cellType', 'totalSynapses', 'totalPartnerTypes', 'maxSynapseCount'});

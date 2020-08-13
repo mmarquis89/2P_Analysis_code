@@ -81,7 +81,121 @@ tbl = readtable(fullfile(parentDir, 'full_connectivity_table_all_cells.csv'), ..
 
 % DNs = readtable(fullfile(parentDir, 'putative_DN_IDs.csv'), 'delimiter', ',');    
 
-%% Test section
+%% Create tables of reciprocal connectivity
+
+topPartnerCount = [];
+saveTables = 0;
+
+
+tracedTbl = tbl(strcmpi(tbl.partnerStatus, 'traced') & tbl.partnerSize > 1.2e8, :);
+tracedTbl = tracedTbl(~strcmp(tracedTbl.partnerType, 'NA'), :);     
+
+% Grouped by cell type
+groupTbl = groupsummary(tracedTbl, {'neuronID', 'neuronName', 'neuronType', ...
+        'partnerType', 'partnerDirection'}, 'sum', {'synapseCount'});
+groupTbl.Properties.VariableNames{strcmp(groupTbl.Properties.VariableNames, ...
+        'sum_synapseCount')} = 'synapseCount';
+groupTbl.Properties.VariableNames{strcmp(groupTbl.Properties.VariableNames, ...
+        'GroupCount')} = 'nCells';
+tblDS = groupTbl(strcmp(groupTbl.partnerDirection, 'downstream'), :);
+tblUS = groupTbl(strcmp(groupTbl.partnerDirection, 'upstream'), :);
+mergeTbl = outerjoin(tblDS, tblUS, 'keys', {'neuronID', 'neuronName', 'neuronType', 'partnerType'}, ...
+        'mergekeys', 1);
+mergeTbl.synapseCount_tblUS(isnan(mergeTbl.synapseCount_tblUS)) = 0;
+mergeTbl.nCells_tblUS(isnan(mergeTbl.nCells_tblUS)) = 0;
+mergeTbl.synapseCount_tblDS(isnan(mergeTbl.synapseCount_tblDS)) = 0;
+mergeTbl.nCells_tblDS(isnan(mergeTbl.nCells_tblDS)) = 0;
+cellTypeRecipTable = mergeTbl(~isnan(mergeTbl.nCells_tblDS) & ~isnan(mergeTbl.nCells_tblUS), ...
+        {'neuronID', 'neuronType', 'partnerType', 'nCells_tblDS', 'synapseCount_tblDS', ...
+        'nCells_tblUS', 'synapseCount_tblUS'});
+cellTypeRecipTable.totalSynapses = cellTypeRecipTable.synapseCount_tblDS + ...
+        cellTypeRecipTable.synapseCount_tblUS;
+if ~isempty(topPartnerCount)
+    newTable = [];
+    neuronList = unique(cellTypeRecipTable.neuronID);
+    for iType = 1:numel(neuronList)
+        currTypeTbl = cellTypeRecipTable(strcmp(cellTypeRecipTable.neuronID, neuronList{iType}), :);
+        newTable = [newTable; tail(sortrows(currTypeTbl(:, {'neuronID', 'neuronType', 'partnerType', ...
+            'nCells_tblDS', 'synapseCount_tblDS', 'nCells_tblUS', 'synapseCount_tblUS', ...
+            'totalSynapses'}), 'totalSynapses'), topPartnerCount)];
+    end
+    cellTypeRecipTable = newTable;
+end
+
+% Single cell connections
+singleCellTbl = tracedTbl(:, {'neuronID', 'neuronName', 'neuronType', 'partnerID', 'partnerType', ...
+        'partnerDirection', 'synapseCount'});
+tblDS = singleCellTbl(strcmp(singleCellTbl.partnerDirection, 'downstream'), :);
+tblUS = singleCellTbl(strcmp(singleCellTbl.partnerDirection, 'upstream'), :);
+mergeTbl = outerjoin(tblDS, tblUS, 'keys', {'neuronID', 'neuronName', 'neuronType', 'partnerID', ...
+        'partnerType'}, 'mergekeys', 1);
+singleCellRecipTable = mergeTbl(~isnan(mergeTbl.synapseCount_tblUS) & ...
+        ~isnan(mergeTbl.synapseCount_tblDS), {'neuronID', 'neuronType', 'partnerID', 'partnerType', ...
+        'synapseCount_tblDS', 'synapseCount_tblUS'});
+singleCellRecipTable.totalSynapses = singleCellRecipTable.synapseCount_tblDS + ...
+        singleCellRecipTable.synapseCount_tblUS;
+if ~isempty(topPartnerCount)
+    newTable = [];
+    neuronList = unique(singleCellRecipTable.neuronID);
+    for iType = 1:numel(neuronList)
+        currTypeTbl = singleCellRecipTable(strcmp(singleCellRecipTable.neuronID, ...
+                neuronList{iType}), :);
+        newTable = [newTable; tail(sortrows(currTypeTbl(:, {'neuronID', 'neuronType', 'partnerID', ...
+            'partnerType', 'synapseCount_tblDS', 'synapseCount_tblUS', 'totalSynapses'}), ...
+            'totalSynapses'), topPartnerCount)];
+    end
+    singleCellRecipTable = newTable;
+end
+
+% Save tables
+if saveTables
+    writetable(cellTypeRecipTable, fullfile(parentDir, 'cellTypeReciprocityTable.csv'));
+    writetable(singleCellRecipTable, fullfile(parentDir, 'singleCellReciprocityTable.csv'));
+end
+
+
+%
+plotTable = cellTypeRecipTable(cellTypeRecipTable.totalSynapses > 1, :);
+% plotTable = singleCellRecipTable;
+plotTable.eqIndex = abs(0.5 - (plotTable.synapseCount_tblDS ./ ...
+        plotTable.totalSynapses));
+plotTable = sortrows(plotTable, 'totalSynapses', 'descend');
+f = figure(2);clf;hold on;
+% neuronList = sortrows(unique(cellTypeRecipTable(:, 1:2)), 2);
+neuronList = sortrows(unique(plotTable(:, 2)), 1);
+% cm = jet(size(neuronList, 1)) * 0.95;
+cm = [rgb('blue'); rgb('blue'); rgb('orange'); rgb('red'); rgb('red'); rgb('red'); rgb('magenta'); ...
+    rgb('magenta'); rgb('magenta');rgb('green'); rgb('violet');rgb('cyan'); rgb('cyan');rgb('cyan'); ...
+    rgb('indigo');rgb('indigo'); rgb('indigo');rgb('indigo'); rgb('indigo');];
+meanVals = [];
+plotDims = numSubplots(size(neuronList,1));
+for iCell = 1:size(neuronList, 1)
+       ax = subaxis(plotDims(1), plotDims(2), iCell); cla();
+%      yy = sort(plotTable.eqIndex(strcmp(cellTypeRecipTable.neuronID, ...
+%             neuronList.neuronID{iCell})));
+%      yy = (plotTable.eqIndex(strcmp(plotTable.neuronType, ...
+%             neuronList.neuronType{iCell})));
+%      xx = (1:numel(yy)) ./ numel(yy);
+%      meanVals(iCell) = mean(yy');
+     xx = plotTable.synapseCount_tblDS(strcmp(plotTable.neuronType, ...
+            neuronList.neuronType{iCell}));
+     yy = plotTable.synapseCount_tblUS(strcmp(plotTable.neuronType, ...
+            neuronList.neuronType{iCell}));
+%      disp([neuronList.neuronType{iCell}, ': ', num2str(mean(yy'), 3)])
+     plot(ax, xx, yy, 'x', 'color', cm(iCell, :));   
+     hold on;
+     xL = xlim();
+     yL = ylim();
+     plot(ax, [1, max([xL, yL])], [1, max([xL, yL])], '-', 'color', 'k')
+     title(regexprep(neuronList.neuronType{iCell}, '_', '\\_'));
+     xlabel('Output synapses');
+     ylabel('Input synapses');
+     ax.XScale = 'log'; 
+     ax.YScale = 'log';
+end
+% neuronList.meanVals = meanVals';
+% disp(sortrows(neuronList, 2, 'descend'))
+% legend(neuronList.neuronType, 'location', 'nw');
 
 %% 
 dt = DataTable(tbl);
@@ -92,7 +206,7 @@ currType = 8;
 
 % filterDefs.DAN_name = 'TypeB';
 filterDefs.neuronType = typeList{currType};
-filterDefs.partnerDirection = 'downstream';
+filterDefs.partnerDirection = 'upstream';
 
 thresh = 5;
 

@@ -11,7 +11,7 @@ load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_Align
 
 %% Generate or load aligned event data table
 
-analysisWin = [2 4];
+analysisWin = [2 6];
 
 saveFileName = [alignObj.alignEventName, '_pre_', num2str(analysisWin(1)), '_post_', ...
         num2str(analysisWin(2)), '.mat'];
@@ -28,12 +28,12 @@ end
 baseFilterDefs = alignObj.create_filterDefs();
 
 % General fields
-baseFilterDefs.expID = '20180329-2';%'20180414-1|20180623-3|20181120-1|2019031503';
+baseFilterDefs.expID = '20180623-1';%'20180414-1|20180623-3|20181120-1|2019031503';
 baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = 'VLP-AMMC|TypeF';
+baseFilterDefs.roiName = 'TypeD';
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
@@ -41,7 +41,7 @@ baseFilterDefs.grooming = [];
 baseFilterDefs.isolatedmovement = [];
 baseFilterDefs.locomotion = 0;
 baseFilterDefs.flailing = 0;
-baseFilterDefs.odor = [];
+baseFilterDefs.odor = -1;
 baseFilterDefs.optostim = 0;
 baseFilterDefs.panelsflash = 0;
 baseFilterDefs.soundstim = 0;
@@ -94,9 +94,13 @@ plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 % groupVarList = expIDList(~ismember(expIDList, transectionExpts));
 % groupVarColors = lines(numel(groupVarList));
 
-groupVar = 'roiName';
-groupVarList =  unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
+% groupVar = 'roiName';
+% groupVarList =  unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
+groupVar = 'odorName';
+groupVarList = unique(dt.subset.odorName)';
 groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
+
+
 
 % Pre-calculate filter vectors so it's not being done repeatedly in a loop during plotting  
 plotVarFilters = {};
@@ -296,22 +300,22 @@ for iAx = 1:numel(goodAxes)
         ylim(newAxes(iAx), globalYLims);
     end
     
-%    if iAx == numel(goodAxes) && useLegend
-%         handles = legendUnq(newFig);
-%         legend(newAxes(end), handles, 'fontsize', 14, 'location', 'best', 'autoupdate', 'off');
-%     end    
+   if iAx == numel(goodAxes) && useLegend
+        handles = legendUnq(newFig);
+        legend(newAxes(end), handles, 'fontsize', 14, 'location', 'best', 'autoupdate', 'off');
+    end    
 end
 % close(f);
 
-% Plot legend on an empty axes in an unused part of the figure 
-tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, ...
-            'sv', SV, 'sh', SH);
-if  useLegend
-    handles = legendUnq(newFig);
-    legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
-    set(gca, 'FontSize', 14)
-    axis off
-end
+% % Plot legend on an empty axes in an unused part of the figure 
+% tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, ...
+%             'sv', SV, 'sh', SH);
+% if  useLegend
+%     handles = legendUnq(newFig);
+%     legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
+%     set(gca, 'FontSize', 14)
+%     axis off
+% end
 
 % Reset filter mat and filterDefs
 dt.filterMat = baseFilterMat;
