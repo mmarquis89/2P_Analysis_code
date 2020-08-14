@@ -11,7 +11,7 @@ load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_Align
 
 %% Generate or load aligned event data table
 
-analysisWin = [2 6];
+analysisWin = [7 5];
 
 saveFileName = [alignObj.alignEventName, '_pre_', num2str(analysisWin(1)), '_post_', ...
         num2str(analysisWin(2)), '.mat'];
