@@ -10,9 +10,9 @@ typeList = sortrows(unique(dt.sourceData(:, {'neuronID', 'neuronName'})), 2);
 neuronList = unique(dt.sourceData.neuronID);
 neuronNameList = unique(dt.sourceData.neuronName);
 
-currTypeList = typeList([1:14, 19:21, 15:18],:);
+currTypeList = typeList([1:13, 19:21, 15:18],:);
 % currTypeList = typeList([1:15, 20:22, 16:19], :);
-partnerDirection = 'downstream';
+partnerDirection = 'upstream';
 yVarType =  'percentage'; %'count'; %
 yScaleType =  'log'; %'linear'; % 
 xNorm = 1;
@@ -29,7 +29,7 @@ cm = [rgb('blue'); rgb('blue'); ...
         rgb('red'); rgb('red'); rgb('red'); ...
         rgb('green'); rgb('green'); rgb('green'); ...
         rgb('magenta'); rgb('magenta'); ...
-        rgb('black'); ...
+%         rgb('black'); ...
         rgb('orange'); rgb('orange'); rgb('orange'); ...
         rgb('brown'); rgb('brown'); rgb('brown'); rgb('brown')];
 
@@ -242,9 +242,9 @@ yy = tb.maxSynapseCount;
 yLab = ['Max synapses with a single partner cell type'];
 fileName = ['total_', directionStr, '_synapses_vs_max_synapses_with_single_cell_type'];
 % % 
-% yy = tb.totalPartnerTypes;
-% yLab = ['Number of ', partnerDirection, ' cell types'];
-% fileName = ['total_', directionStr, '_synapses_vs_total_', partnerDirection, '_cell_types'];
+yy = tb.totalPartnerTypes;
+yLab = ['Number of ', partnerDirection, ' cell types'];
+fileName = ['total_', directionStr, '_synapses_vs_total_', partnerDirection, '_cell_types'];
 
 saveFig = 0;
 
