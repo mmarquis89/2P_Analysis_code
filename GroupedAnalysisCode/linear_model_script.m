@@ -139,9 +139,7 @@ f.Color = [1 1 1];
 plot(dt.subset.volTimes{1}(dt.subset.volTimes{1} > 0)', odorRespFilter, 'linewidth', 3, 'color', ...
         'k');
 plot_stim_shading([0, dt.subset.offsetTime(1) - dt.subset.onsetTime(1)])
-title([regexprep(expID, '_', '\\_'), ' odor response filter'])
-xlabel('Time (sec)');
-set(gca, 'FontSize', 11)
+
 if saveFig
     fileName = [expID, '_odor_response_filter'];
     save_figure(f, fullfile(parentDir, 'Figs', 'linear_regression_analysis'), fileName); 
