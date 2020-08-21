@@ -59,8 +59,8 @@ methods
         
         % Load event DataTable
         disp('Loading event DataTable...')
-        fileName = ['odor_pre_', num2str(mp.odorRespFilterDur(1)), '_post_', ...
-                num2str(mp.odorRespFilterDur(2)), '.mat'];
+        fileName = ['odor_pre_', num2str(sourceDataParams.odorRespFilterDur(1)), '_post_', ...
+                num2str(sourceDataParams.odorRespFilterDur(2)), '.mat'];
         load(fullfile(parentDir, 'Saved_DataTable_objects', fileName), 'dt')
         disp('Loading complete')
         
