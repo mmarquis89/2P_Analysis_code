@@ -404,7 +404,7 @@ methods(Static)
         end
         
         % Format axes
-        ax.XLim = [1 nCoeffs];
+        ax.XLim = [1.5, nCoeffs + 0.5];
         ax.FontSize = 12;
         ax.XTick = 2:numel(mdl.Coefficients.Estimate);
         ax.XTickLabel = regexprep(mdl.CoefficientNames(2:end), '_', '\\_');
