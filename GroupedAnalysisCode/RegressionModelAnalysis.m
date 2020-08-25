@@ -43,6 +43,7 @@ methods
         smWinFrames = sourceDataParams.smWinFrames;
         smReps = sourceDataParams.smReps;
         ftLagVols = sourceDataParams.ftLagVols;
+        roiName = sourceDataParams.roiName;
         
         obj.modelData = [];
         
@@ -73,7 +74,7 @@ methods
             % -------  Load source data -------
             [expMd, trialMd] = load_metadata({currExpID}, dataDir);
             roiData = load_roi_data({currExpID}, dataDir);
-            roiNames = regexp(roiData.roiName, ['TypeD', '-.'], 'match', 'once');
+            roiNames = regexp(roiData.roiName, [roiName, '-.'], 'match', 'once');
             roiNames(cellfun(@isempty, roiNames)) = [];   
             roiData = roiData(strcmp(roiData.roiName, roiNames{1}), :);
             ft = load_ft_data({currExpID}, dataDir);
@@ -141,23 +142,30 @@ methods
             filterDefs.expID = currExpID;
             filterDefs.roiName = roiNames{1};
             filterDefs.odor = -1;
-            filterDefs.locomotion = 0;
+%             filterDefs.locomotion = 0;
+            filterDefs.locomotion = [];
             filterDefs.flailing = 0;
             filterDefs.grooming = 0;
             dt = dt.initialize_filters(filterDefs);
-            if size(dt.subset, 1) == 0
-                % Relax the locomotion exclusion requirement if there isn't any data for this experiment
-                filterDefs.locomotion = [];
-                dt = dt.initialize_filters(filterDefs);
-                disp('No movement free odor stim windows - using full exp trial-averaged response')
-            else
-                disp(['Using ', num2str(size(dt.subset, 1)), ...
-                        ' trials to estimate odor filter'])
-            end
+%             if size(dt.subset, 1) == 0
+%                 % Relax the locomotion exclusion requirement if there isn't any data for this experiment
+%                 filterDefs.locomotion = [];
+%                 dt = dt.initialize_filters(filterDefs);
+%                 disp('No movement free odor stim windows - using full exp trial-averaged response')
+%             else
+%                 disp(['Using ', num2str(size(dt.subset, 1)), ...
+%                         ' trials to estimate odor filter'])
+%             end
             meanTrace = smoothdata(mean(cell2mat(dt.subset.eventFl'), 2, 'omitnan'), ...
                     'gaussian', smWinVols);
             odorRespFilter = meanTrace(dt.subset.volTimes{1} > 0); % Trim pre-onset volumes
-            odorRespFilter = odorRespFilter - odorRespFilter(1);          % Offset to zero first volume
+            odorRespFilter = odorRespFilter - odorRespFilter(1);   % Offset to zero first volume
+            
+            % Also calculate a trial-averaged version of the move speed while we're at it
+            moveSpeedArr = cell2mat(dt.subset.moveSpeed') .* 4.5 .* FRAME_RATE;
+            meanSpeed = repeat_smooth(mean(moveSpeedArr, 2, 'omitnan'), smReps, 'smWin', ...
+                    smWinFrames);
+            meanSpeed = meanSpeed(dt.subset.frameTimes{1} > 0);
             
             % Extract onset volumes from odor command vector
             odorOnsetVols = (regexp(regexprep(num2str(allOdorVols'), ' ', ''), '01')) + 1;
@@ -176,6 +184,7 @@ methods
             newRow.yawSpeed = {allYawSpeed'};
             newRow.odorVols = {allOdorVols'};
             newRow.odorRespFilter = {odorRespFilter'};
+            newRow.odorRespMeanSpeed = {meanSpeed'};
             newRow.odorStimDur = dt.subset.offsetTime(1) - ...
                     dt.subset.onsetTime(1);
             newRow.odorRespVector = {odorRespVector'};
@@ -373,6 +382,30 @@ methods
         plot(xx, odorRespFilter, 'linewidth', 3, 'color', 'k');            
         plot_stim_shading([0, currExpData.odorStimDur])
         title([regexprep(expID, '_', '\\_'), ' odor response filter'])
+        xlabel('Time (sec)');
+        set(gca, 'FontSize', 11)
+        ax = axesHandle;
+    end
+    
+    % Plot the trial-averaged moveSpeed response filter for a specific experiment
+    function ax = plot_mean_moveSpeed(obj, expID, axesHandle)
+        if nargin < 3
+            f = figure(23); clf; hold on;
+            f.Color = [1 1 1];
+            axesHandle = gca();
+        else
+            axes(axesHandle);
+        end
+        if isnumeric(expID)
+           expID = obj.sourceData.expID{expID}; 
+        end
+        currExpData = obj.sourceData(strcmp(obj.sourceData.expID, expID), :);
+        meanSpeed = currExpData.odorRespMeanSpeed{:};
+        frameTimes = (1:1000) ./ 25;
+        xx = frameTimes(1:numel(meanSpeed));
+        plot(xx, meanSpeed, 'linewidth', 3, 'color', 'k');            
+        plot_stim_shading([0, currExpData.odorStimDur])
+        title([regexprep(expID, '_', '\\_'), ' mean moveSpeed response'])
         xlabel('Time (sec)');
         set(gca, 'FontSize', 11)
         ax = axesHandle;
