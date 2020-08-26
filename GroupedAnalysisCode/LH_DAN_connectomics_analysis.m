@@ -90,6 +90,8 @@ saveTables = 0;
 tracedTbl = tbl(strcmpi(tbl.partnerStatus, 'traced') & tbl.partnerSize > 1.2e8, :);
 tracedTbl = tracedTbl(~strcmp(tracedTbl.partnerType, 'NA'), :);     
 
+tracedTbl = tracedTbl(~contains(tracedTbl.neuronName, 'PPL105'), :); % Drop fragment MB-DAN 
+
 % Grouped by cell type
 groupTbl = groupsummary(tracedTbl, {'neuronID', 'neuronName', 'neuronType', ...
         'partnerType', 'partnerDirection'}, 'sum', {'synapseCount'});
@@ -165,37 +167,53 @@ f = figure(2);clf;hold on;
 neuronList = sortrows(unique(plotTable(:, 2)), 1);
 % cm = jet(size(neuronList, 1)) * 0.95;
 cm = [rgb('blue'); rgb('blue'); rgb('orange'); rgb('red'); rgb('red'); rgb('red'); rgb('magenta'); ...
-    rgb('magenta'); rgb('magenta');rgb('green'); rgb('violet');rgb('cyan'); rgb('cyan');rgb('cyan'); ...
+    rgb('magenta'); rgb('magenta');rgb('green'); rgb('teal'); rgb('teal');rgb('teal'); ...
     rgb('indigo');rgb('indigo'); rgb('indigo');rgb('indigo'); rgb('indigo');];
 meanVals = [];
-plotDims = numSubplots(size(neuronList,1));
+plotDims = numSubplots(size(neuronList,1) + 1);
 for iCell = 1:size(neuronList, 1)
-       ax = subaxis(plotDims(1), plotDims(2), iCell); cla();
+    ax = subaxis(plotDims(1), plotDims(2), iCell, 'mt', 0.04, 'sv', 0.08); 
+    cla(); hold on;
 %      yy = sort(plotTable.eqIndex(strcmp(cellTypeRecipTable.neuronID, ...
 %             neuronList.neuronID{iCell})));
 %      yy = (plotTable.eqIndex(strcmp(plotTable.neuronType, ...
 %             neuronList.neuronType{iCell})));
 %      xx = (1:numel(yy)) ./ numel(yy);
 %      meanVals(iCell) = mean(yy');
-     xx = plotTable.synapseCount_tblDS(strcmp(plotTable.neuronType, ...
+    xx = plotTable.synapseCount_tblDS(strcmp(plotTable.neuronType, ...
             neuronList.neuronType{iCell}));
-     yy = plotTable.synapseCount_tblUS(strcmp(plotTable.neuronType, ...
+    yy = plotTable.synapseCount_tblUS(strcmp(plotTable.neuronType, ...
             neuronList.neuronType{iCell}));
-%      disp([neuronList.neuronType{iCell}, ': ', num2str(mean(yy'), 3)])
-     plot(ax, xx, yy, 'x', 'color', cm(iCell, :));   
-     hold on;
-     xL = xlim();
-     yL = ylim();
-     plot(ax, [1, max([xL, yL])], [1, max([xL, yL])], '-', 'color', 'k')
-     title(regexprep(neuronList.neuronType{iCell}, '_', '\\_'));
-     xlabel('Output synapses');
-     ylabel('Input synapses');
-     ax.XScale = 'log'; 
-     ax.YScale = 'log';
+    scatter(ax, xx + 1, yy + 1, 30, cm(iCell, :), 'filled', 'markerfaceAlpha', 0.125);
+%     plot(ax, xx + 1, yy + 1, 'o', 'color', cm(iCell, :)); % Adding 1 so I can plot on a log scale
+    ax.XScale = 'log';
+    ax.YScale = 'log';
+%     xlim();
+%     ylim();
+    xL = xlim();
+    yL = ylim();
+    plot(ax, [1, max([xL, yL])], [1, max([xL, yL])], '-', 'color', 'k')
+    title(regexprep(neuronList.neuronType{iCell}, '_', '\\_'));
+    xlabel('Output synapses');
+    ylabel('Input synapses');
+    ax.FontSize = 11;
+    ax.XTickLabel{1} = '0';
+    ax.YTickLabel{1} = '0';
+    
+    
+    test = plotTable(:, [2 3 5 7]);
+    test = test(strcmp(test.neuronType, neuronList.neuronType{iCell}), :);
+    test2 = sortrows(groupsummary(test, {'synapseCount_tblDS', 'synapseCount_tblUS'}), 3);
+    disp(neuronList.neuronType{iCell});
+    disp(tail(test2, 5));
+    disp(' ');
 end
+ax = subaxis(plotDims(1), plotDims(2), iCell + 1);
+text(ax, 0, 0.5, {'*** Fully opaque dots indicate 8+ stacked datapoints ***'}, 'Fontsize', 16)
+axis off
 % neuronList.meanVals = meanVals';
 % disp(sortrows(neuronList, 2, 'descend'))
-% legend(neuronList.neuronType, 'location', 'nw');
+% legend(neuronList.neuronType, 'location', 'nw')
 
 %% 
 dt = DataTable(tbl);
