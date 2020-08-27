@@ -379,7 +379,7 @@ methods
         currExpData = obj.sourceData(strcmp(obj.sourceData.expID, expID), :);
         odorRespFilter = currExpData.odorRespFilter{:};
         xx = currExpData.volTimes{:}(1:numel(odorRespFilter));
-        plot(xx, odorRespFilter, 'linewidth', 3, 'color', 'k');            
+        plot(xx, odorRespFilter, 'linewidth', 3, 'color', 'b');            
         plot_stim_shading([0, currExpData.odorStimDur])
         title([regexprep(expID, '_', '\\_'), ' odor response filter'])
         xlabel('Time (sec)');

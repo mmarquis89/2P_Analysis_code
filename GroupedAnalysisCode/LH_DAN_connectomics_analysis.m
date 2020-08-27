@@ -162,7 +162,8 @@ plotTable = cellTypeRecipTable(cellTypeRecipTable.totalSynapses > 1, :);
 plotTable.eqIndex = abs(0.5 - (plotTable.synapseCount_tblDS ./ ...
         plotTable.totalSynapses));
 plotTable = sortrows(plotTable, 'totalSynapses', 'descend');
-f = figure(2);clf;hold on;
+f = figure(2);clf;hold on; 
+f.Color = [1 1 1];
 % neuronList = sortrows(unique(cellTypeRecipTable(:, 1:2)), 2);
 neuronList = sortrows(unique(plotTable(:, 2)), 1);
 % cm = jet(size(neuronList, 1)) * 0.95;
@@ -184,10 +185,14 @@ for iCell = 1:size(neuronList, 1)
             neuronList.neuronType{iCell}));
     yy = plotTable.synapseCount_tblUS(strcmp(plotTable.neuronType, ...
             neuronList.neuronType{iCell}));
-    scatter(ax, xx + 1, yy + 1, 30, cm(iCell, :), 'filled', 'markerfaceAlpha', 0.125);
+    
+    h = histogram2(xx, yy,  xEdges, yEdges, 'displaystyle', 'tile');
+%     scatter(ax, xx + 1, yy + 1, 30, cm(iCell, :), 'filled', 'markerfaceAlpha', 0.125);
 %     plot(ax, xx + 1, yy + 1, 'o', 'color', cm(iCell, :)); % Adding 1 so I can plot on a log scale
     ax.XScale = 'log';
     ax.YScale = 'log';
+    ax.XTickLabel{1} = '0';
+    ax.YTickLabel{1} = '0';
 %     xlim();
 %     ylim();
     xL = xlim();
@@ -197,16 +202,15 @@ for iCell = 1:size(neuronList, 1)
     xlabel('Output synapses');
     ylabel('Input synapses');
     ax.FontSize = 11;
-    ax.XTickLabel{1} = '0';
-    ax.YTickLabel{1} = '0';
+
     
     
-    test = plotTable(:, [2 3 5 7]);
-    test = test(strcmp(test.neuronType, neuronList.neuronType{iCell}), :);
-    test2 = sortrows(groupsummary(test, {'synapseCount_tblDS', 'synapseCount_tblUS'}), 3);
-    disp(neuronList.neuronType{iCell});
-    disp(tail(test2, 5));
-    disp(' ');
+%     test = plotTable(:, [2 3 5 7]);
+%     test = test(strcmp(test.neuronType, neuronList.neuronType{iCell}), :);
+%     test2 = sortrows(groupsummary(test, {'synapseCount_tblDS', 'synapseCount_tblUS'}), 3);
+%     disp(neuronList.neuronType{iCell});
+%     disp(tail(test2, 5));
+%     disp(' ');
 end
 ax = subaxis(plotDims(1), plotDims(2), iCell + 1);
 text(ax, 0, 0.5, {'*** Fully opaque dots indicate 8+ stacked datapoints ***'}, 'Fontsize', 16)

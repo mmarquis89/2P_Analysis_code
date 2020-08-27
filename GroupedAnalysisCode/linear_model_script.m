@@ -327,31 +327,35 @@ allYlim = [];
 for iFig = 1:size(rm.sourceData, 1)
     ax = subaxis(3, 3, iFig, 'ml', 0.04, 'mr', 0.03, 'sv', 0.06, 'mb', 0.06); hold on;
     rm.plot_mean_moveSpeed(iFig, ax);
+    allYlim(iFig, :) = ylim();
+%     yyaxis right
+%     rm.plot_odor_filter(iFig, ax)
     ax.Title.String = ax.Title.String(1:10);
     if iFig < 7
         xlabel(ax, '')
     end
     box off
-%     ax.YTick = 0;
+    ax.YTick = [];
     xlim([0 6]);
-    allYlim(iFig, :) = ylim();
+    
 end
 for iPlot = 1:numel(f.Children)
+    yyaxis(f.Children(iPlot), 'left')
     f.Children(iPlot).YLim = [min(allYlim(:, 1)), max(allYlim(:, 2))];
 end
-suptitle('Mean behavioral response to odor stim');
+suptitle('Trial-averaged responses to odor stim (blue = GCaMP, black = move speed)');
 f.Children(2).Children.FontWeight = 'bold';
 f.Children(2).Children.FontSize = 16;
-saveFileName = ['behavioral_odor_response'];
+saveFileName = ['behavioral_and_GCaMP_odor_responses_overlay'];
 if saveFig
     save_figure(f, figDir, saveFileName);
 end
 catch ME; rethrow(ME); end
 
 %% Plot summary of adjusted R2 scores
-saveFig = 0;
+saveFig = 1;
 try
-plotArr = [rm.modelData.fullMdlAdjR2, rm.modelData.driftCorrectedMdlAdjR2, ...
+plotArr = [rm.modelData.driftCorrectedMdlAdjR2, ...
         rm.modelData.noOdorHistMdlAdjR2]';
 f = figure(3);clf; hold on 
 f.Color = [1 1 1];
@@ -368,7 +372,7 @@ xlim([0.5, size(plotArr, 1) + 0.5])
 ylim([0, 1])
 ax = gca();
 ax.XTick = 1:size(plotArr, 1);
-ax.XTickLabel = {'Initial model', 'Drift-corrected', 'No odor history', 'No odor history (re-fit)'};
+ax.XTickLabel = {'Drift-corrected', 'No odor history', 'No odor history (re-fit)'};
 ylabel('Model adjusted R^2');
 ax.FontSize = 14;
 if strcmpi(rm.modelParams.upper, 'linear')
@@ -494,7 +498,7 @@ for iExp = 1:size(rm.modelData, 1)
 end
 uniqueCoeffs = unique(regexprep(allDcCoeffNames, 'odorHistory_.*', 'odorHistory'));
 uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
-uniqueCoeffs = uniqueCoeffs([1 5 4 2 6 7 3]);
+uniqueCoeffs = uniqueCoeffs([1 4 3 2 5]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1)
 %     coeffArrDc(ismember(uniqueCoeffs, regexprep(...
@@ -534,7 +538,9 @@ ax.XTick = 1:numel(uniqueCoeffs);
 ax.XTickLabel = uniqueCoeffs;
 ax.XTickLabelRotation = 30;
 ax.YTick = 1:size(coeffTblDc, 1);
-% ax.YTickLabel = uniqueCoeffs;
+% ax.YTickLabel = cellfun(@(x, y) [x, ' (R^2=', num2str(y, 2), ')'], rm.modelData.expID, ...
+%         mat2cell(rm.modelData.driftCorrectedMdlAdjR2, ones(1, size(rm.modelData, 1))), ...
+%         'uniformoutput', 0);
 ax.YTickLabel = rm.modelData.expID;
 ax.XAxisLocation = 'top';
 ax.FontSize = 14;
@@ -542,11 +548,19 @@ colorbar();
 hold on; 
 xL = xlim();
 yL = ylim();
-for iCol = 1:(numel(uniqueCoeffs) - 1)
+for iCol = 1:(numel(uniqueCoeffs))
+    if iCol == 1
+        plot([iCol iCol] - 0.5, yL, 'color', 'k', 'linewidth', 1.5)
+    end
     plot([iCol iCol] + 0.5, yL, 'color', 'k', 'linewidth', 1.5)
 end
-for iRow = 1:(numel(rm.modelData.expID) - 1)
+for iRow = 1:(numel(rm.modelData.expID))
+    if iRow == 1
+        plot(xL, [iRow iRow] - 0.5, 'color', 'k', 'linewidth', 1.5)
+    end
     plot(xL, [iRow iRow] + 0.5, 'color', 'k', 'linewidth', 1.5)
+    text(4.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.driftCorrectedMdlAdjR2(iRow), 2)], ...
+            'FontSize', 12);
 end
 title('Drift-corrected model coefficients')
 if saveFig
@@ -561,7 +575,7 @@ catch ME; rethrow(ME); end
 try
 predictorVars = {'odorHistory', 'odorResp', 'fwSpeed'}; % odorHistory, odorResp, fwSpeed, yawSpeed
 legendLocs = {'sw', 'sw', 'w', 'w'};
-xLimits = [];
+xLimits = {[], [], [300 600], [1800 3200], [700 1900], [300 1000], [300 600], [100 1100], [1000 1600]}';
 
 legendStr = {'predicted fl', 'measured fl'};
 for iExp = 1:size(rm.modelData, 1)
@@ -583,12 +597,10 @@ for iExp = 1:size(rm.modelData, 1)
     nohPredFl = currModelData.noOdorHistMdlPredFl{:};
     measuredFl = currModelData.driftCorrectedMdlMeasuredFl{:};
     xx = currSourceData.volTimes{:}(1:numel(measuredFl))';
-    if isempty(xLimits)
+    xL = xLimits{iExp};
+    if isempty(xL)
         xL = [0 xx(end)];
-    else
-        xL = xLimits;
     end
-
     
     % Measured Fl data
     ax = subaxis(24, 1, 4:10, 'mt', 0.05, 'mb', 0.07, 'ml', 0.03, 'mr', 0.03, 'sv', 0.01); hold on;
@@ -622,8 +634,6 @@ for iExp = 1:size(rm.modelData, 1)
     ax.YLim = [min(measuredFl) max(measuredFl)];
     ax.YAxis.Visible = 'off';
     ax.XAxis.Visible = 'off';
-%     title([currModelData.expID{:}, '  —  drift-corrected model (adj. R^2 = ', ...
-%             num2str(currModelData.driftCorrectedMdlAdjR2, 2), ')'])
     box off;
     
     % No-odor history model
@@ -671,7 +681,8 @@ for iExp = 1:size(rm.modelData, 1)
     legend(legendStr, 'fontsize', 12, 'Location', legendLocs{4}, 'autoupdate', 'off', 'box', ...
             'off');
     xlabel('Time (sec)')
-    
+        suptitle([currModelData.expID{:}, '  —  drift-corrected model (adj. R^2 = ', ...
+            num2str(currModelData.driftCorrectedMdlAdjR2, 2), ')'])
 end
 
 catch ME; rethrow(ME); end
