@@ -29,19 +29,25 @@ mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
 mp.upper = [];
-mp.pEnter = [0.01];
+mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
-mp.odorIntegrationWin = [20:10:200];
+mp.odorIntegrationWin = [30:10:200];
+% mp.odorIntegrationWin = [30 60 90];
+
 
 expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
 
+% % Type F
+% expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
+%         '20181020-1', '20190226-3'};
+
 skipTrials = {[], [], [], [], [], ...
               [], [], [], []};
           
-skipVols = {[], [1:1500], [], [], [], ...
-              [], [], [], [1:2200]};
+% skipVols = {[], [1:1500], [], [], [], ...
+%               [], [], [], [1:2200]};
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
@@ -93,10 +99,12 @@ for iExp = 1:size(rm.sourceData, 1)
     emptyArgs = cellfun(@isempty, kvArgs);
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
-    [predFl, ~] = predict(fullMdls{iExp}, tblTest(~isnan(tblTest.fl), 1:end-1));
-    [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~isnan(tblTest.fl)), predFl, ...
-            fullMdls{iExp}.NumCoefficients);
-    [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, tblPred(~isnan(tblPred.fl), 1:end-1));
+    [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
+            1:end-1));
+    [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), ...
+            predFl, fullMdls{iExp}.NumCoefficients);
+    [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
+            tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
 end
 disp('Final models created');
 rm.modelData.fullMdls = fullMdls';
@@ -141,8 +149,8 @@ for iExp = 1:size(rm.sourceData, 1)
     end      
     tblFit = tblPred(currModelData.fitRowInds{:}, :);
     tblTest = tblPred(currModelData.testRowInds{:}, :);
-    driftCorrectedMdlMeasuredFl{iExp} = tblPred.fl(~isnan(tblPred.fl));
-    driftCorrectedMdlTestFl{iExp} = tblTest.fl(~isnan(tblTest.fl));
+    driftCorrectedMdlMeasuredFl{iExp} = tblPred.fl(~logical(sum(isnan(table2array(tblPred)), 2)));
+    driftCorrectedMdlTestFl{iExp} = tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2)));
     
     % Use all training data to create and evaluate a final stepwise model
     kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
@@ -151,11 +159,11 @@ for iExp = 1:size(rm.sourceData, 1)
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     driftCorrectedMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
     [predFl, ~] = predict(driftCorrectedMdls{iExp}, ...
-            tblTest(~isnan(tblTest.fl), 1:end-1));
+            tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), 1:end-1));
     [~, driftCorrectedMdlAdjR2(iExp)] = r_squared(driftCorrectedMdlTestFl{iExp}, ...
             predFl, driftCorrectedMdls{iExp}.NumCoefficients);
     [driftCorrectedMdlPredFl{iExp}, ~] = predict(driftCorrectedMdls{iExp}, ...
-            tblPred(~isnan(tblPred.fl), 1:end-1));
+            tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
 end
 disp('Final models created');
 rm.modelData.driftCorrectedMdls = driftCorrectedMdls';
@@ -205,11 +213,12 @@ for iExp = 1:size(rm.sourceData, 1)
     emptyArgs = cellfun(@isempty, kvArgs);
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     noOdorHistReFitMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
-    [predFl, ~] = predict(noOdorHistReFitMdls{iExp}, tblTest(~isnan(tblTest.fl), 1:end-1));
+    [predFl, ~] = predict(noOdorHistReFitMdls{iExp}, ...
+            tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), 1:end-1));
     [~, noOdorHistReFitMdlAdjR2(iExp)] = r_squared(rm.modelData.driftCorrectedMdlTestFl{iExp}, predFl, ...
             noOdorHistReFitMdls{iExp}.NumCoefficients);
     [noOdorHistReFitMdlPredFl{iExp}, ~] = predict(noOdorHistReFitMdls{iExp}, ...
-           tblPred(~isnan(tblPred.fl), 1:end-1));
+           tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
 end
 disp('Final models created');
 rm.modelData.noOdorHistReFitMdls = noOdorHistReFitMdls';
@@ -261,12 +270,14 @@ for iExp = 1:size(rm.sourceData, 1)
     noOdorHistMdls{iExp} = updatedMdl;
     
     % Evaluate updated model
-    [predFl, ~] = predict(noOdorHistMdls{iExp}, tblTest(~isnan(tblTest.fl), ...
+    [predFl, ~] = predict(noOdorHistMdls{iExp}, ...
+            tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
             ~ismember(tblTest.Properties.VariableNames, odorHistCoeffs)));
-    [~, noOdorHistMdlAdjR2(iExp)] = r_squared(tblTest.fl(~isnan(tblTest.fl)), predFl, ...
+    [~, noOdorHistMdlAdjR2(iExp)] = r_squared( ...
+            tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), predFl, ...
             noOdorHistMdls{iExp}.NumCoefficients);
     [noOdorHistMdlPredFl{iExp}, ~] = predict(noOdorHistMdls{iExp}, ...
-           tblPred(~isnan(tblPred.fl), 1:end-1));
+           tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
 end
 disp('Final models created');
 rm.modelData.noOdorHistMdls = noOdorHistMdls';
@@ -308,6 +319,8 @@ end
 suptitle('Estimated odor response filters');
 f.Children(2).Children.FontWeight = 'bold';
 f.Children(2).Children.FontSize = 16;
+f.UserData.sourceDataParams = rm.sourceDataParams;
+f.UserData.modelParams = rm.modelParams;
 saveFileName = ['estimated_odor_response_filters'];
 if saveFig
     save_figure(f, figDir, saveFileName);
@@ -325,15 +338,53 @@ if (f.Position(2) + f.Position(4)) > 1000
 end
 allYlim = [];
 for iFig = 1:size(rm.sourceData, 1)
+    ax = subaxis(3, 3, iFig, 'ml', 0.06, 'mr', 0.03, 'sv', 0.06, 'mb', 0.06); hold on;
+    rm.plot_mean_moveSpeed(iFig, ax);
+    allYlim(iFig, :) = ylim();
+    ax.Title.String = ax.Title.String(1:10);
+    if ismember(iFig, [1 4 7])
+        ylabel('Move speed (mm/sec)')
+    end
+    if iFig < 7
+        xlabel(ax, '')
+    end
+    ax.FontSize = 12;
+    box off
+    xlim([0 6]);
+    
+end
+suptitle('Trial-averaged moveSpeed responses to odor stim');
+f.Children(2).Children.FontWeight = 'bold';
+f.Children(2).Children.FontSize = 16;
+f.UserData.sourceDataParams = rm.sourceDataParams;
+f.UserData.modelParams = rm.modelParams;
+saveFileName = ['behavioral_odor_responses'];
+if saveFig
+    save_figure(f, figDir, saveFileName);
+end
+catch ME; rethrow(ME); end
+
+%% Plot overlaid odor response filters and trial-averaged behavioral responses to odor
+saveFig = 0;
+try
+f = figure(3);clf;hold on
+f.Color = [1 1 1];
+f.Position = [f.Position(1:2), 1070, 950];
+if (f.Position(2) + f.Position(4)) > 1000
+    f.Position(2) = 1000 - f.Position(4);
+end
+allYlim = [];
+for iFig = 1:size(rm.sourceData, 1)
     ax = subaxis(3, 3, iFig, 'ml', 0.04, 'mr', 0.03, 'sv', 0.06, 'mb', 0.06); hold on;
     rm.plot_mean_moveSpeed(iFig, ax);
     allYlim(iFig, :) = ylim();
-%     yyaxis right
-%     rm.plot_odor_filter(iFig, ax)
+    yyaxis right
+    rm.plot_odor_filter(iFig, ax)
     ax.Title.String = ax.Title.String(1:10);
     if iFig < 7
         xlabel(ax, '')
     end
+    ax.YAxis(2).Visible = 'off'
     box off
     ax.YTick = [];
     xlim([0 6]);
@@ -346,14 +397,16 @@ end
 suptitle('Trial-averaged responses to odor stim (blue = GCaMP, black = move speed)');
 f.Children(2).Children.FontWeight = 'bold';
 f.Children(2).Children.FontSize = 16;
-saveFileName = ['behavioral_and_GCaMP_odor_responses_overlay'];
+f.UserData.sourceDataParams = rm.sourceDataParams;
+f.UserData.modelParams = rm.modelParams;
+saveFileName = ['behavioral_and_estimated_odor_response_filters_overlay'];
 if saveFig
     save_figure(f, figDir, saveFileName);
 end
 catch ME; rethrow(ME); end
 
 %% Plot summary of adjusted R2 scores
-saveFig = 1;
+saveFig = 0;
 try
 plotArr = [rm.modelData.driftCorrectedMdlAdjR2, ...
         rm.modelData.noOdorHistMdlAdjR2]';
@@ -383,6 +436,8 @@ else
     fileNameStr = 'with';
 end
 title({['Adj. R^2 step thresh: ', num2str(rm.modelParams.pEnter)], titleStr});
+f.UserData.sourceDataParams = rm.sourceDataParams;
+f.UserData.modelParams = rm.modelParams;
 if saveFig
     pEnterStr = num2str(rm.modelParams.pEnter);
     saveFileName = ['adj_R2_summary_stepThresh_', pEnterStr(3:end), ...
@@ -437,13 +492,15 @@ end
 subplotDims = [2 5];
 for iExp = 1:size(rm.modelData, 1)
     currMdl = rm.modelData.driftCorrectedMdls{iExp};
-    subaxis(subplotDims(1), subplotDims(2), iExp, 'mt', 0.05, 'mb', 0.12, 'sv', 0.16, ...
+    if currMdl.NumCoefficients > 1
+        subaxis(subplotDims(1), subplotDims(2), iExp, 'mt', 0.05, 'mb', 0.12, 'sv', 0.16, ...
             'ml', 0.05, 'mr', 0.05);
-    hold on
-    ax = gca();
-    RegressionModelAnalysis.plot_coeffs(currMdl, ax);
-    title([regexprep(rm.modelData.expID{iExp}, '_', '\\_'), ' (adj. R^2 = ', ...
+        hold on
+        ax = gca();
+        RegressionModelAnalysis.plot_coeffs(currMdl, ax);
+        title([regexprep(rm.modelData.expID{iExp}, '_', '\\_'), ' (adj. R^2 = ', ...
             num2str(rm.modelData.driftCorrectedMdlAdjR2(iExp), 2), ')'], 'fontweight', 'normal')
+    end
 end
 suptitle(['Drift-corrected model coefficients (stepThresh: ', num2str(rm.modelParams.pEnter), ...
         ', ', titleStr, ')']);
@@ -474,16 +531,22 @@ suptitle(['No-odor history model coefficients (stepThresh: ', num2str(rm.modelPa
         ', ', titleStr, ')']);
 f_3.Children(2).Children.FontWeight = 'bold';
 f_3.Children(2).Children.FontSize = 16;
+f_1.UserData.sourceDataParams = rm.sourceDataParams;
+f_1.UserData.modelParams = rm.modelParams;
+f_2.UserData.sourceDataParams = rm.sourceDataParams;
+f_2.UserData.modelParams = rm.modelParams;
+f_3.UserData.sourceDataParams = rm.sourceDataParams;
+f_3.UserData.modelParams = rm.modelParams;
 if saveFig
     pEnterStr = num2str(rm.modelParams.pEnter);
     
-    saveFileName = ['full_model_coeffs_stepThresh_', pEnterStr(3:end), '_', fileNameStr, ...
+    saveFileName = ['model_coeffs_full_stepThresh_', pEnterStr(3:end), '_', fileNameStr, ...
             '_interactions'];
     save_figure(f_1, figDir, saveFileName);
-    saveFileName = ['driftCorrected_model_coeffs_stepThresh_', pEnterStr(3:end), '_', fileNameStr, ...
+    saveFileName = ['model_coeffs_driftCorrected_stepThresh_', pEnterStr(3:end), '_', fileNameStr, ...
             '_interactions'];
     save_figure(f_2, figDir, saveFileName);
-    saveFileName = ['noOdorHist_model_coeffs_stepThresh_', pEnterStr(3:end), '_', fileNameStr, ...
+    saveFileName = ['model_coeffs_noOdorHist_stepThresh_', pEnterStr(3:end), '_', fileNameStr, ...
             '_interactions'];
     save_figure(f_3, figDir, saveFileName);
 end
@@ -498,12 +561,10 @@ for iExp = 1:size(rm.modelData, 1)
 end
 uniqueCoeffs = unique(regexprep(allDcCoeffNames, 'odorHistory_.*', 'odorHistory'));
 uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
-uniqueCoeffs = uniqueCoeffs([1 4 3 2 5]);
+% uniqueCoeffs = uniqueCoeffs([1 4 3 2 5]);
+uniqueCoeffs = uniqueCoeffs([1 3 3]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
-for iExp = 1:size(rm.modelData, 1)
-%     coeffArrDc(ismember(uniqueCoeffs, regexprep(...
-%             rm.modelData.driftCorrectedMdls{iExp}.CoefficientNames, 'odorHistory_.*', ...
-%             'odorHistory')), iExp) = 1;    
+for iExp = 1:size(rm.modelData, 1) 
     for iCoeff = 1:numel(uniqueCoeffs)
         if ismember(uniqueCoeffs{iCoeff}, ...
                 regexprep(rm.modelData.driftCorrectedMdls{iExp}.CoefficientNames, ...
@@ -514,13 +575,11 @@ for iExp = 1:size(rm.modelData, 1)
         end
     end
 end
-% coeffTbl = array2table(coeffArr, 'rowNames', uniqueCoeffs, 'variableNames', rm.modelData.expID);
 coeffTblDc = array2table(coeffArrDc', 'variableNames', uniqueCoeffs, 'rowNames', ...
         rm.modelData.expID);
-
 f = figure(35); clf; 
 f.Color = [1 1 1];
-f.Position = [f.Position(1:2), 1035, 985];
+f.Position = [f.Position(1:2), 1035, 950];
 if (f.Position(2) + f.Position(4)) > 1000
     f.Position(2) = 1000 - f.Position(4);
 end
@@ -529,11 +588,10 @@ lim = max(abs([max(plotArr(:)), min(plotArr(:))]));
 xSize = size(plotArr, 2);
 plotArr(:, end + 1) = -lim;
 plotArr(:, end + 1) = lim;
+ax = subaxis(1, 1, 1, 'ml', 0.12, 'mt', 0.12, 'mb', 0.03, 'mr', 0.11);
 imagesc(plotArr);
 cm = colormap(bluewhitered);
 xlim([0.5, xSize + 0.5])
-ax = gca;
-% ax.XTickLabel = rm.modelData.expID;
 ax.XTick = 1:numel(uniqueCoeffs);
 ax.XTickLabel = uniqueCoeffs;
 ax.XTickLabelRotation = 30;
@@ -544,7 +602,10 @@ ax.YTick = 1:size(coeffTblDc, 1);
 ax.YTickLabel = rm.modelData.expID;
 ax.XAxisLocation = 'top';
 ax.FontSize = 14;
-colorbar();
+pos = ax.Position;
+cb = colorbar();
+cb.Position(1) = sum(ax.Position([1 3])) + 0.03;
+ax.Position = pos;
 hold on; 
 xL = xlim();
 yL = ylim();
@@ -559,13 +620,15 @@ for iRow = 1:(numel(rm.modelData.expID))
         plot(xL, [iRow iRow] - 0.5, 'color', 'k', 'linewidth', 1.5)
     end
     plot(xL, [iRow iRow] + 0.5, 'color', 'k', 'linewidth', 1.5)
-    text(4.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.driftCorrectedMdlAdjR2(iRow), 2)], ...
+    text(2.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.driftCorrectedMdlAdjR2(iRow), 2)], ...
             'FontSize', 12);
 end
 title('Drift-corrected model coefficients')
+f.UserData.sourceDataParams = rm.sourceDataParams;
+f.UserData.modelParams = rm.modelParams;
 if saveFig
     pEnterStr = num2str(rm.modelParams.pEnter);
-    saveFileName = ['driftCorrected_model_coeff_summary_stepThresh_', pEnterStr(3:end), ...
+    saveFileName = ['model_coeff_summary_driftCorrected_stepThresh_', pEnterStr(3:end), ...
             '_', fileNameStr, '_interactions'];
     save_figure(f, figDir, saveFileName);
 end
@@ -576,6 +639,8 @@ try
 predictorVars = {'odorHistory', 'odorResp', 'fwSpeed'}; % odorHistory, odorResp, fwSpeed, yawSpeed
 legendLocs = {'sw', 'sw', 'w', 'w'};
 xLimits = {[], [], [300 600], [1800 3200], [700 1900], [300 1000], [300 600], [100 1100], [1000 1600]}';
+xLimits = repmat({[]}, 1, 10);
+% xLimits = {[400 800], [200 600], [1 500], [1 500], [], [200 600], [500 800], [1 400]}'; 
 
 legendStr = {'predicted fl', 'measured fl'};
 for iExp = 1:size(rm.modelData, 1)
@@ -655,20 +720,24 @@ for iExp = 1:size(rm.modelData, 1)
     ax = subaxis(24, 1, 1:3); hold on
     legendStr = {};
     if any(strcmpi('odorResp', predictorVars))
-        plot(xx, fullDataTbl.odorResp, 'color', rgb('red'), 'linewidth', 1);
+        plot(xx, fullDataTbl.odorResp(~logical(sum(isnan(table2array(fullDataTbl)), 2))), ...
+                'color', rgb('red'), 'linewidth', 1);
         legendStr{end + 1} = 'Odor response';
     end
     if any(strcmpi('fwSpeed', predictorVars))
-        plot(xx, fullDataTbl.fwSpeed, '-', 'color', rgb('blue'), 'linewidth', 1);
+        plot(xx, fullDataTbl.fwSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
+                'color', rgb('blue'), 'linewidth', 1);
         legendStr{end + 1} = 'abs(fwSpeed)';
     end
     if any(strcmpi('yawSpeed', predictorVars))
-        plot(xx, fullDataTbl.yawSpeed, 'color', rgb('red'));
+        plot(xx, fullDataTbl.yawSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), 'color', ...
+                rgb('red'));
         legendStr{end + 1} = 'yawSpeed';
     end
     if any(strcmpi('odorHistory', predictorVars))
         varName = ['odorHistory_', num2str(bestWinSize)];
-        plot(xx, fullDataTbl.(varName), '-', 'color', rgb('black'), 'linewidth', 3);
+        plot(xx, fullDataTbl.(varName)(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
+                'color', rgb('black'), 'linewidth', 3);
         legendStr{end + 1} = regexprep(varName, '_', '\\_');
     end
     ax.FontSize = 14;

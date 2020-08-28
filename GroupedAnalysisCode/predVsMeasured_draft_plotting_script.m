@@ -6,7 +6,7 @@ legendLocs = {'sw', 'sw', 'sw'};
 xL = [];
 
 legendStr = {'predicted fl', 'measured fl'};
-for iExp = 6%1:size(rm.modelData, 1)
+for iExp = [1:4 7:size(rm.modelData, 1)]%;1:size(rm.modelData, 1)
     
     f = figure(iExp + 100); clf;
     f.Color = [1 1 1];
@@ -22,7 +22,7 @@ for iExp = 6%1:size(rm.modelData, 1)
     
     ax = subaxis(12, 1, 1:5, 'mt', 0.05, 'mb', 0.07, 'ml', 0.03, 'mr', 0.03, 'sv', 0.01); hold on;
     legendStr = {'measured fl', 'predicted fl (drift-corrected model)', };
-    dcPredFl = currModelData.driftCorrectedMdlPredFl{:};
+    dcPredFl = smoothdata(currModelData.driftCorrectedMdlPredFl{:}, 'gaussian', 3);
     nohPredFl = currModelData.noOdorHistMdlPredFl{:};
     measuredFl = currModelData.driftCorrectedMdlMeasuredFl{:};
     xx = currSourceData.volTimes{:}(1:numel(measuredFl))';

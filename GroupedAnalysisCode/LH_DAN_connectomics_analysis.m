@@ -157,7 +157,8 @@ end
 
 
 %
-plotTable = cellTypeRecipTable(cellTypeRecipTable.totalSynapses > 1, :);
+plotTable = cellTypeRecipTable;
+% plotTable = cellTypeRecipTable(cellTypeRecipTable.totalSynapses > 1, :);
 % plotTable = singleCellRecipTable;
 plotTable.eqIndex = abs(0.5 - (plotTable.synapseCount_tblDS ./ ...
         plotTable.totalSynapses));
@@ -171,9 +172,9 @@ cm = [rgb('blue'); rgb('blue'); rgb('orange'); rgb('red'); rgb('red'); rgb('red'
     rgb('magenta'); rgb('magenta');rgb('green'); rgb('teal'); rgb('teal');rgb('teal'); ...
     rgb('indigo');rgb('indigo'); rgb('indigo');rgb('indigo'); rgb('indigo');];
 meanVals = [];
-plotDims = numSubplots(size(neuronList,1) + 1);
+plotDims = numSubplots(size(neuronList,1));
 for iCell = 1:size(neuronList, 1)
-    ax = subaxis(plotDims(1), plotDims(2), iCell, 'mt', 0.04, 'sv', 0.08); 
+    ax = subaxis(plotDims(1), plotDims(2), iCell, 'mt', 0.04, 'sv', 0.05, 'mb', 0.06); 
     cla(); hold on;
 %      yy = sort(plotTable.eqIndex(strcmp(cellTypeRecipTable.neuronID, ...
 %             neuronList.neuronID{iCell})));
@@ -185,32 +186,69 @@ for iCell = 1:size(neuronList, 1)
             neuronList.neuronType{iCell}));
     yy = plotTable.synapseCount_tblUS(strcmp(plotTable.neuronType, ...
             neuronList.neuronType{iCell}));
+        
+        
+    % Custom scatter/hist blend
+    currPlotData = plotTable(strcmp(plotTable.neuronType, neuronList.neuronType{iCell}), [2 3 5 7]);
+    groupedPlotPoints = sortrows(groupsummary(currPlotData, {'synapseCount_tblDS', ...
+            'synapseCount_tblUS'}), 3);
+%     cm = plasma(max(groupedPlotPoints.GroupCount));
+    xx = groupedPlotPoints.synapseCount_tblDS;
+    yy = groupedPlotPoints.synapseCount_tblUS;
+    groupCounts = groupedPlotPoints.GroupCount;
+    logGroupCounts = log10(groupCounts);
+    intLogGroupCounts = round(logGroupCounts * 100);
+    intLogGroupCounts(intLogGroupCounts == 0) = 1;
+%     C = cm(groupedPlotPoints.GroupCount, :);
+    cm = plasma(max(intLogGroupCounts));
+    C = cm(intLogGroupCounts, :);
     
-    h = histogram2(xx, yy,  xEdges, yEdges, 'displaystyle', 'tile');
+%     scatter(xx + 1, yy + 1, 20, C, 'linewidth', 1.5)
+    scatter(xx + 1, yy + 1, 20, C, 'filled')
+    colormap(ax, cm)
+    cb = colorbar(ax);
+    
+    maxCValExp = max(intLogGroupCounts) / 100;
+    tickExps = (0:0.2:1) * maxCValExp;
+    cb.Ticks = 0.07:0.18:1;
+    tLabels = (10*ones(size(tickExps))).^tickExps;
+%     tLabels = cb.Ticks * max(groupedPlotPoints.GroupCount);
+    tLabels(tLabels > 5) = round(tLabels(tLabels > 5));
+    tLabels(tLabels <=5) = round(tLabels(tLabels <=5), 1);
+    cb.TickLabels = tLabels;
+    axis square
+%     
+%     % Bivariate histogram
+%     axUpperLim = exp_ceil(max([xx; yy]));
+%     edgeExps = 0:0.1:3;
+%     edges = (10 * ones(size(edgeExps))).^edgeExps;
+%     h = histogram2(xx + 1, yy + 1,  edges, edges, 'displaystyle', 'tile');
+%     colormap('plasma')
+%     colorbar()
+%     axis square
+%     
 %     scatter(ax, xx + 1, yy + 1, 30, cm(iCell, :), 'filled', 'markerfaceAlpha', 0.125);
+%     axis square
+    
 %     plot(ax, xx + 1, yy + 1, 'o', 'color', cm(iCell, :)); % Adding 1 so I can plot on a log scale
+    
     ax.XScale = 'log';
     ax.YScale = 'log';
-    ax.XTickLabel{1} = '0';
-    ax.YTickLabel{1} = '0';
 %     xlim();
 %     ylim();
     xL = xlim();
     yL = ylim();
     plot(ax, [1, max([xL, yL])], [1, max([xL, yL])], '-', 'color', 'k')
     title(regexprep(neuronList.neuronType{iCell}, '_', '\\_'));
-    xlabel('Output synapses');
+    if iCell > 12
+        xlabel('Output synapses');
+    end
     ylabel('Input synapses');
     ax.FontSize = 11;
-
-    
-    
-%     test = plotTable(:, [2 3 5 7]);
-%     test = test(strcmp(test.neuronType, neuronList.neuronType{iCell}), :);
-%     test2 = sortrows(groupsummary(test, {'synapseCount_tblDS', 'synapseCount_tblUS'}), 3);
-%     disp(neuronList.neuronType{iCell});
-%     disp(tail(test2, 5));
-%     disp(' ');
+    ax.XTick = ax.YTick;
+    ax.XTickLabel{1} = '0';
+    ax.YTickLabel{1} = '0';
+   
 end
 ax = subaxis(plotDims(1), plotDims(2), iCell + 1);
 text(ax, 0, 0.5, {'*** Fully opaque dots indicate 8+ stacked datapoints ***'}, 'Fontsize', 16)

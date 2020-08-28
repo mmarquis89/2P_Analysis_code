@@ -14,7 +14,7 @@ currTypeList = typeList([1:13, 19:21, 15:18],:);
 % currTypeList = typeList([1:15, 20:22, 16:19], :);
 partnerDirection = 'upstream';
 yVarType =  'percentage'; %'count'; %
-yScaleType =  'log'; %'linear'; % 
+yScaleType =  'linear'; %'linear'; % 
 xNorm = 1;
 xMinPct = 80;
 groupPartnersByType = 1;
@@ -241,7 +241,7 @@ xLab = ['Total ', directionStr, ' synapses'];
 yy = tb.maxSynapseCount;
 yLab = ['Max synapses with a single partner cell type'];
 fileName = ['total_', directionStr, '_synapses_vs_max_synapses_with_single_cell_type'];
-% % 
+% 
 yy = tb.totalPartnerTypes;
 yLab = ['Number of ', partnerDirection, ' cell types'];
 fileName = ['total_', directionStr, '_synapses_vs_total_', partnerDirection, '_cell_types'];

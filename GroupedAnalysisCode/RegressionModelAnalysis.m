@@ -2,14 +2,18 @@ classdef RegressionModelAnalysis
 % ==================================================================================================
 %
 % Properties:
-%
+%       sourceData (table)
+%       sourceDataParams (scalar struct)
+%       modelData (table)
+%       modelParams (scalar struct)
 %
 % Methods:
-%       initialize_models()
+%       initialize_models(modelParams)
 %       optimize_integration_windows()
+%       ax = plot_odor_filter(expID, axesHandle)       
+%       plot_mean_moveSpeed(expID, axesHandle)
 %       
-%       plot_odor_filter();       
-%
+%       (Static) plot_coeffs(mdl, axesHandle);
 % ==================================================================================================
 
 properties
@@ -18,12 +22,6 @@ properties
     modelData
     modelParams
 end
-
-
-properties (Dependent)
-    
-end 
-
 
 methods
     
@@ -86,7 +84,7 @@ methods
             % Process data for each trial (assuming no time between trials)
             trialNums = trialMd.trialNum;
             if ~isempty(expInfoTbl.skipTrials{iExp})
-                trialNums(trialNums == skipTrials) = [];
+                trialNums(ismember(trialNums, expInfoTbl.skipTrials{iExp})) = [];
             end
             allFwSpeed = []; allYawSpeed = []; allOdorVols = []; allFl = []; allVolTimes = [];
             for iTrial = 1:numel(trialNums)
