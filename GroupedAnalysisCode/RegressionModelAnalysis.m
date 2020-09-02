@@ -9,7 +9,8 @@ classdef RegressionModelAnalysis
 %
 % Methods:
 %       initialize_models(modelParams)
-%       optimize_integration_windows()
+%       optimize_odor_integration_windows()
+%       optimize
 %       ax = plot_odor_filter(expID, axesHandle)       
 %       plot_mean_moveSpeed(expID, axesHandle)
 %       
@@ -80,6 +81,7 @@ methods
             % Load odor event data
             eventData = load_event_data({currExpID}, dataDir);
             odorEventData = eventData.odor;
+            locEventData = eventData.locomotion;
             
             % Process data for each trial (assuming no time between trials)
             trialNums = trialMd.trialNum;
@@ -145,15 +147,7 @@ methods
             filterDefs.flailing = 0;
             filterDefs.grooming = 0;
             dt = dt.initialize_filters(filterDefs);
-%             if size(dt.subset, 1) == 0
-%                 % Relax the locomotion exclusion requirement if there isn't any data for this experiment
-%                 filterDefs.locomotion = [];
-%                 dt = dt.initialize_filters(filterDefs);
-%                 disp('No movement free odor stim windows - using full exp trial-averaged response')
-%             else
-%                 disp(['Using ', num2str(size(dt.subset, 1)), ...
-%                         ' trials to estimate odor filter'])
-%             end
+
             meanTrace = smoothdata(mean(cell2mat(dt.subset.eventFl'), 2, 'omitnan'), ...
                     'gaussian', smWinVols);
             odorRespFilter = meanTrace(dt.subset.volTimes{1} > 0); % Trim pre-onset volumes
@@ -199,11 +193,12 @@ methods
     function obj = initialize_models(obj, modelParams)
         
         % modelParams = struct with fields: trainTestSplit, kFold, criterion, pEnter, pRemove,
-        %                                   verbose, odorIntegrationWin
+        %                                   verbose, odorIntegrationWin, fwSpeedIntegrationWin
         % Can be either a scalar structure or have one set of params for each experiment in rm.
 
         disp('Initializing model data...')
         obj.modelParams = modelParams;
+        obj.modelData = [];
         
         for iExp = 1:size(obj.sourceData, 1)
             if numel(modelParams) > 1 
@@ -243,6 +238,27 @@ methods
                 end
             end
             
+            % Calculate integrated speed values
+            if ~isempty(mp.fwSpeedIntegrationWin)
+                speedIntegrationWinVols = round(mp.fwSpeedIntegrationWin * currExpData.volumeRate);
+                meanSpeed = [];
+                for iWin = 1:numel(speedIntegrationWinVols)
+                    currIntegrationWin = speedIntegrationWinVols(iWin);
+                    for iVol = 1:numel(currExpData.fwSpeed{:})
+                        if iVol <= currIntegrationWin
+                            meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(1:iVol));
+                        else
+                            meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(iVol - ...
+                                currIntegrationWin:iVol));
+                        end
+                    end
+                end
+                for iWin = 1:size(meanSpeed, 1)
+                    varName = ['fwSpeedHistory_', num2str(mp.fwSpeedIntegrationWin(iWin))];
+                    tbl.(varName) = meanSpeed(iWin, :)';
+                end
+            end
+            
             % Add fluorescence data in last column of input table
             tbl.fl = currExpData.fl{:}';
             if ~isempty(currExpData.skipVols{:})
@@ -268,7 +284,7 @@ methods
     end% Function
     
     % Find optimal odor integration window for each experiment
-    function obj = optimize_integration_windows(obj)
+    function obj = optimize_odor_integration_windows(obj)
         disp('Finding best odor integration window sizes...')
         
         bestWinSizes = [];

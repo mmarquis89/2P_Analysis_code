@@ -20,10 +20,10 @@ savedAnalysisObjects = [];
 
 %%
 
-expNums = [8];
+expNums = [1:8];
 
-xLim = [0 300];
-yLim = [];
+xLim = [-3 25];
+yLim = [0 3];
 fontSize = 12;
 useSavedObj = 0;
 
@@ -56,11 +56,16 @@ for iExp = 1:numel(expNums)
     disp(currExpID);
     currPlotParams = allPlotParams.params{expNums(iExp)};
     
-    currPlotParams.locomotion = 0;
-    currPlotParams.odor = 1.5;
-    currPlotParams.roiName = 'TypeF-R';
+    currPlotParams.locomotion = [];
+    currPlotParams.isolatedmovement = [];
+    currPlotParams.grooming = [];
+    currPlotParams.odor = [];
+    currPlotParams.quiescence = [];
+    currPlotParams.roiName = 'TypeF';
     currPlotParams.ballstop = 0;
+    currPlotParams.nHistBins = 30;
     
+    currPlotParams.flType = 'expDff';
     a.params = currPlotParams;
     
     % Create axes for current plot
@@ -74,6 +79,13 @@ for iExp = 1:numel(expNums)
         a.filterDefs.roiName = currPlotParams.roiName;
         a = a.init_filters();
         
+        % If the filter matches more than one ROI, just use the first one
+        uniqueRois = unique(a.sourceDataTable.subset.roiName);
+        if numel(uniqueRois) > 1
+            a.filterDefs.roiName = uniqueRois{1};
+            a.init_filters();
+        end
+        
         % Run analysis
         a = a.analyze();
         
@@ -85,12 +97,12 @@ for iExp = 1:numel(expNums)
   
     a = a.generate_binned_flData('slidingBaseline', 'forward');
     
-%     % Plot binned FW speed vs. sliding dF/F
-%     a = a.generate_binned_flData('slidingBaseline', 'forward');
-%     a.plot_binned_fl(ax);
-%     ax.FontSize = fontSize;
-%     ax.YLabel.String = 'Mean sliding dF/F';
-%     ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
+    % Plot binned FW speed vs. sliding dF/F
+    a = a.generate_binned_flData('slidingBaseline', 'forward');
+    a.plot_binned_fl(ax);
+    ax.FontSize = fontSize;
+    ax.YLabel.String = 'Mean sliding dF/F';
+    ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
     
 %     % Plot binned calculated move speed vs. sliding dF/F
 %     a = a.generate_binned_flData('slidingBaseline', 'calculatedMove');
@@ -106,14 +118,14 @@ for iExp = 1:numel(expNums)
 %     ax.YLabel.String = 'Mean sliding dF/F';
 %     ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
 
-    % Yaw vs. abs(forward speed)
-    [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.yawSpeedData, ...
-            abs(a.analysisOutput.fwSpeedData), currPlotParams.nAnalysisBins);
-    errorbar(ax, binMidpoints, binMeans, binSEM, 'color', 'k', 'linewidth', 1);
-    ax.YLabel.String = 'abs(forward speed) (mm/sec)';
-    ax.XLabel.String = 'Mean yaw speed (deg/sec)';
-    ax.FontSize = fontSize;
-    ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
+%     % Yaw vs. abs(forward speed)
+%     [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.yawSpeedData, ...
+%             abs(a.analysisOutput.fwSpeedData), currPlotParams.nAnalysisBins);
+%     errorbar(ax, binMidpoints, binMeans, binSEM, 'color', 'k', 'linewidth', 1);
+%     ax.YLabel.String = 'abs(forward speed) (mm/sec)';
+%     ax.XLabel.String = 'Mean yaw speed (deg/sec)';
+%     ax.FontSize = fontSize;
+%     ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
 %     
 %     % Forward speed vs. Yaw
 %     [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.fwSpeedData, ...
@@ -144,8 +156,8 @@ end
 %% Save current figure
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
-fileName = ['allExp_binned_yawSpeedVsFwSpeed_plots_', neuronType, '_noLocOnset_scaledX_part_2'];
-
+fileName = ['allExp_binned_fwSpeedVsExpDff_plots_', neuronType, '_allVolumes'];
+f.UserData.plotParams = currPlotParams;
 save_figure(f, saveDir, fileName)
 
 

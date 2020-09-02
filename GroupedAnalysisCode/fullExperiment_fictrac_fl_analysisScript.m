@@ -8,10 +8,10 @@ allPlotParams = [];
 
 %% Set params and run moveSpeed-only analysis
 
-expNum = 61;
+expNum = 10;
 
 % DataTable filter values
-roiName = 'TypeD-L';
+roiName = 'TypeF-L';
 expID = expList.expID{expNum};
 
 % Analysis parameters
@@ -19,12 +19,12 @@ smWinVols = 3;
 smWinFrames = 5;
 nSmoothReps = 15;
 lagVols = 2;
-flType = 'rawFl';
+flType = 'slidingbaseline';
                         max_moveSpeed = 35;
                         max_yawSpeed = 1000;
 skipTrials = [];
 slidingWinDur = 60;
-                        nAnalysisBins = 40;
+                        nAnalysisBins = 20;
 
 % Plotting parameters
 a.params.nHistBins = 50;
@@ -33,13 +33,13 @@ a.params.plotting_minSpeed = -100;
 overlayTimeSec = [40];
 
 % Analysis exclusion events
-odor = 0.01;
-optostim = 1;
-soundstim = 1;
-grooming = 0;
-isolatedmovement = 0;
-locomotion = 0;
-quiescence = 0;
+odor = [0.01];
+optostim = [];
+soundstim = [];
+grooming = [];
+isolatedmovement = [];
+locomotion = [];
+quiescence = [];
 
 % Primary analysis plot spacing and margins
 SV = 0.05;

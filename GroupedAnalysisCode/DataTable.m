@@ -79,14 +79,14 @@ methods
             filtData = obj.sourceData.(filtName);
 
             % ------ Create the filter ------
-            if ~isempty(filtValue)
+%             if ~isempty(firltValue)
 
                 currFiltVec = parse_filter(obj, filtValue, filtData);
 
                 % Update appropriate column of filterMat
                 obj.filterMat(:, strcmp(fieldnames(obj.sourceData), filtName)) = currFiltVec;
 
-            end
+%             end
         end%iFilt
 
         obj.filterDefs = filterDefs;
