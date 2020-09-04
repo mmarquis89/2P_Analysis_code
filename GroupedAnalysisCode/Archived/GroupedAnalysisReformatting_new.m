@@ -101,7 +101,7 @@ save(fullfile(saveDir, [expID, '_roiData.mat']), 'roiData');
 save(fullfile(savedir, [expID, '_refImages.mat']), 'refImages');
 
 
-% CREATE EVENT OBJECTS AND EXPORT DATA
+%% CREATE EVENT OBJECTS AND EXPORT DATA
 
 % ----- Panels flash stim -----
 

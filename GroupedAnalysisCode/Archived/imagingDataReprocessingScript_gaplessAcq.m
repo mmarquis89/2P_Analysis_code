@@ -5,7 +5,7 @@
 % expList = load_expList('groupName', 'gaplessAcq');
 % % expList = expList(~cellfun(@isempty, regexp(expList.expID, '2018.*', 'match', 'once')), 1);
 
-expList = table({'20181120-1'; '20190315-3'}, 'variablenames', {'expID'}); 
+expList = table({'20200901-1'; '20200901-1'}, 'variablenames', {'expID'}); 
 
 for iExp = 1:size(expList, 1)
     currExpID = expList.expID{iExp};
@@ -89,7 +89,8 @@ end%iExp
 for iExp = 1:size(expList, 1)
     currExpID = expList.expID{iExp};
     disp(currExpID);
-    expDirName = [currExpID(1:4), '_', currExpID(5:6), '_', currExpID(7:8), '_exp_', currExpID(end)]; 
+    expDirName = [currExpID(1:4), '_', currExpID(5:6), '_', currExpID(7:8), '_exp_', ...
+            currExpID(end)]; 
     parentDir = find_parent_dir(currExpID);
     
     if exist(fullfile(parentDir, expDirName), 'dir')
@@ -117,7 +118,8 @@ for iExp = 1:size(expList, 1)
                     % Identify files in current block
                     disp([expDirName, ', block ', num2str(iBlock), ' of ', num2str(nBlocks)])
                     if iBlock < nBlocks
-                        currBlockTrials = blockStartTrials(iBlock):(blockStartTrials(iBlock + 1) - 1);
+                        currBlockTrials = blockStartTrials(iBlock):(blockStartTrials(iBlock + 1) ...
+                                - 1);
                     else
                         currBlockTrials = blockStartTrials(iBlock):numel(currFileNames);
                     end

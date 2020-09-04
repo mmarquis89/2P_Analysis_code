@@ -113,6 +113,8 @@ for iExp = 1:size(expList, 1)
         roiDataSort = sort(cell2mat(currRoiData.rawFl));
         baselineVals(iROI) = median(roiDataSort(1:round(numel(roiDataSort) * 0.05)));        
     end
+    
+    
     baselineTable = [roiList, table(baselineVals', 'variableNames', {'baselineVals'})];
     expDffData = [];
     for iRow = 1:size(roiData, 1)

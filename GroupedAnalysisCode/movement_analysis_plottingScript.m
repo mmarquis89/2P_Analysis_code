@@ -23,12 +23,12 @@ savedAnalysisObjects = [];
 expNums = [1:8];
 
 xLim = [-3 25];
-yLim = [0 3];
+yLim = [];
 fontSize = 12;
 useSavedObj = 0;
 
 % Adjust plot spacing and margins
-SV = 0.07;
+SV = 0.08;
 SH = 0.03;
 ML = 0.04;
 MR = 0.02;
@@ -63,9 +63,9 @@ for iExp = 1:numel(expNums)
     currPlotParams.quiescence = [];
     currPlotParams.roiName = 'TypeF';
     currPlotParams.ballstop = 0;
-    currPlotParams.nHistBins = 30;
+    currPlotParams.nHistBins = 25;
     
-    currPlotParams.flType = 'expDff';
+    currPlotParams.flType = 'rawFl';
     a.params = currPlotParams;
     
     % Create axes for current plot
@@ -83,7 +83,7 @@ for iExp = 1:numel(expNums)
         uniqueRois = unique(a.sourceDataTable.subset.roiName);
         if numel(uniqueRois) > 1
             a.filterDefs.roiName = uniqueRois{1};
-            a.init_filters();
+            a = a.init_filters();
         end
         
         % Run analysis
@@ -95,14 +95,15 @@ for iExp = 1:numel(expNums)
         a = savedAnalysisObjects.obj{expNums(iExp)};
     end
   
-    a = a.generate_binned_flData('slidingBaseline', 'forward');
+    a = a.generate_binned_flData(currPlotParams.flType, 'forward');
     
     % Plot binned FW speed vs. sliding dF/F
-    a = a.generate_binned_flData('slidingBaseline', 'forward');
+    a = a.generate_binned_flData(currPlotParams.flType, 'forward');
     a.plot_binned_fl(ax);
     ax.FontSize = fontSize;
-    ax.YLabel.String = 'Mean sliding dF/F';
+    ax.YLabel.String = 'Mean dF/F';
     ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
+    box off
     
 %     % Plot binned calculated move speed vs. sliding dF/F
 %     a = a.generate_binned_flData('slidingBaseline', 'calculatedMove');
@@ -156,7 +157,7 @@ end
 %% Save current figure
 
 saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
-fileName = ['allExp_binned_fwSpeedVsExpDff_plots_', neuronType, '_allVolumes'];
+fileName = ['allExp_binned_fwSpeedVsSlidingDff_plots_', neuronType, '_allVolumes_matchedAxLims'];
 f.UserData.plotParams = currPlotParams;
 save_figure(f, saveDir, fileName)
 

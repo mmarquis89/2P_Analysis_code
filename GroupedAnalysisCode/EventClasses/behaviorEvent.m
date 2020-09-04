@@ -122,7 +122,6 @@ end %class
 % Local functions
 % ==================================================================================================
 
-
 function [behavData, frameTimes] = multi_trial_input_check(trialNums, behavData, frameTimes) 
 
     % Make sure input variable sizes and types match up

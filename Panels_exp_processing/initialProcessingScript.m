@@ -177,7 +177,7 @@ disp('Video processing complete');
 save(fullfile(outputDir, 'FicTracData.mat'), 'ftData', '-v7.3');
 
 
-% PROCESS IMAGING DATA AND METADATA
+%% PROCESS IMAGING DATA AND METADATA
 
 % Identify imaging data files
 imgDataFiles = dir(fullfile(expDir, '*trial*.tif'));
