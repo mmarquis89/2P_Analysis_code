@@ -32,7 +32,7 @@ methods
         % expInfoTable = table with colums: [expID][skipTrials][skipVols]
         
         % sourceDataParams = struct with fields: maxSpeed, smWinVols, smWinFrames, smReps, 
-        %                                        ftLagVols, odorRespFilterDur
+        %                                        ftLagVols, speedType, odorRespFilterDur
         
         obj.sourceDataParams = sourceDataParams;
         
@@ -104,8 +104,13 @@ methods
                 
                 % Smooth FicTrac data, then downsample to match volume rate
                 currFt = ft(currTrialNum, :);
-                currFwSpeed = repeat_smooth(currFt.fwSpeed{:} .* 4.5 .* FRAME_RATE, smReps, 'smWin', ...
-                    smWinFrames);
+                if strcmp(sourceDataParams.speedType, 'moveSpeed')
+                    currFwSpeed = repeat_smooth(currFt.moveSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
+                            'smWin', smWinFrames);
+                else
+                    currFwSpeed = repeat_smooth(currFt.fwSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
+                            'smWin', smWinFrames);
+                end
                 currFwSpeed(currFwSpeed > maxSpeed) = maxSpeed;
                 currYawSpeed = abs(repeat_smooth(rad2deg(currFt.yawSpeed{:}) .* FRAME_RATE, ...
                         smReps, 'smWin', smWinFrames));
@@ -193,7 +198,8 @@ methods
     function obj = initialize_models(obj, modelParams)
         
         % modelParams = struct with fields: trainTestSplit, kFold, criterion, pEnter, pRemove,
-        %                                   verbose, odorIntegrationWin, fwSpeedIntegrationWin
+        %                                   verbose, odorIntegrationWin, speedPadDist, 
+        %                                   fwSpeedIntegrationWin
         % Can be either a scalar structure or have one set of params for each experiment in rm.
 
         disp('Initializing model data...')
@@ -238,18 +244,22 @@ methods
                 end
             end
             
-            % Calculate integrated speed values
+            % Calculate mean speed values
+            padDist = modelParams.speedPadDist;
+            padDistVols = padDist * currExpData.volumeRate;
             if ~isempty(mp.fwSpeedIntegrationWin)
                 speedIntegrationWinVols = round(mp.fwSpeedIntegrationWin * currExpData.volumeRate);
                 meanSpeed = [];
                 for iWin = 1:numel(speedIntegrationWinVols)
                     currIntegrationWin = speedIntegrationWinVols(iWin);
                     for iVol = 1:numel(currExpData.fwSpeed{:})
-                        if iVol <= currIntegrationWin
+                        if iVol <= padDistVols
                             meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(1:iVol));
+                        elseif iVol <= currIntegrationWin + padDistVols
+                            meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(1:(iVol - padDistVols)));
                         else
                             meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(iVol - ...
-                                currIntegrationWin:iVol));
+                                currIntegrationWin:(iVol - padDistVols)));
                         end
                     end
                 end
@@ -375,6 +385,101 @@ methods
         obj.modelData.bestWinSizes = bestWinSizes;        
     
         disp('Optimal odor integration windows selected');
+        
+    end% function
+ 
+    % Find optimal mean speed window for each experiment
+    function obj = optimize_mean_speed_windows(obj)
+        disp('Finding best mean speed window sizes...')
+        
+        bestWinSizes = [];
+        cvModels = {};
+        cvAdjR2Vals = {};
+        for iExp = 1:size(obj.sourceData, 1)
+            if numel(obj.modelParams) > 1
+                mp = obj.modelParams(iExp);
+            else
+                mp = obj.modelParams;
+            end
+            disp(obj.sourceData.expID{iExp})
+            
+            currExpData = obj.modelData(iExp, :);
+            
+            % Get training data for current experiment
+            tblTrain = currExpData.fullDataTbl{:}(currExpData.fitRowInds{:}, :);
+            
+            % Drop rows without valid fluorescence measurements
+            tblTrain = tblTrain(~isnan(tblTrain.fl), :);
+            
+            % Drop yawSpeed variable
+%             tblTrain = tblTrain(:, ~strcmp(tblTrain.Properties.VariableNames, 'yawSpeed'));
+            
+            % Divide training data into cross-validation folds
+            chunkSize = floor(size(tblTrain, 1) / mp.kFold);
+            startInds = 1:chunkSize:size(tblTrain, 1);
+            endInds = [startInds(2:end) - 1, size(tblTrain, 1)];
+            
+            % Identify positions of mean speed history variables
+            kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
+                mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
+            emptyArgs = cellfun(@isempty, kvArgs);
+            kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
+            varNames = tblTrain.Properties.VariableNames;
+            speedHistVars = ~cellfun(@isempty,regexp(varNames, 'fwSpeedHistory'));
+            speedHistVarInds = find(speedHistVars);
+            
+            % Select speed history window size using cross-validation
+            nWindows = numel(mp.fwSpeedIntegrationWin);
+            loopTbls = [];
+            for iWin = 1:nWindows
+                loopTbls{iWin} = tblTrain(:, [1:(speedHistVarInds(1) - 1), speedHistVarInds(iWin), ...
+                    size(tblTrain, 2)]);
+            end
+            kFold = mp.kFold;
+            predAdjR2 = zeros(nWindows, kFold);
+            allCvMdls = cell(nWindows, kFold);
+            parfor iWin = 1:nWindows
+
+                currTbl = loopTbls{iWin};
+                
+                % Fit model with cross-validation
+                for iFold = 1:kFold
+                    if iWin == 1 && ~mod(iFold, 20)
+                        disp(['Running cross-validation fold ', num2str(iFold), ' of ', ...
+                                num2str(kFold)]);
+                    end
+                    
+                    % Split data for current fold
+                    currFoldTrainTbl = currTbl;
+                    currFoldTrainTbl(startInds(iFold):endInds(iFold), :) = [];
+                    currFoldTestTbl = currTbl(startInds(iFold):endInds(iFold), :);
+                    
+                    % ------------- Generate model ---------------
+                    mdl = stepwiselm(currFoldTrainTbl, kvArgs{:});
+                    % mdl = fitlm(tblFit);
+                    allCvMdls{iWin, iFold} = compact(mdl);
+                    
+                    % Evaluate fit to test data
+                    [yPred, ~] = predict(mdl, currFoldTestTbl(:, 1:end-1));
+                    [~, R2] = r_squared(currFoldTestTbl.fl, yPred, mdl.NumCoefficients);
+                    predAdjR2(iWin, iFold) = R2;
+                    
+                end%iFold
+            end%iWin
+            
+            % Store result variables
+            cvModels{iExp, 1} = allCvMdls;
+            cvAdjR2Vals{iExp, 1} = predAdjR2;
+            bestWinSizes(iExp, 1) = mp.fwSpeedIntegrationWin(argmax(mean(predAdjR2, 2), 1));
+            
+        end%iExp
+        
+        % Save results for all experiments to model data table
+        obj.modelData.cvModels = cvModels;
+        obj.modelData.cvAdjR2Vals = cvAdjR2Vals;
+        obj.modelData.bestWinSizes = bestWinSizes;        
+    
+        disp('Optimal speed integration windows selected');
         
     end% function
     

@@ -198,10 +198,10 @@ for iFile = 1:numel(imgDataFiles)
     pMd.trialNum = trialNum;
     pMd.panelsMode = mD.panelsMode;
     pMd.pattern = mD.pattern;
-    pMd.xDimPosFunc = mD.xDimPosFun.func;
-    pMd.yDimPosFunc = mD.yDimPosFun.func;
-    pMd.panelsPosX = panelsPosX;
-    pMd.panelsPosY = panelsPosY;
+    pMd.xDimPosFunc = {mD.xDimPosFun.func};
+    pMd.yDimPosFunc = {mD.yDimPosFun.func};
+    pMd.panelsPosX = {panelsPosX};
+    pMd.panelsPosY = {panelsPosY};
     
     % Separate trial metadata
     tMd = [];
@@ -357,7 +357,7 @@ catch ME; rethrow(ME); end
 try 
     
 % Define an ROI around the fly
-vidRoi = select_video_ROIs(expDir);
+vidRoi = select_video_ROIs(outputDir);
 
 % Extract mean flow within ROI for each FicTrac vid
 ftVids = dir(fullfile(outputDir, 'FicTrac*.mp4'));
@@ -538,7 +538,7 @@ for iFile = 1:numel(roiDefFiles)
     end
     
     % Loop through and extract data for each subROI
-    trialBaselinees = [];
+    trialBaselines = [];
     for iRoi = 1:numel(roiDefs)
         currRoi = roiDefs(iRoi);
         rawData = [];
@@ -558,10 +558,10 @@ for iFile = 1:numel(roiDefFiles)
         currDataSorted = sort(roiDataAvg);
         trialBaselines(iRoi, 1) = currDataSorted(round(numel(currDataSorted * 0.05))); 
         
-        % Add trial baselines to table
-        currRoiData.trialBaseline = trialBaselines;
-        
     end%iRoi   
+    
+    % Add trial baselines to table
+    currRoiData.trialBaseline = trialBaselines;
     
     % Append to main ROI data table
     roiData = [roiData; currRoiData];

@@ -21,6 +21,7 @@ p.smWinVols = 5;
 p.smWinFrames = 3;
 p.smReps = 10;
 p.ftLagVols = 3;
+p.speedType = 'moveSpeed';
 p.odorRespFilterDur = [7 5];
 
 % Set model parameters
@@ -34,7 +35,8 @@ mp.pRemove = [0];
 mp.verbose = 0;
 mp.odorIntegrationWin = [];
 % mp.odorIntegrationWin = [30 60 90];
-mp.fwSpeedIntegrationWin = [10];
+mp.speedPadDist = 5;
+mp.fwSpeedIntegrationWin = [10 20 30 60 120];
 
 
 % expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
@@ -73,7 +75,7 @@ catch ME; rethrow(ME); end
 %  MODEL POSTPROCESSING
 %  =================================================================================================
 
-%% Use the calculated best window sizes to fit new models for each of the experiments 
+%% Use the calculated best odor window sizes to fit new models for each of the experiments 
 try
 fullMdls = {};
 fullMdlPredFl = {};
@@ -120,7 +122,7 @@ disp(rm.modelData)
 
 catch ME; rethrow(ME); end
 
-%%
+%% Use best speed history window sizes instead of odor integration windows
 try
 fullMdls = {};
 fullMdlPredFl = {};
@@ -138,7 +140,7 @@ for iExp = 1:size(rm.sourceData, 1)
     currModelData = rm.modelData(iExp, :);
     bestWinSize = 10;
     varNames = currModelData.fullDataTbl{:}.Properties.VariableNames;
-    speedHistVarInds = ~cellfun(@isempty,regexp(varNames, 'speedHistory')); 
+    speedHistVarInds = ~cellfun(@isempty,regexp(varNames, 'SpeedHistory')); 
     bestHistVarInd = ~cellfun(@isempty, regexp(varNames, ['_', num2str(bestWinSize), '$']));
     tblFit = currModelData.fullDataTbl{:}(currModelData.fitRowInds{:}, ...
             logical(~speedHistVarInds + bestHistVarInd));
@@ -146,22 +148,19 @@ for iExp = 1:size(rm.sourceData, 1)
             + bestHistVarInd));
     tblPred = currModelData.fullDataTbl{:}(:, logical(~speedHistVarInds + bestHistVarInd));
 
-    expStartColInd = strcmp(tblFit.Properties.VariableNames, 'volsFromExpStart');
-    tblFit = tblFit(:, ~expStartColInd);
-    tblTest = tblTest(:, ~expStartColInd);
-    tblPred = tblPred(:, ~expStartColInd);
+%     expStartColInd = strcmp(tblFit.Properties.VariableNames, 'volsFromExpStart');
+%     tblFit = tblFit(:, ~expStartColInd);
+%     tblTest = tblTest(:, ~expStartColInd);
+%     tblPred = tblPred(:, ~expStartColInd);    
     
+    % Use all training data to create and evaluate a final stepwise model
+    kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
+            mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
+    emptyArgs = cellfun(@isempty, kvArgs);
+    kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
+    fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
     
-    
-%     
-%     % Use all training data to create and evaluate a final stepwise model
-%     kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
-%             mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
-%     emptyArgs = cellfun(@isempty, kvArgs);
-%     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
-%     fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
-%     
-    fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + fwSpeed:fwSpeedHistory_10');
+%     fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + fwSpeed:fwSpeedHistory_10');
     
     
     [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
@@ -191,7 +190,7 @@ for iExp = 1:size(rm.modelData, 1)
     currModelData = rm.modelData(iExp, :);
     bestWinSize = 120;
     varNames = currModelData.fullDataTbl{:}.Properties.VariableNames;
-    speedHistVarInds = ~cellfun(@isempty,regexp(varNames, 'speedHistory')); 
+    speedHistVarInds = ~cellfun(@isempty,regexp(varNames, 'SpeedHistory')); 
     bestHistVarInd = ~cellfun(@isempty, regexp(varNames, ['_', num2str(bestWinSize), '$']));
     tblFit = currModelData.fullDataTbl{:}(currModelData.fitRowInds{:}, ...
             logical(~speedHistVarInds + bestHistVarInd));
@@ -200,11 +199,11 @@ for iExp = 1:size(rm.modelData, 1)
     tblPred = currModelData.fullDataTbl{:}(:, logical(~speedHistVarInds + bestHistVarInd));
 
     expStartColInd = strcmp(tblFit.Properties.VariableNames, 'volsFromExpStart');
-    tblFit = tblFit(:, ~expStartColInd);
-    tblTest = tblTest(:, ~expStartColInd);
-    tblPred = tblPred(:, ~expStartColInd);
+%     tblFit = tblFit(:, ~expStartColInd);
+%     tblTest = tblTest(:, ~expStartColInd);
+%     tblPred = tblPred(:, ~expStartColInd);
          
-    noSpeedHistMdls{iExp} = removeTerms(fullMdls{iExp}, 'fwSpeed:fwSpeedHistory_10');
+    noSpeedHistMdls{iExp} = removeTerms(fullMdls{iExp}, 'fwSpeedHistory_10');
     
     [predFl, ~] = predict(noSpeedHistMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
             1:end-1));
