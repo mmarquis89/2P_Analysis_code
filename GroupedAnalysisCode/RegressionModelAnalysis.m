@@ -275,10 +275,10 @@ methods
                 tbl.fl(currExpData.skipVols{:}) = nan;
             end
             
-            % Scale all variables so that the max value is 1 (and center?)
+            % Scale all variables so that the max value is either 1 or -1 (and center?)
             for iCol = 1:(size(tbl, 2))
                 %         tbl{:, iCol} = tbl{:, iCol} - mean(tbl{:, iCol}, 'omitnan'); % Center mean of all variables at zero
-                tbl{:, iCol} = tbl{:, iCol} ./ max(tbl{:, iCol}, [], 'omitnan');
+                tbl{:, iCol} = tbl{:, iCol} ./ max(abs(tbl{:, iCol}), [], 'omitnan');
             end
             
             % Add to model data table for future use in plotting model predictions

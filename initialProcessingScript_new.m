@@ -194,14 +194,14 @@ for iFile = 1:numel(imgDataFiles)
     panelsPosY = yPosRep(1:nPanelsFrames);
     
     % Separate panels metadata
-    pMd = [];
-    pMd.trialNum = trialNum;
-    pMd.panelsMode = mD.panelsMode;
-    pMd.pattern = mD.pattern;
-    pMd.xDimPosFunc = {mD.xDimPosFun.func};
-    pMd.yDimPosFunc = {mD.yDimPosFun.func};
-    pMd.panelsPosX = {panelsPosX};
-    pMd.panelsPosY = {panelsPosY};
+    pMdRow = table({mD.expID}, 'VariableNames', {'expID'});
+    pMdRow.trialNum = trialNum;
+    pMdRow.panelsMode = mD.panelsMode;
+    pMdRow.pattern = mD.pattern;
+    pMdRow.xDimPosFunc = {mD.xDimPosFun.func};
+    pMdRow.yDimPosFunc = {mD.yDimPosFun.func};
+    pMdRow.panelsPosX = {panelsPosX};
+    pMdRow.panelsPosY = {panelsPosY};
     
     % Separate trial metadata
     tMd = [];
@@ -229,7 +229,7 @@ for iFile = 1:numel(imgDataFiles)
     
     % Append to metadata structs
     trialMd = [trialMd, tMd];
-    panelsMd = [panelsMd, pMd];
+    panelsMd = [panelsMd; pMdRow];
     
 end
 
@@ -238,7 +238,7 @@ expMd.nTrials = numel(trialMd);
 % Convert from structs to tables
 expMd = struct2table(expMd);
 trialMetadata = struct2table(trialMd);
-panelsMetadata = struct2table(panelsMd);
+panelsMetadata = panelsMd;
 
 % Save metadata files
 writetable(expMd, fullfile(outputDir, [expMd.expID, '_expMetadata.csv']));
@@ -585,7 +585,7 @@ for iRoi = 1:size(roiList, 1)
     roiDataSort = sort(cell2mat(currRoiData.rawFl));
     baselineVals(iRoi) = roiDataSort(round(numel(currDataSorted * 0.05)));
 end
-baselineTable = [roiList, table(baselineVals', 'variableNames', {'baselineVals'})];
+baselineTable = [roiList, table(baselineVals', 'variableNames', {'expBaseline'})];
 roiData = innerjoin(roiData, baselineTable);
 
 % Save processed ROI data

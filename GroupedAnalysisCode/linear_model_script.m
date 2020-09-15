@@ -7,7 +7,8 @@ figDir = ...
 threshStr = {'03'};%{'01', '015', '02'};
 allRm = {};
 for i=1:numel(threshStr)
-    load(fullfile(parentDir, ['rm_stepThresh_', threshStr{i}, '_with_interactions.mat']), 'rm');
+    load(fullfile(parentDir, 'Saved_LinearModel_objects', ...
+            ['rm_stepThresh_', threshStr{i}, '_with_interactions_30_sec_min_winSize.mat']), 'rm');
     allRm{i} = rm;
 end
 
@@ -15,7 +16,7 @@ end
 
 % Set source data parameters;
 p = [];
-p.roiName = 'TypeF';
+p.roiName = 'TypeD';
 p.maxSpeed = 100;
 p.smWinVols = 5;
 p.smWinFrames = 3;
@@ -29,30 +30,30 @@ mp = [];
 mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
-mp.upper = [];
+mp.upper = ['linear'];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
-mp.odorIntegrationWin = [];
+mp.odorIntegrationWin = [30:10:200];
 % mp.odorIntegrationWin = [30 60 90];
 mp.speedPadDist = 5;
-mp.fwSpeedIntegrationWin = [10 20 30 60 120];
+mp.fwSpeedIntegrationWin = [];
 
 
-% expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
-%                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
-
-% Type F
-expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
-        '20181020-1', '20190226-3'};
+expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
+               '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
+% 
+% % Type F
+% expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
+%         '20181020-1', '20190226-3'};
 
 skipTrials = {[], [], [], [], [], ...
-              [], [], []};
+              [], [], [], []};
           
-% skipVols = {[], [1:1500], [], [], [], ...
-%               [], [], [], [1:2200]};
+skipVols = {[], [1:1500], [], [], [], ...
+              [], [], [], [1:2200]};
 
-skipVols = repmat({[]}, 1, numel(skipTrials));
+% skipVols = repmat({[]}, 1, numel(skipTrials));
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
@@ -68,7 +69,7 @@ rm = rm.initialize_models(mp);
 rm = rm.optimize_odor_integration_windows();
 
 % Find optimal fw speed integration window sizes
-rm = rm.optimize_mean_speed_windows();
+% rm = rm.optimize_mean_speed_windows();
 
 catch ME; rethrow(ME); end
 %% =================================================================================================
@@ -485,12 +486,12 @@ for iFig = 1:size(rm.sourceData, 1)
     rm.plot_mean_moveSpeed(iFig, ax);
     allYlim(iFig, :) = ylim();
     yyaxis right
-    rm.plot_odor_filter(iFig, ax)
+    rm.plot_odor_filter(iFig, ax);
     ax.Title.String = ax.Title.String(1:10);
     if iFig < 7
         xlabel(ax, '')
     end
-    ax.YAxis(2).Visible = 'off'
+    ax.YAxis(2).Visible = 'off';
     box off
     ax.YTick = [];
     xlim([0 6]);
@@ -516,9 +517,12 @@ saveFig = 0;
 try
 plotArr = [rm.modelData.driftCorrectedMdlAdjR2, ...
         rm.modelData.noOdorHistMdlAdjR2]';
+% plotArr = [rm.modelData.driftCorrectedMdlAdjR2, allRm{1}.modelData.driftCorrectedMdlAdjR2, ...
+%         rm.modelData.noOdorHistMdlAdjR2]';
+
 f = figure(3);clf; hold on 
 f.Color = [1 1 1];
-f.Position = [f.Position(1:2), 570, 500];
+f.Position = [f.Position(1:2), 500, 500];
 if (f.Position(2) + f.Position(4)) > 1000
     f.Position(2) = 1000 - f.Position(4);
 end
@@ -532,8 +536,10 @@ ylim([0, 1])
 ax = gca();
 ax.XTick = 1:size(plotArr, 1);
 ax.XTickLabel = {'Drift-corrected', 'No odor history', 'No odor history (re-fit)'};
+% ax.XTickLabel = {'With interactions', 'No interactions', 'No odor history'};
 ylabel('Model adjusted R^2');
 ax.FontSize = 14;
+% titleStr = '';
 if strcmpi(rm.modelParams.upper, 'linear')
     titleStr = 'No interaction terms';
     fileNameStr = 'no';
@@ -668,7 +674,7 @@ end
 uniqueCoeffs = unique(regexprep(allDcCoeffNames, 'odorHistory_.*', 'odorHistory'));
 uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
 % uniqueCoeffs = uniqueCoeffs([1 4 3 2 5]);
-uniqueCoeffs = uniqueCoeffs([1 3 3]);
+uniqueCoeffs = uniqueCoeffs([1 3 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1) 
     for iCoeff = 1:numel(uniqueCoeffs)
@@ -741,17 +747,23 @@ end
 catch ME; rethrow(ME); end
 
 %% Plot predicted vs. measured fluorescence
-try
+
+saveFigs = 0;
+fileNameStr = 'fullExp_';
+
+
 predictorVars = {'odorHistory', 'odorResp', 'fwSpeed'}; % odorHistory, odorResp, fwSpeed, yawSpeed
-legendLocs = {'sw', 'sw', 'w', 'w'};
+legendLocs = {'sw', 'sw', 'nw', 'nw'};
+% legendLocs = {'best', 'best', 'best', 'best'};
 xLimits = {[], [], [300 600], [1800 3200], [700 1900], [300 1000], [300 600], [100 1100], [1000 1600]}';
 xLimits = repmat({[]}, 1, 10);
 % xLimits = {[400 800], [200 600], [1 500], [1 500], [], [200 600], [500 800], [1 400]}'; 
 
+try
 legendStr = {'predicted fl', 'measured fl'};
 for iExp = 1:size(rm.modelData, 1)
     
-    f = figure(iExp + 10); clf;
+    f = figure(iExp + 100); clf;
     f.Color = [1 1 1];
     
     currModelData = rm.modelData(iExp, :);
@@ -826,8 +838,9 @@ for iExp = 1:size(rm.modelData, 1)
     ax = subaxis(24, 1, 1:3); hold on
     legendStr = {};
     if any(strcmpi('odorResp', predictorVars))
-        plot(xx, fullDataTbl.odorResp(~logical(sum(isnan(table2array(fullDataTbl)), 2))), ...
-                'color', rgb('red'), 'linewidth', 1);
+        odorResp = fullDataTbl.odorResp(~logical(sum(isnan(table2array(fullDataTbl)), 2)));
+        plot(xx, odorResp ./ max(abs([min(odorResp), max(odorResp)])), 'color', rgb('red'), ...
+            'linewidth', 1);
         legendStr{end + 1} = 'Odor response';
     end
     if any(strcmpi('fwSpeed', predictorVars))
@@ -858,6 +871,11 @@ for iExp = 1:size(rm.modelData, 1)
     xlabel('Time (sec)')
         suptitle([currModelData.expID{:}, '  —  drift-corrected model (adj. R^2 = ', ...
             num2str(currModelData.driftCorrectedMdlAdjR2, 2), ')'])
+        
+    if saveFigs
+        figTitle = ['predictedVsMeasuredFl_', fileNameStr, currModelData.expID{:}];
+        save_figure(f, figDir, figTitle);
+    end
 end
 
 catch ME; rethrow(ME); end
@@ -1002,7 +1020,13 @@ catch ME; rethrow(ME); end
 
 %% Collect info from different model sets
 try
-fileIDStrings = {'01_with', '02_with', '03_with', '015_with', '025_with', '01_no', '02_no'};
+% fileIDStrings = {'01_with', '02_with', '03_with', '015_with', '025_with', '01_no', '02_no'};
+fileIDStrings = {'fwSpeedHistory', ...
+                 'fwSpeedHistory_1_sec_offset', ...
+                 'fwSpeedHistory_5_sec_offset', ...
+                 'moveSpeedHistory', ...
+                 'moveSpeedHistory_1_sec_offset', ...
+                 'moveSpeedHistory_5_sec_offset'};
 
 dcR2 = [];
 nohR2 = [];
@@ -1011,20 +1035,37 @@ nohNumCoeffs = [];
 bestWinSizes = [];
 coeffNames = {};
 coeffs = {};
+
+summaryTbl = [];
 for iFile = 1:numel(fileIDStrings)
-    currFileName = fullfile(parentDir, ['rm_stepThresh_', fileIDStrings{iFile}, ...
-            '_interactions.mat'])
+    currFileName = fullfile(parentDir, 'Saved_LinearModel_objects', ...
+            ['rm_TypeF_stepThresh_03_', fileIDStrings{iFile}, '.mat'])
       
     % Load dataset
     load(currFileName, 'rm');
     
-    dcR2(iFile, :) = [rm.modelData.driftCorrectedMdlAdjR2'];
-    nohR2(iFile, :) = [rm.modelData.noOdorHistMdlAdjR2'];
-    dcNumCoeffs(iFile, :) = cellfun(@(x) x.NumCoefficients, rm.modelData.driftCorrectedMdls)';
-    nohNumCoeffs(iFile, :) = cellfun(@(x) x.NumCoefficients, rm.modelData.noOdorHistMdls)';
-    bestWinSizes(iFile, :) = rm.modelData.bestWinSizes';
-    coeffNames{iFile} = cellfun(@(x) x.CoefficientNames, rm.modelData.driftCorrectedMdls, ...
-            'UniformOutput', false);
+    for iExp = 1:size(rm.modelData, 1)
+        currData = rm.modelData(iExp, :);
+        newRow = table(currData.expID, 'variableNames', {'expID'});
+        newRow.modelVersion = fileIDStrings(iFile);
+        newRow.bestWinSizes = currData.bestWinSizes;
+        newRow.fullMdls = currData.fullMdls;
+        newRow.noSpeedHistMdls = currData.noSpeedHistMdls;
+        newRow.fullMdlAdjR2 = currData.fullMdlAdjR2;
+        newRow.noSpeedHistMdlAdjR2 = currData.noSpeedHistMdlAdjR2;
+        newRow.fullMdlNumCoeffs = currData.fullMdls{1}.NumCoefficients;
+        newRow.noSpeedHistMdlNumCoeffs = currData.noSpeedHistMdls{1}.NumCoefficients;
+        newRow.fullMdlCoeffNames = {currData.fullMdls{1}.CoefficientNames};
+        newRow.noSpeedHistMdlCoeffNames = {currData.noSpeedHistMdls{1}.CoefficientNames};
+        summaryTbl = [summaryTbl; newRow];
+    end    
     
+%     dcR2(iFile, :) = [rm.modelData.driftCorrectedMdlAdjR2'];
+%     nohR2(iFile, :) = [rm.modelData.noOdorHistMdlAdjR2'];
+%     dcNumCoeffs(iFile, :) = cellfun(@(x) x.NumCoefficients, rm.modelData.driftCorrectedMdls)';
+%     nohNumCoeffs(iFile, :) = cellfun(@(x) x.NumCoefficients, rm.modelData.noOdorHistMdls)';
+%     bestWinSizes(iFile, :) = rm.modelData.bestWinSizes';
+%     coeffNames{iFile} = cellfun(@(x) x.CoefficientNames, rm.modelData.driftCorrectedMdls, ...
+%             'UniformOutput', false);
 end
 catch ME; rethrow(ME); end
