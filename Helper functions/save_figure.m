@@ -1,4 +1,4 @@
-function save_figure(figHandle, saveDir, fileName)
+function save_figure(figHandle, saveDir, fileName, overwriteFlag)
 %===================================================================================================
 % Wrapper function for saving figures as a .png .pdf, and .fig file that asks to make sure the user
 % wants to overwrite a file of the same name if one exists. The .fig file is saved within a 
@@ -6,11 +6,13 @@ function save_figure(figHandle, saveDir, fileName)
 %
 % INPUTS:
 %
-%       figHandle   = handle to the figure to be saved
+%       figHandle     = handle to the figure to be saved
 %
-%       saveDir     = directory where you want the .png files saved
+%       saveDir       = directory where you want the .png files saved
 %
-%       fileName    = output file name
+%       fileName      = output file name
+%
+%       overwriteFlag = (optional positional) pass "skipConfirmation" to skip overwrite confirmation
 %
 %===================================================================================================
 
@@ -20,19 +22,23 @@ if ~isdir(saveDir)
 end
 
 % Warn user and offer to cancel save if this will overwrite existing files
-overwrite = 1;
-if exist(fullfile(saveDir, [fileName, '.fig']), 'file') ~= 0 || ...
-        exist(fullfile(saveDir, [fileName, '.png']), 'file') ~= 0
-    dlgAns = questdlg(['Saving this figure will overwrite one or more existing files in this ', ...
+if nargin > 3 && strcmp(overwriteFlag, 'skipConfirmation')
+    overwrite = 1;
+else
+    overwrite = 1;
+    if exist(fullfile(saveDir, [fileName, '.fig']), 'file') ~= 0 || ...
+            exist(fullfile(saveDir, [fileName, '.png']), 'file') ~= 0
+        dlgAns = questdlg(['Saving this figure will overwrite one or more existing files in this ', ...
             'directory...are you sure you want to do this?'], 'Warning', 'Yes', 'No', 'No');
-    if strcmp(dlgAns, 'No')
-        overwrite = 0;
-        disp('Saving cancelled')
+        if strcmp(dlgAns, 'No')
+            overwrite = 0;
+            disp('Saving cancelled')
+        end
     end
 end
 
 % Save figure files
-if overwrite
+if overwrite 
     export_fig(fullfile(saveDir, fileName), '-png', '-nocrop', figHandle);
     print(figHandle, '-dpdf', '-bestfit', fullfile(saveDir, fileName));
     if ~isdir(fullfile(saveDir, 'figFiles'))

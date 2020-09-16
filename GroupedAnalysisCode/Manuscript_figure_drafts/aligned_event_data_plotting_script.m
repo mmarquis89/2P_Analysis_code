@@ -345,10 +345,12 @@ catch ME; rethrow(ME); end
 
 %% Save current figure
 
-saveDir = 'D:\Dropbox (HMS)\Manuscript_figure_drafts\Loc_onset_responses';
+saveDir = ['C:\Users\Wilson Lab\Documents\MATLAB\2P_code\GroupedAnalysisCode\', ...
+            'Manuscript_figure_drafts\Loc_onset_responses'];
 fileName = 'PPL203_grooming_onset_response_plots';
 newFig.UserData.baseFilterDefs = baseFilterDefs;
 newFig.UserData.plottingParams = p;
+newFig.UserData.gitInfo = getGitInfo('C:\Users\Wilson Lab\Documents\MATLAB\2P_code');
 save_figure(newFig, saveDir, fileName)
 
 
