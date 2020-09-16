@@ -4,14 +4,14 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
 alignEventDateStr = '20200609';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
-alignEventName = 'soundstim';
+alignEventName = 'panelsflash';
 
 load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_AlignEventObj_', ...
         alignEventName, '.mat']));
 
 %% Generate or load aligned event data table
 
-analysisWin = [2 5];
+analysisWin = [2 3];
 
 saveFileName = [alignObj.alignEventName, '_pre_', num2str(analysisWin(1)), '_post_', ...
         num2str(analysisWin(2)), '.mat'];
@@ -33,18 +33,18 @@ baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = 'TypeB|TypeD';
+baseFilterDefs.roiName = [];
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
-baseFilterDefs.grooming = 0;
+baseFilterDefs.grooming = [];
 baseFilterDefs.isolatedmovement = [];
 baseFilterDefs.locomotion = 0;
 baseFilterDefs.flailing = 0;
 baseFilterDefs.odor = 0;
 baseFilterDefs.optostim = 0;
-baseFilterDefs.panelsflash = 0;
-baseFilterDefs.soundstim = -1;
+baseFilterDefs.panelsflash = [];
+baseFilterDefs.soundstim = 0;
 
 % OneNote experiment metadata
 baseFilterDefs.genotype = [];
@@ -73,20 +73,20 @@ baseFilterMat = dt.filterMat;
 %         '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
 % expIDList = unique(dt.subset.expID);
 % plotVarList = expIDList(~ismember(expIDList, transectionExpts));
-
+% 
 % expIDsOfInterest = {'20180207-2', '20180207-3', '20180209-1', '20180228-1', '20180228-3', '20180307-3', ...
 %         '20180314-1', '20180316-2', '20180323-1', ...
 %         '20180328-2', '20180329-1', '20180426-1', '20180525-1', '20180623-1', ...
 %         '20180623-2', '20180627-1'};
 % plotVarList = expIDsOfInterest';
-% 
+% % 
 plotVar = 'roiName';
-plotVarList = {'TypeD'};
+plotVarList = {'TypeB', 'TypeD'}';
 
 
 
 % Will plot one overlay group per value in this variable list (if rows matching the filter exist)
-
+% 
 groupVar = 'expID';
 transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
         '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
@@ -95,11 +95,12 @@ groupVarList = expIDList(~ismember(expIDList, transectionExpts));
 groupVarColors = repmat([0 0 0], numel(groupVarList), 1)%
 
 % groupVar = 'roiName';
-% groupVarList =  unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
+% groupVarList =  {'TypeD', 'TypeB'};%unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
 % groupVar = 'odorName';
 % groupVarList = unique(dt.subset.odorName)';
-% groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
 
+% groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
+% 
 
 
 % Pre-calculate filter vectors so it's not being done repeatedly in a loop during plotting  
@@ -130,31 +131,33 @@ disp('Plot and group filters ready')
 % disp(unique(dt.subset.odorName))
 
 % Set plotting options
-p.smWin = 4;
+p = []; 
+p.smWin = 5;
 p.singleTrials = 0;
-p.shadeStim = 1;
+p.shadeStim = 0;
 p.shadeStimColor = [1 0 0];% [1 0 0]
-p.includeNaN = 0;
-p.shadeSEM = 1;
-p.minTrials = 2;
+p.includeNaN = 1;
+p.shadeSEM = 0;
+p.minTrials = 3;
 
 p.matchYLims = 1;
 p.useLegend = 0;
+p.separateLegendAxes = 1;
 p.manualYLims = [];
 p.manualXLims = [];
 p.minPlotGroups = 0;
 
-p.figDims = [770 570];
+p.figDims = [];
 p.fontSize = 14;
-p.manualTitle = ['PPL203 200 Hz tone responses'];
+p.manualTitle = [];
 
 % Configure plot spacing and margins
-p.SV = 0.07;
-p.SH = 0.07;
-p.ML = 0.12;
+p.SV = 0.09;
+p.SH = 0.05;
+p.ML = 0.09;
 p.MR = 0.02;
 p.MT = 0.06;
-p.MB = 0.12;
+p.MB = 0.13;
 
 try 
     
@@ -209,8 +212,12 @@ for iPlot = 1:nPlots
             [~, onsetVol] = min(abs(volTimes));
             allStimDurs = [allStimDurs; currSubset.offsetTime - currSubset.onsetTime];
             
-%                    dff((onsetVol - 1):(onsetVol + 2), :) = nan;
-            
+            % Set stim period to NaN (for panels flash stim)
+            stimDurVols = ceil(allStimDurs(1) * currSubset.volumeRate(1));
+            dff((onsetVol - 1):(onsetVol + stimDurVols + 3), :) = nan;
+             dff(dff > 0.3) = nan;
+
+
             % Plot individual trials if appropriate
             if p.singleTrials
                 xx = repmat(volTimes', 1, size(dff, 2));
@@ -318,22 +325,22 @@ for iAx = 1:numel(goodAxes)
         xlim(newAxes(iAx), p.manualXLims);
     end
     newAxes(iAx).FontSize = p.fontSize;
-    if iAx == numel(goodAxes) && p.useLegend
+    if iAx == numel(goodAxes) && p.useLegend && ~p.separateLegendAxes
         handles = legendUnq(newFig);
         legend(newAxes(end), handles, 'fontsize', 14, 'location', 'best', 'autoupdate', 'off');
     end    
 end
 % close(f);
 
-% % Plot legend on an empty axes in an unused part of the figure 
-% tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', p.ML, 'mr', p.MR, 'mt', ...
-%           p.MT, 'mb', p.MB, 'sv', p.SV, 'sh', p.SH);
-% if  p.useLegend
-%     handles = legendUnq(newFig);
-%     legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
-%     set(gca, 'FontSize', 14)
-%     axis off
-% end
+% Plot legend on an empty axes in an unused part of the figure
+if p.useLegend & p.separateLegendAxes
+    tempAx = subaxis(subplotDims(1), subplotDims(2), numel(goodAxes) + 1, 'ml', p.ML, 'mr', p.MR, 'mt', ...
+            p.MT, 'mb', p.MB, 'sv', p.SV, 'sh', p.SH);
+    handles = legendUnq(newFig);
+    legend(tempAx, handles, 'location', 'best', 'autoupdate', 'off');
+    set(gca, 'FontSize', 14)
+    axis off
+end
 
 % Reset filter mat and filterDefs
 dt.filterMat = baseFilterMat;
@@ -343,20 +350,11 @@ catch ME; rethrow(ME); end
 
 %% Save current figure
 
-saveDir = 'D:\Dropbox (HMS)\Manuscript_figure_drafts\Sound_responses';
-fileName = 'PPL203_sound_response_overlay';
+saveDir = 'D:\Dropbox (HMS)\Manuscript_figure_drafts\Visual_responses';
+fileName = 'PPL203+PPL201_panelsFlash_response_overlay';
 newFig.UserData.baseFilterDefs = baseFilterDefs;
 newFig.UserData.plottingParams = p;
 save_figure(newFig, saveDir, fileName)
-
-%%
-print(newFig, '-dpdf', fullfile(saveDir, [fileName, '_test.pdf']))
-
-
-
-
-
-
 
 
 

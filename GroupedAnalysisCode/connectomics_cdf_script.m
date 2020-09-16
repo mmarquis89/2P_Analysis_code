@@ -221,16 +221,16 @@ disp(cellTypeTbl_allTypes);
 % writetable(singleCellTbl_allTypes, fullfile(parentDir, fileName));
 % 
 %%
-% tblDS = cellTypeTbl_allTypes;
-
-test = outerjoin(tblUS, tblDS, 'Keys', {'neuronID', 'partnerID'}, 'MergeKeys', 1, 'LeftVariables', ...
-        {'neuronID', 'neuronName', 'partnerID', 'partnerType', 'synapseCount'}, 'RightVariables', ...
-        {'neuronID', 'neuronName', 'partnerID', 'partnerType', 'synapseCount'});
-
-test2 = test(~isnan(test.synapseCount_tblUS) & ~isnan(test.synapseCount_tblDS), :);
-
-writetable(test2, fullfile('C:\Users\Wilson Lab\Google Drive\Lab Work\LH-DAN_connectomics_analysis', ...
-        'testRecipTable.csv'));
+% % tblDS = cellTypeTbl_allTypes;
+% 
+% test = outerjoin(tblUS, tblDS, 'Keys', {'neuronID', 'partnerID'}, 'MergeKeys', 1, 'LeftVariables', ...
+%         {'neuronID', 'neuronName', 'partnerID', 'partnerType', 'synapseCount'}, 'RightVariables', ...
+%         {'neuronID', 'neuronName', 'partnerID', 'partnerType', 'synapseCount'});
+% 
+% test2 = test(~isnan(test.synapseCount_tblUS) & ~isnan(test.synapseCount_tblDS), :);
+% 
+% writetable(test2, fullfile('C:\Users\Wilson Lab\Google Drive\Lab Work\LH-DAN_connectomics_analysis', ...
+%         'testRecipTable.csv'));
 %% Create scatter plots of summary variables
 tb = table(currTypeList.neuronName, totalSynapseCounts', partnerTypeCounts', maxSynapseCounts', ...
         'variablenames', {'cellType', 'totalSynapses', 'totalPartnerTypes', 'maxSynapseCount'});
@@ -286,28 +286,4 @@ YTickVals(end + 1) = 10^yExpLims(2);
 ax.YScale = 'log';
 ax.YTick = YTickVals;
 
-end
-
-% Round up to the next power of 10
-function x = exp_ceil(n, startingExp)
-    if nargin < 2
-        startingExp = -5;
-    end
-    if n > 10^startingExp
-        x = exp_ceil(n, startingExp + 1);        
-    else
-        x = 10^startingExp;
-    end
-end
-
-% Round down to the next power of 10
-function x = exp_floor(n, startingExp)
-    if nargin < 2
-        startingExp = 10;
-    end
-    if n < 10^startingExp
-        x = exp_floor(n, startingExp - 1);        
-    else
-        x = 10^startingExp;
-    end
 end
