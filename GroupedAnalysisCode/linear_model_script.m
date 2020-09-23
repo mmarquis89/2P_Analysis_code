@@ -16,13 +16,13 @@ end
 
 % Set source data parameters;
 p = [];
-p.roiName = 'TypeD';
+p.roiName = 'TypeF';
 p.maxSpeed = 100;
 p.smWinVols = 5;
 p.smWinFrames = 3;
 p.smReps = 10;
 p.ftLagVols = 3;
-p.speedType = 'moveSpeed';
+p.speedType = 'fwSpeed';
 p.odorRespFilterDur = [7 5];
 
 % Set model parameters
@@ -30,12 +30,12 @@ mp = [];
 mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
-mp.upper = ['linear'];
+mp.upper = [];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
-mp.odorIntegrationWin = [30:10:200];
-% mp.odorIntegrationWin = [30 60 90];
+% mp.odorIntegrationWin = [30:10:200];
+mp.odorIntegrationWin = [];
 mp.speedPadDist = 5;
 mp.fwSpeedIntegrationWin = [];
 
@@ -43,24 +43,24 @@ mp.fwSpeedIntegrationWin = [];
 expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
 % 
-% % Type F
-% expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
-%         '20181020-1', '20190226-3'};
+% Type F
+expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
+        '20181020-1', '20190226-3'};
 
-skipTrials = {[], [], [], [], [], ...
+skipTrials = {[], [], [], [], ...
               [], [], [], []};
           
-skipVols = {[], [1:1500], [], [], [], ...
-              [], [], [], [1:2200]};
+% skipVols = {[], [1:1500], [], [], [], ...
+%               [], [], [], [1:2200]};
 
-% skipVols = repmat({[]}, 1, numel(skipTrials));
+skipVols = repmat({[]}, 1, numel(skipTrials));
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
         'skipVols'});
 
 % Create analysis object
-rm = RegressionModelAnalysis(expInfoTbl, p);
+rm = RegressionModelAnalysis_PPM1201(expInfoTbl, p);
 
 % Initialize models
 rm = rm.initialize_models(mp);
@@ -218,6 +218,49 @@ rm.modelData.noSpeedHistMdls = noSpeedHistMdls';
 rm.modelData.noSpeedHistMdlAdjR2 = noSpeedHistMdlAdjR2';
 
 
+
+catch ME; rethrow(ME); end
+%% Train initial models
+try
+fullMdls = {};
+fullMdlPredFl = {};
+fullMdlAdjR2 = [];
+disp('Training final models...')
+for iExp = 1:size(rm.sourceData, 1)
+    if numel(rm.modelParams) > 1
+        mp = rm.modelParams(iExp);
+    else
+        mp = rm.modelParams;
+    end
+    disp(rm.sourceData.expID{iExp})
+    
+    % Select data with best odorIntegration win for current experiment
+    currModelData = rm.modelData(iExp, :);
+    tblFit = currModelData.fullDataTbl{:}(currModelData.fitRowInds{:}, :);
+    tblTest = currModelData.fullDataTbl{:}(currModelData.testRowInds{:}, :);
+    tblPred = currModelData.fullDataTbl{:}(:, :); 
+    
+    % Use all training data to create and evaluate a stepwise model
+    kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
+            mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
+    emptyArgs = cellfun(@isempty, kvArgs);
+    kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
+    fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
+    
+%     fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + fwSpeed:fwSpeedHistory_10');
+
+    [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
+            1:end-1));
+    [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), ...
+            predFl, fullMdls{iExp}.NumCoefficients);
+    [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
+            tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
+end
+disp('Final models created');
+rm.modelData.fullMdls = fullMdls';
+rm.modelData.fullMdlPredFl = fullMdlPredFl';
+rm.modelData.fullMdlAdjR2 = fullMdlAdjR2';
+disp(rm.modelData)
 
 catch ME; rethrow(ME); end
 
