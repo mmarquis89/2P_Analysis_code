@@ -41,7 +41,7 @@ mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
 mp.useYaw = 0;
-mp.useDriftCorrection = 0;
+mp.useDriftCorrection = 1;
 
 % Initialize models
 rm = rm.initialize_models(mp);
@@ -79,7 +79,7 @@ for iExp = 1:size(rm.sourceData, 1)
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
     
-%     fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
+    fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + volsFromExpStart + fwSpeed:odorResp');
 
     [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
             1:end-1));
@@ -136,7 +136,7 @@ for iExp = 1:size(rm.sourceData, 1)
     emptyArgs = cellfun(@isempty, kvArgs);
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     driftCorrectedMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
-%     driftCorrectedMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
+    driftCorrectedMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
 
     [predFl, ~] = predict(driftCorrectedMdls{iExp}, ...
             tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), 1:end-1));
@@ -154,6 +154,49 @@ rm.modelData.driftCorrectedMdlAdjR2 = driftCorrectedMdlAdjR2';
 disp(rm.modelData)
 
 catch ME; rethrow(ME); end
+
+%% TEMPORARY HACK to remove volsFromExpStart term from all fullModels
+fullMdls = {};
+fullMdlPredFl = {};
+fullMdlAdjR2 = [];
+disp('Training innitial models...')
+for iExp = 1:size(rm.sourceData, 1)
+    if numel(rm.modelParams) > 1
+        mp = rm.modelParams(iExp);
+    else
+        mp = rm.modelParams;
+    end
+    disp(rm.sourceData.expID{iExp})
+    
+    % Select and split up data from current experiment
+    currModelData = rm.modelData(iExp, :);
+%     currModelData.fullDataTbl{:} = currModelData.fullDataTbl{:}(:, [1 2 4]);
+    tblFit = currModelData.fullDataTbl{:}(currModelData.fitRowInds{:}, :);
+    tblTest = currModelData.fullDataTbl{:}(currModelData.testRowInds{:}, :);
+    tblPred = currModelData.fullDataTbl{:}; 
+    
+    % Use all training data to create and evaluate a stepwise model
+    kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
+            mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
+    emptyArgs = cellfun(@isempty, kvArgs);
+    kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
+    fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
+    
+    fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
+
+    [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
+            1:end-1));
+    [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), ...
+            predFl, fullMdls{iExp}.NumCoefficients);
+    [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
+            tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
+end
+disp('Final models created');
+rm.modelData.fullMdls = fullMdls';
+rm.modelData.fullMdlPredFl = fullMdlPredFl';
+rm.modelData.fullMdlAdjR2 = fullMdlAdjR2';
+disp(rm.modelData)
+
 
 %% =================================================================================================
 % PLOTTING RESULTS
@@ -247,6 +290,8 @@ saveFig = 0;
 try
 plotArr = [rm.modelData.fullMdlAdjR2, ...
         rm.modelData.driftCorrectedMdlAdjR2]';
+    
+groupNames = {'Base model', 'Drift corrected model'};
 % plotArr = [rm.modelData.driftCorrectedMdlAdjR2, allRm{1}.modelData.driftCorrectedMdlAdjR2, ...
 %         rm.modelData.noOdorHistMdlAdjR2]';
 
@@ -265,7 +310,7 @@ xlim([0.5, size(plotArr, 1) + 0.5])
 ylim([-0.001, 1])
 ax = gca();
 ax.XTick = 1:size(plotArr, 1);
-ax.XTickLabel = {'Full model', 'drift-corrected'};
+ax.XTickLabel = groupNames;
 ylabel('Model adjusted R^2');
 ax.FontSize = 14;
 if strcmpi(rm.modelParams.upper, 'linear')
@@ -296,8 +341,8 @@ end
 uniqueCoeffs = unique(allDcCoeffNames);
 uniqueCoeffs = uniqueCoeffs(2:end) % Drop intercept term
 %%
-saveFig = 1;
-uniqueCoeffs = uniqueCoeffs([1 2]);
+saveFig = 0;
+uniqueCoeffs = uniqueCoeffs([1 3 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1) 
     for iCoeff = 1:numel(uniqueCoeffs)

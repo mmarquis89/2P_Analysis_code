@@ -96,7 +96,7 @@ for iExp = 1:numel(expNums)
     end
   
     a = a.generate_binned_flData(currPlotParams.flType, 'forward');
-    
+%     
     % Plot binned FW speed vs. sliding dF/F
     a = a.generate_binned_flData(currPlotParams.flType, 'forward');
     a.plot_binned_fl(ax);

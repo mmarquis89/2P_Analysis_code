@@ -4,14 +4,14 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
 alignEventDateStr = '20200609';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
-alignEventName = 'panelsflash';
+alignEventName = 'locomotion';
 
 load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_AlignEventObj_', ...
         alignEventName, '.mat']));
 
 %% Generate or load aligned event data table
 
-analysisWin = [2 3];
+analysisWin = [2 5];
 
 saveFileName = [alignObj.alignEventName, '_pre_', num2str(analysisWin(1)), '_post_', ...
         num2str(analysisWin(2)), '.mat'];
@@ -33,13 +33,13 @@ baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = [];
+baseFilterDefs.roiName = ['TypeD|TypeF'];
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
 baseFilterDefs.grooming = [];
 baseFilterDefs.isolatedmovement = [];
-baseFilterDefs.locomotion = 0;
+baseFilterDefs.locomotion = -1;
 baseFilterDefs.flailing = 0;
 baseFilterDefs.odor = 0;
 baseFilterDefs.optostim = 0;
@@ -70,7 +70,9 @@ baseFilterMat = dt.filterMat;
 % % Will make one subplot per value in this variable list
 % plotVar = 'expID';
 % transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
-%         '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
+%         '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
+% Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
+%         '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
 % expIDList = unique(dt.subset.expID);
 % plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 % 
@@ -81,7 +83,7 @@ baseFilterMat = dt.filterMat;
 % plotVarList = expIDsOfInterest';
 % % 
 plotVar = 'roiName';
-plotVarList = {'TypeB', 'TypeD'}';
+plotVarList = {'TypeF', 'TypeD'}';
 
 
 
@@ -89,7 +91,9 @@ plotVarList = {'TypeB', 'TypeD'}';
 % 
 groupVar = 'expID';
 transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
-        '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
+        '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
+Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
+        '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
 expIDList = unique(dt.subset.expID)';
 groupVarList = expIDList(~ismember(expIDList, transectionExpts));
 groupVarColors = repmat([0 0 0], numel(groupVarList), 1)%
@@ -126,6 +130,68 @@ groupVarFilterTable = table(groupVarList', groupVarFilters', 'VariableNames', ..
     
 disp('Plot and group filters ready')    
 
+%%
+
+sb = dt.subset;
+
+transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
+        '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
+Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
+        '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
+sb = sb(~ismember(sb.expID, transectionExpts) & ~ismember(sb.expID, transectionExpts), :);
+
+
+
+prePostAverages = [];
+for iEvent = 1:size(sb, 1)
+    if ~mod(iEvent, 1000)
+       disp([num2str(iEvent), ' of ', num2str(size(sb, 1))]) 
+    end
+    prePostAverages(iEvent, 1) = mean(sb.eventFl{iEvent}(sb.volTimes{iEvent} <= 0), 'omitnan');
+    prePostAverages(iEvent, 2) = mean(sb.eventFl{iEvent}(sb.volTimes{iEvent} > 0), 'omitnan');
+end
+
+testTbl = [sb(:, {'expID', 'trialNum', 'roiName'}), table(prePostAverages(:, 1), ...
+        prePostAverages(:, 2), 'VariableNames', {'pre', 'post'})];
+
+testTbl.dff = (testTbl.post - testTbl.pre) ./ testTbl.pre;
+
+testTbl = testTbl(~isnan(testTbl.dff), :);
+
+expMeanDff = groupsummary(testTbl, {'expID', 'roiName'}, 'mean', 'dff');
+expSEM = groupsummary(testTbl, {'expID', 'roiName'}, @(x) std_err(x), 'dff');
+expMeanDff.SEM = expSEM.fun1_dff;
+expMeanDff.SEM(isnan(expMeanDff.SEM)) = 0;
+
+PPM1201 = expMeanDff(contains(expMeanDff.roiName, 'TypeF'), :);
+PPL203 = expMeanDff(contains(expMeanDff.roiName, 'TypeD'), :);
+%%
+f = figure(3);clf; hold on 
+f.Color = [1 1 1];
+f.Position = [f.Position(1:2), 500, 500];
+if (f.Position(2) + f.Position(4)) > 1000
+    f.Position(2) = 1000 - f.Position(4);
+end
+plot(ones(size(PPM1201, 1), 1), PPM1201.mean_dff, 'o', ...
+        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green'));
+% errorbar(ones(size(PPM1201, 1), 1), PPM1201.mean_dff, PPM1201.SEM, 'o', 'horizontal', 'color', ...
+%         rgb('green'), 'markerFaceColor', rgb('green'), 'linewidth', 1.5)
+plot(2*ones(size(PPL203, 1), 1), PPL203.mean_dff, 'o', ...
+        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green')); 
+errorbar([1, 2], [mean(PPM1201.mean_dff), mean(PPL203.mean_dff)], [std_err(PPM1201.mean_dff), ...
+        std_err(PPL203.mean_dff)], '-s', ...
+        'color', 'k', 'markerFaceColor', 'k', 'linewidth', 3, 'markerSize', 10)
+xlim([0.5, 2.5])
+ylim([-0.001, 1])
+ax = gca();
+ax.XTick = 1:2;
+ax.XTickLabel = {'PPM1201', 'PPM203'};
+ylabel('dF/F');
+ax.FontSize = 14;
+[~, p] = ttest2(PPM1201.mean_dff, PPL203.mean_dff);
+title({'Locomotion onset dF/F', ['p = ', num2str(p, 3)]})
+
+
 %% GENERATE PLOTS
 
 % disp(unique(dt.subset.odorName))
@@ -136,7 +202,7 @@ p.smWin = 5;
 p.singleTrials = 0;
 p.shadeStim = 0;
 p.shadeStimColor = [1 0 0];% [1 0 0]
-p.includeNaN = 1;
+p.includeNaN = 0;
 p.shadeSEM = 0;
 p.minTrials = 3;
 
