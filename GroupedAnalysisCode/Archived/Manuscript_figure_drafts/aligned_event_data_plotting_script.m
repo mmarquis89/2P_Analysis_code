@@ -4,7 +4,7 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\';
 alignEventDateStr = '20200609';
 
 % ballstop, flailing, grooming, isolatedmovement, locomotion, odor, optostim, panelsflash, soundstim
-alignEventName = 'panelsflash';
+alignEventName = 'odor';
 
 load(fullfile(parentDir, 'Saved_AlignEvent_objects', [alignEventDateStr, '_AlignEventObj_', ...
         alignEventName, '.mat']));
@@ -33,17 +33,17 @@ baseFilterDefs.trialNum = [];
 baseFilterDefs.expName = [];
 baseFilterDefs.moveSpeed = [];
 baseFilterDefs.yawSpeed = [];
-baseFilterDefs.roiName = ['TypeB|TypeD'];
+baseFilterDefs.roiName = ['TypeF'];
 
 % Event filter vectors
 baseFilterDefs.ballstop = 0;
-baseFilterDefs.grooming = [];
-baseFilterDefs.isolatedmovement = [];
+baseFilterDefs.grooming = [-1];
+baseFilterDefs.isolatedmovement = [-1];
 baseFilterDefs.locomotion = 0;
 baseFilterDefs.flailing = 0;
-baseFilterDefs.odor = 0;
+baseFilterDefs.odor = -1;
 baseFilterDefs.optostim = 0;
-baseFilterDefs.panelsflash = [];
+baseFilterDefs.panelsflash = 0;
 baseFilterDefs.soundstim = 0;
 
 % OneNote experiment metadata
@@ -57,7 +57,7 @@ baseFilterDefs.bathTemp = [];
 
 % Alignment event-specific fields
 if strcmp(alignObj.alignEventName, 'odor')
-    baseFilterDefs.odorName = 'ACV'%['^.(?!.*background)(?!.*Oil)(?!.*Stop)(?!.*Air)'];%[];%
+    baseFilterDefs.odorName = ['^.(?!.*background)(?!.*Oil)(?!.*Vial)(?!.*Stop)(?!.*Air)'];%[];%
     baseFilterDefs.concentration = [];
 end
 % 
@@ -67,14 +67,16 @@ baseFilterMat = dt.filterMat;
 
 % SETUP PLOTTING VARIABLES
 
-% % Will make one subplot per value in this variable list
-% plotVar = 'expID';
-% transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
-%         '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
-% Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
-%         '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
-% expIDList = unique(dt.subset.expID);
-% plotVarList = expIDList(~ismember(expIDList, transectionExpts));
+% Will make one subplot per value in this variable list
+plotVar = 'expID';
+transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
+        '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
+    
+Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
+        '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
+    
+expIDList = unique(dt.subset.expID);
+plotVarList = expIDList(~ismember(expIDList, transectionExpts));
 % 
 % expIDsOfInterest = {'20180207-2', '20180207-3', '20180209-1', '20180228-1', '20180228-3', '20180307-3', ...
 %         '20180314-1', '20180316-2', '20180323-1', ...
@@ -82,28 +84,29 @@ baseFilterMat = dt.filterMat;
 %         '20180623-2', '20180627-1'};
 % plotVarList = expIDsOfInterest';
 % % 
-plotVar = 'roiName';
-plotVarList = {'TypeF', 'TypeD'}';
+% plotVar = 'roiName';
+% plotVarList = {'TypeF'}';
 
 
 
 % Will plot one overlay group per value in this variable list (if rows matching the filter exist)
 % 
-groupVar = 'expID';
-transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
-        '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
-Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
-        '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
-expIDList = unique(dt.subset.expID)';
-groupVarList = expIDList(~ismember(expIDList, transectionExpts));
-groupVarColors = repmat([0 0 0], numel(groupVarList), 1)%
+% groupVar = 'expID';
+% transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
+%         '20190219-2', '20190220-1', '20190226-1', '20190226-2', '20190226-3'};
+
+% Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
+%         '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
+% expIDList = unique(dt.subset.expID)';
+% groupVarList = expIDList(~ismember(expIDList, transectionExpts));
+% groupVarColors = repmat([0 0 0], numel(groupVarList), 1)%
 
 % groupVar = 'roiName';
-% groupVarList =  {'TypeD', 'TypeB'};%unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
-% groupVar = 'odorName';
-% groupVarList = unique(dt.subset.odorName)';
+% groupVarList =  {'TypeF'};%unique(dt.subset.roiName)';%{'TypeD', 'ANT'}; % {'TypeF', 'VLP-AMMC'};%{'TypeD', 'TypeB', 'TypeF'}; %
+groupVar = 'odorName';
+groupVarList = unique(dt.subset.odorName)';
 
-% groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
+groupVarColors = custom_colormap(numel(groupVarList));% [rgb('blue'); rgb('red'); rgb('green')]; %[rgb('green'); rgb('magenta')]; %
 % 
 
 
@@ -130,85 +133,22 @@ groupVarFilterTable = table(groupVarList', groupVarFilters', 'VariableNames', ..
     
 disp('Plot and group filters ready')    
 
-%%
-
-sb = dt.subset;
-
-transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
-        '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
-Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
-        '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
-sb = sb(~ismember(sb.expID, transectionExpts) & ~ismember(sb.expID, transectionExpts), :);
-
-
-
-prePostAverages = [];
-for iEvent = 1:size(sb, 1)
-    if ~mod(iEvent, 1000)
-       disp([num2str(iEvent), ' of ', num2str(size(sb, 1))]) 
-    end
-    prePostAverages(iEvent, 1) = mean(sb.eventFl{iEvent}(sb.volTimes{iEvent} <= 0), 'omitnan');
-    prePostAverages(iEvent, 2) = mean(sb.eventFl{iEvent}(sb.volTimes{iEvent} > 0), 'omitnan');
-end
-
-testTbl = [sb(:, {'expID', 'trialNum', 'roiName'}), table(prePostAverages(:, 1), ...
-        prePostAverages(:, 2), 'VariableNames', {'pre', 'post'})];
-
-testTbl.dff = (testTbl.post - testTbl.pre) ./ testTbl.pre;
-
-testTbl = testTbl(~isnan(testTbl.dff), :);
-
-expMeanDff = groupsummary(testTbl, {'expID', 'roiName'}, 'mean', 'dff');
-expSEM = groupsummary(testTbl, {'expID', 'roiName'}, @(x) std_err(x), 'dff');
-expMeanDff.SEM = expSEM.fun1_dff;
-expMeanDff.SEM(isnan(expMeanDff.SEM)) = 0;
-
-PPM1201 = expMeanDff(contains(expMeanDff.roiName, 'TypeF'), :);
-PPL203 = expMeanDff(contains(expMeanDff.roiName, 'TypeD'), :);
-%%
-f = figure(3);clf; hold on 
-f.Color = [1 1 1];
-f.Position = [f.Position(1:2), 500, 500];
-if (f.Position(2) + f.Position(4)) > 1000
-    f.Position(2) = 1000 - f.Position(4);
-end
-plot(ones(size(PPM1201, 1), 1), PPM1201.mean_dff, 'o', ...
-        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green'));
-% errorbar(ones(size(PPM1201, 1), 1), PPM1201.mean_dff, PPM1201.SEM, 'o', 'horizontal', 'color', ...
-%         rgb('green'), 'markerFaceColor', rgb('green'), 'linewidth', 1.5)
-plot(2*ones(size(PPL203, 1), 1), PPL203.mean_dff, 'o', ...
-        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green')); 
-errorbar([1, 2], [mean(PPM1201.mean_dff), mean(PPL203.mean_dff)], [std_err(PPM1201.mean_dff), ...
-        std_err(PPL203.mean_dff)], '-s', ...
-        'color', 'k', 'markerFaceColor', 'k', 'linewidth', 3, 'markerSize', 10)
-xlim([0.5, 2.5])
-ylim([-0.001, 1])
-ax = gca();
-ax.XTick = 1:2;
-ax.XTickLabel = {'PPM1201', 'PPM203'};
-ylabel('dF/F');
-ax.FontSize = 14;
-[~, p] = ttest2(PPM1201.mean_dff, PPL203.mean_dff);
-title({'Locomotion onset dF/F', ['p = ', num2str(p, 3)]})
-
-
 %% GENERATE PLOTS
 
 % disp(unique(dt.subset.odorName))
 
 % Set plotting options
-p = []; 
-p.smWin = 5;
+p.smWin = 3;
 p.singleTrials = 0;
-p.shadeStim = 0;
+p.shadeStim = 1;
 p.shadeStimColor = [1 0 0];% [1 0 0]
 p.includeNaN = 0;
-p.shadeSEM = 0;
-p.minTrials = 3;
+p.shadeSEM = 1;
+p.minTrials = 2;
 
 p.matchYLims = 1;
-p.useLegend = 0;
-p.separateLegendAxes = 1;
+p.useLegend = 1;
+p.separateLegendAxes = 0;
 p.manualYLims = [];
 p.manualXLims = [];
 p.minPlotGroups = 0;
@@ -220,10 +160,10 @@ p.manualTitle = [];
 % Configure plot spacing and margins
 p.SV = 0.09;
 p.SH = 0.05;
-p.ML = 0.09;
+p.ML = 0.06;
 p.MR = 0.02;
 p.MT = 0.06;
-p.MB = 0.13;
+p.MB = 0.09;
 
 try 
     
@@ -278,12 +218,8 @@ for iPlot = 1:nPlots
             [~, onsetVol] = min(abs(volTimes));
             allStimDurs = [allStimDurs; currSubset.offsetTime - currSubset.onsetTime];
             
-            % Set stim period to NaN (for panels flash stim)
-            stimDurVols = ceil(allStimDurs(1) * currSubset.volumeRate(1));
-            dff((onsetVol - 1):(onsetVol + stimDurVols + 3), :) = nan;
-             dff(dff > 0.3) = nan;
-
-
+%                    dff((onsetVol - 1):(onsetVol + 2), :) = nan;
+            
             % Plot individual trials if appropriate
             if p.singleTrials
                 xx = repmat(volTimes', 1, size(dff, 2));
@@ -414,12 +350,126 @@ dt.filterDefs = baseFilterDefs;
 
 catch ME; rethrow(ME); end
 
+%% PLOT CRUNCH FIGURE
+
+try
+    
+baseFilterDefs = alignObj.create_filterDefs();
+
+% General fields
+baseFilterDefs.expID = [];%'20180623-1';%'20180414-1|20180623-3|20181120-1|2019031503';
+baseFilterDefs.trialNum = [];
+baseFilterDefs.expName = [];
+baseFilterDefs.moveSpeed = [];
+baseFilterDefs.yawSpeed = [];
+baseFilterDefs.roiName = ['TypeB|TypeD'];
+
+% Event filter vectors
+baseFilterDefs.ballstop = 0;
+baseFilterDefs.grooming = [];
+baseFilterDefs.isolatedmovement = [];
+baseFilterDefs.locomotion = -1;
+baseFilterDefs.flailing = 0;
+baseFilterDefs.odor = 0;
+baseFilterDefs.optostim = 0;
+baseFilterDefs.panelsflash = [];
+baseFilterDefs.soundstim = 0;
+
+% OneNote experiment metadata
+baseFilterDefs.genotype = [];
+baseFilterDefs.ageHrs = [];
+baseFilterDefs.foodType = [];
+baseFilterDefs.bedtime = [];
+baseFilterDefs.starvationTimeHrs = [];
+baseFilterDefs.olfactometerVersion = [];
+baseFilterDefs.bathTemp = [];
+
+% Alignment event-specific fields
+if strcmp(alignObj.alignEventName, 'odor')
+    baseFilterDefs.odorName = 'ACV'%['^.(?!.*background)(?!.*Oil)(?!.*Stop)(?!.*Air)'];%[];%
+    baseFilterDefs.concentration = [];
+end
+% 
+dt = dt.initialize_filters(baseFilterDefs);
+sb = dt.subset;
+
+% Remove transection and Gr5a>ChR experiments from dataset
+transectionExpts = {'20190211-3', '20190216-1', '20190218-1', '20190218-2', '20190219-1', ...
+        '20190219-2', '20190220-1', '20190226-1', '20190226-2'};
+Gr5aChrExpts = {'20190403-1', '20190405-1', '20190408-1', '20190409-1', '20190409-2', ...
+        '20190416-1', '20190422-1', '20190422-2', '20190422-3', '20190606-2'};
+sb = sb(~ismember(sb.expID, transectionExpts) & ~ismember(sb.expID, transectionExpts), :);
+
+% Get mean fluorescence before and after each event onset
+prePostAverages = [];
+for iEvent = 1:size(sb, 1)
+    if ~mod(iEvent, 1000)
+       disp([num2str(iEvent), ' of ', num2str(size(sb, 1))]) 
+    end
+    prePostAverages(iEvent, 1) = mean(sb.eventFl{iEvent}(sb.volTimes{iEvent} <= 0), 'omitnan');
+    prePostAverages(iEvent, 2) = mean(sb.eventFl{iEvent}(sb.volTimes{iEvent} > 0), 'omitnan');
+end
+    
+% Calculate dF/F for each event
+tbl = [sb(:, {'expID', 'trialNum', 'roiName'}), table(prePostAverages(:, 1), ...
+        prePostAverages(:, 2), 'VariableNames', {'pre', 'post'})];    
+tbl.dff = (tbl.post - tbl.pre) ./ tbl.pre;
+tbl = tbl(~isnan(tbl.dff), :);
+
+% Calculate mean dF/F and SEM for each experiment
+expMeanDff = groupsummary(tbl, {'expID', 'roiName'}, 'mean', 'dff');
+expSEM = groupsummary(tbl, {'expID', 'roiName'}, @(x) std_err(x), 'dff');
+expMeanDff.SEM = expSEM.fun1_dff;
+expMeanDff.SEM(isnan(expMeanDff.SEM)) = 0;
+
+% Separate experiments by cell type
+% PPM1201 = expMeanDff(contains(expMeanDff.roiName, 'TypeF'), :);
+PPL201 = expMeanDff(contains(expMeanDff.roiName, 'TypeB'), :);
+PPL203 = expMeanDff(contains(expMeanDff.roiName, 'TypeD'), :);
+
+%% Plot figure
+f = figure(3);clf; hold on 
+f.Color = [1 1 1];
+f.Position = [f.Position(1:2), 500, 500];
+if (f.Position(2) + f.Position(4)) > 1000
+    f.Position(2) = 1000 - f.Position(4);
+end
+% plot(ones(size(PPM1201, 1), 1), PPM1201.mean_dff, 'o', ...
+%         'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green'));
+plot(ones(size(PPL201, 1), 1), PPL201.mean_dff, 'o', ...
+        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green'));
+plot(2*ones(size(PPL203, 1), 1), PPL203.mean_dff, 'o', ...
+        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green')); 
+% errorbar([1, 2], [mean(PPM1201.mean_dff), mean(PPL203.mean_dff)], [std_err(PPM1201.mean_dff), ...
+%         std_err(PPL203.mean_dff)], '-s', 'color', 'k', 'markerFaceColor', 'k', 'linewidth', ...
+%         3, 'markerSize', 10)
+errorbar([1, 2], [mean(PPL201.mean_dff), mean(PPL203.mean_dff)], [std_err(PPL201.mean_dff), ...
+        std_err(PPL203.mean_dff)], '-s', 'color', 'k', 'markerFaceColor', 'k', 'linewidth', ...
+        3, 'markerSize', 10)
+xlim([0.5, 2.5])
+ylim([-0.001, 0.4])
+ax = gca();
+ax.XTick = 1:2;
+% ax.XTickLabel = {'PPM1201', 'PPM203'};
+ax.XTickLabel = {'PPL201', 'PPM203'};
+ylabel('dF/F');
+ax.FontSize = 14;
+% [~, p] = ttest2(PPM1201.mean_dff, PPL203.mean_dff);
+[~, p] = ttest2(PPL201.mean_dff, PPL203.mean_dff);
+title({'Panels flash dF/F', ['p = ', num2str(p, 3)]})
+
+newFig = f;
+
+catch ME; rethrow(ME); end
+
 %% Save current figure
 
-saveDir = 'D:\Dropbox (HMS)\Manuscript_figure_drafts\Visual_responses';
-fileName = 'PPL203+PPL201_panelsFlash_response_overlay';
+saveDir = ['C:\Users\Wilson Lab\Documents\MATLAB\2P_code\GroupedAnalysisCode\', ...
+            'Manuscript_figure_drafts\visual_responses'];
+fileName = 'panels_flash_dff_comparison';
 newFig.UserData.baseFilterDefs = baseFilterDefs;
 newFig.UserData.plottingParams = p;
+newFig.UserData.gitInfo = getGitInfo('C:\Users\Wilson Lab\Documents\MATLAB\2P_code');
 save_figure(newFig, saveDir, fileName)
 
 

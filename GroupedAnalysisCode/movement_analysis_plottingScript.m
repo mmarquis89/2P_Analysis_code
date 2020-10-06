@@ -1,6 +1,6 @@
 %% Create analysis object
 expList = load_expList;
-expType = 'PPM2';
+expType = 'D-ANT';
 expList = expList(contains(expList.expName, expType), :);
 a = MoveSpeedAnalysis(expList);
 
@@ -20,7 +20,7 @@ savedAnalysisObjects = [];
 
 %%
 
-expNums = [1:8];
+expNums = [1:48];
 
 xLim = [-3 25];
 yLim = [];
@@ -49,6 +49,7 @@ if isempty(savedAnalysisObjects) || ~useSavedObj
 end
 f = figure(1); clf;
 f.Color = [1 1 1];
+allRs = [];
 for iExp = 1:numel(expNums)    
     
     % Get current expID and params
@@ -61,7 +62,7 @@ for iExp = 1:numel(expNums)
     currPlotParams.grooming = [];
     currPlotParams.odor = [];
     currPlotParams.quiescence = [];
-    currPlotParams.roiName = 'TypeF';
+    currPlotParams.roiName = 'TypeD';
     currPlotParams.ballstop = 0;
     currPlotParams.nHistBins = 25;
     
@@ -102,8 +103,11 @@ for iExp = 1:numel(expNums)
     a.plot_binned_fl(ax);
     ax.FontSize = fontSize;
     ax.YLabel.String = 'Mean dF/F';
-    ax.Title.String = [currExpID, ' — ', currPlotParams.roiName];
+    cf = a.analysisOutput.r(1);
+    allRs(end + 1) = cf;
+    ax.Title.String = [currExpID, ' — ', currPlotParams.roiName, ' — r = ', num2str(cf, 2)];
     box off
+    
     
 %     % Plot binned calculated move speed vs. sliding dF/F
 %     a = a.generate_binned_flData('slidingBaseline', 'calculatedMove');

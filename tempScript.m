@@ -13,12 +13,9 @@ for iType = 1:size(neuronList, 1)
     
     topPartnerMeanPct = mean(currData.connectionWeightPct(1:pctCutoffInd));
     
-    
-    
     outputTbl = [outputTbl; table(neuronList.neuronID(iType), neuronList.neuronName(iType), ...
             cumPctVal, topPartnerMeanPct, cutoffPartnerVal, 'variableNames', {'neuronID', ...
-            'neuronName', 'topPartnerCumPct', 'topPartnerMeanPct', 'cutoffPercentile'})];
-        
-        
+            'neuronName', 'topPartnerCumPct', 'topPartnerMeanPct', 'cutoffPercentile'})];     
 end
 outputTbl = sortrows(outputTbl, 5);
+

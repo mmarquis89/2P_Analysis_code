@@ -198,8 +198,8 @@ methods
             end
             
             % Calculate cross-correlation between Fl data and moveSpeed
-            [r(iTrial, :), lags(iTrial, :)] = xcorr(currFlData(~isnan(currFlData + ...
-                    allSpeedVols(:, 2))), allSpeedVols(~isnan(currFlData + fwSpeedVols), 2), 6); 
+            [~, lags(iTrial, :)] = xcorr(currFlData(~isnan(currFlData + ...
+                    fwSpeedVols)), fwSpeedVols(~isnan(currFlData + fwSpeedVols)), 6); 
             
             % Apply a lag to the speed data if necessary
             allSpeedVols = allSpeedVols(1:end - obj.params.lagVols, :);
@@ -225,6 +225,12 @@ methods
         allSpeedData(nanVols, :) = nan;
         flData(nanVols) = nan;
         rawFlData(nanVols) = nan;
+        
+        % Calculate correlation coefficients
+        for iCol = 1:size(allSpeedData, 2)
+            c = corrcoef(allSpeedData(:, iCol), flData, 'rows', 'complete');
+            r(iCol) = c(2, 1);
+        end
         
         % Save processed data
         output = struct();

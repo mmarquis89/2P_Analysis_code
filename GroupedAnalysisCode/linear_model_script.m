@@ -16,13 +16,13 @@ end
 
 % Set source data parameters;
 p = [];
-p.roiName = 'TypeF';
+p.roiName = 'TypeD';
 p.maxSpeed = 100;
 p.smWinVols = 5;
 p.smWinFrames = 3;
 p.smReps = 10;
 p.ftLagVols = 3;
-p.speedType = 'fwSpeed';
+p.speedType = 'moveSpeed';
 p.odorRespFilterDur = [7 5];
 
 % Set model parameters
@@ -30,12 +30,12 @@ mp = [];
 mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
-mp.upper = [];
+mp.upper = ['linear'];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
-% mp.odorIntegrationWin = [30:10:200];
-mp.odorIntegrationWin = [];
+mp.odorIntegrationWin = [30:10:200];
+% mp.odorIntegrationWin = [];
 mp.speedPadDist = 5;
 mp.fwSpeedIntegrationWin = [];
 
