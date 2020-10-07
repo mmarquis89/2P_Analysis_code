@@ -40,8 +40,8 @@ mp.upper = [];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
-mp.useYaw = 0;
-mp.useDriftCorrection = 1;
+mp.useYaw = 1;
+mp.useDriftCorrection = 0;
 
 % Initialize models
 rm = rm.initialize_models(mp);
@@ -51,12 +51,12 @@ rm = rm.initialize_models(mp);
 %  MODEL PROCESSING
 %  =================================================================================================
 
-%% Train initial models
+            %% Train initial models
 try
 fullMdls = {};
 fullMdlPredFl = {};
 fullMdlAdjR2 = [];
-disp('Training innitial models...')
+disp('Training initial models...')
 for iExp = 1:size(rm.sourceData, 1)
     if numel(rm.modelParams) > 1
         mp = rm.modelParams(iExp);
@@ -79,7 +79,7 @@ for iExp = 1:size(rm.sourceData, 1)
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
     
-    fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + volsFromExpStart + fwSpeed:odorResp');
+%     fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + speed + odorResp + volsFromExpStart + speed:odorResp');
 
     [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
             1:end-1));
@@ -96,7 +96,7 @@ disp(rm.modelData)
 
 catch ME; rethrow(ME); end
 
-% Subtract volsFromOdorStart from fl data and re-fit models to "drift-corrected" data
+            % Subtract volsFromOdorStart from fl data and re-fit models to "drift-corrected" data
 try
 disp('Training drift-corrected models...')
 driftCorrectedMdls = {};
@@ -136,7 +136,7 @@ for iExp = 1:size(rm.sourceData, 1)
     emptyArgs = cellfun(@isempty, kvArgs);
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     driftCorrectedMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
-    driftCorrectedMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
+%     driftCorrectedMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
 
     [predFl, ~] = predict(driftCorrectedMdls{iExp}, ...
             tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), 1:end-1));
@@ -159,7 +159,7 @@ catch ME; rethrow(ME); end
 fullMdls = {};
 fullMdlPredFl = {};
 fullMdlAdjR2 = [];
-disp('Training innitial models...')
+disp('Training initial models...')
 for iExp = 1:size(rm.sourceData, 1)
     if numel(rm.modelParams) > 1
         mp = rm.modelParams(iExp);
@@ -182,7 +182,7 @@ for iExp = 1:size(rm.sourceData, 1)
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
     fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
     
-    fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
+%     fullMdls{iExp} = fitlm(tblFit, 'fl ~ 1 + fwSpeed + odorResp + fwSpeed:odorResp');
 
     [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
             1:end-1));
@@ -346,9 +346,9 @@ uniqueCoeffs = uniqueCoeffs([1 3 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1) 
     for iCoeff = 1:numel(uniqueCoeffs)
-        if ismember(uniqueCoeffs{iCoeff}, rm.modelData.driftCorrectedMdls{iExp}.CoefficientNames)
-            coeffArrDc(iCoeff, iExp) = rm.modelData.driftCorrectedMdls{iExp}.Coefficients.Estimate(...
-                    strcmp(rm.modelData.driftCorrectedMdls{iExp}.CoefficientNames, ...
+        if ismember(uniqueCoeffs{iCoeff}, rm.modelData.fullMdls{iExp}.CoefficientNames)
+            coeffArrDc(iCoeff, iExp) = rm.modelData.fullMdls{iExp}.Coefficients.Estimate(...
+                    strcmp(rm.modelData.fullMdls{iExp}.CoefficientNames, ...
                     uniqueCoeffs{iCoeff}));
         end
     end
@@ -398,7 +398,7 @@ for iRow = 1:(numel(rm.modelData.expID))
         plot(xL, [iRow iRow] - 0.5, 'color', 'k', 'linewidth', 1.5)
     end
     plot(xL, [iRow iRow] + 0.5, 'color', 'k', 'linewidth', 1.5)
-    text(1.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.driftCorrectedMdlAdjR2(iRow), 2)], ...
+    text(1.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.fullMdlAdjR2(iRow), 2)], ...
             'FontSize', 12);
 end
 title('Drift-corrected model coefficients')
@@ -416,8 +416,7 @@ catch ME; rethrow(ME); end
 saveFigs = 0;
 fileNameStr = 'fullExp_';
 
-
-predictorVars = {'fwSpeed'}; % odorResp, fwSpeed, yawSpeed
+predictorVars = {'moveSpeed'}; % odorResp, fwSpeed, moveSpeed, yawSpeed
 legendLocs = {'sw', 'sw', 'nw', 'nw'};
 % legendLocs = {'best', 'best', 'best', 'best'};
 % xLimits = {[], [], [300 600], [1800 3200], [700 1900], [300 1000], [300 600], [100 1100], [1000 1600]}';
@@ -439,7 +438,7 @@ for iExp = 1:size(rm.modelData, 1)
     
     legendStr = {'predicted fl (drift-corrected model)', ...
             'measured fl'};
-    dcPredFl = currModelData.driftCorrectedMdlPredFl{:};
+    dcPredFl = currModelData.fullMdlPredFl{:};
     measuredFl = currModelData.driftCorrectedMdlMeasuredFl{:};
     xx = currSourceData.volTimes{:}(1:numel(measuredFl))';
     xL = xLimits{iExp};
@@ -494,6 +493,11 @@ for iExp = 1:size(rm.modelData, 1)
         plot(xx, fullDataTbl.fwSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
                 'color', rgb('blue'), 'linewidth', 1);
         legendStr{end + 1} = 'abs(fwSpeed)';
+    end
+    if any(strcmpi('moveSpeed', predictorVars))
+        plot(xx, fullDataTbl.moveSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
+                'color', rgb('blue'), 'linewidth', 1);
+        legendStr{end + 1} = 'moveSpeed)';
     end
     if any(strcmpi('yawSpeed', predictorVars))
         plot(xx, fullDataTbl.yawSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), 'color', ...

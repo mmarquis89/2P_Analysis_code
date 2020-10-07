@@ -43,6 +43,7 @@ methods
         smReps = sourceDataParams.smReps;
         ftLagVols = sourceDataParams.ftLagVols;
         roiName = sourceDataParams.roiName;
+        speedType = sourceDataParams.speedType;
         obj.modelData = [];
         
         % -------  Load source data for all experiments -------
@@ -86,7 +87,7 @@ methods
             if ~isempty(expInfoTbl.skipTrials{iExp})
                 trialNums(ismember(trialNums, expInfoTbl.skipTrials{iExp})) = [];
             end
-            allFwSpeed = []; allYawSpeed = []; allOdorVols = []; allFl = []; allVolTimes = [];
+            allSpeed = []; allYawSpeed = []; allOdorVols = []; allFl = []; allVolTimes = [];
             for iTrial = 1:numel(trialNums)
                 currTrialNum = trialNums(iTrial);
                 md = innerjoin(expMd, trialMd(currTrialNum, :));
@@ -102,25 +103,25 @@ methods
                 
                 % Smooth FicTrac data, then downsample to match volume rate
                 currFt = ft(currTrialNum, :);
-                if strcmp(sourceDataParams.speedType, 'moveSpeed')
-                    currFwSpeed = repeat_smooth(currFt.moveSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
+                if strcmp(speedType, 'moveSpeed')
+                    currSpeed = repeat_smooth(currFt.moveSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
                             'smWin', smWinFrames);
                 else
-                    currFwSpeed = repeat_smooth(currFt.fwSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
+                    currSpeed = repeat_smooth(currFt.fwSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
                             'smWin', smWinFrames);
                 end
-                currFwSpeed(currFwSpeed > maxSpeed) = maxSpeed;
+                currSpeed(currSpeed > maxSpeed) = maxSpeed;
                 currYawSpeed = abs(repeat_smooth(rad2deg(currFt.yawSpeed{:}) .* FRAME_RATE, ...
                         smReps, 'smWin', smWinFrames));
-                currFwSpeedVols = []; currYawSpeedVols = [];
+                currSpeedVols = []; currYawSpeedVols = [];
                 for iVol = 1:numel(volTimes)
                     dsFrame = argmin(abs(currFt.frameTimes{:} - volTimes(iVol)));
-                    currFwSpeedVols(iVol) = currFwSpeed(dsFrame);
+                    currSpeedVols(iVol) = currSpeed(dsFrame);
                     currYawSpeedVols(iVol) = currYawSpeed(dsFrame);
                 end
                 
                 % Apply a lag to the FicTrac data
-                currFwSpeedVols = currFwSpeedVols([ones(1, ftLagVols), 1:end-ftLagVols]);
+                currSpeedVols = currSpeedVols([ones(1, ftLagVols), 1:end-ftLagVols]);
                 currYawSpeedVols = currYawSpeedVols([ones(1, ftLagVols), 1:end-ftLagVols]);
                 
                 % Get odor command vector for current trial
@@ -129,7 +130,7 @@ methods
                 
                 % Append variables to whole-experiment vectors
                 allFl = [allFl; currFl];
-                allFwSpeed = [allFwSpeed; currFwSpeedVols'];
+                allSpeed = [allSpeed; currSpeedVols'];
                 allYawSpeed = [allYawSpeed; currYawSpeedVols'];
                 allOdorVols = [allOdorVols; currTrialOdorVols];
                 if iTrial == 1
@@ -178,7 +179,7 @@ methods
             newRow = expInfoTbl(iExp, :); 
             newRow = innerjoin(newRow, expMd(:, {'expID', 'expName', 'volumeRate', 'nTrials'}));
             newRow.fl = {allFl'};
-            newRow.fwSpeed = {allFwSpeed'};
+            newRow.(speedType) = {allSpeed'};
             newRow.yawSpeed = {allYawSpeed'};
             newRow.odorVols = {allOdorVols'};
             newRow.odorRespFilter = {odorRespFilter'};
@@ -205,6 +206,7 @@ methods
         disp('Initializing model data...')
         obj.modelParams = modelParams;
         obj.modelData = [];
+        speedType = obj.sourceDataParams.speedType;
         
         for iExp = 1:size(obj.sourceData, 1)
             if numel(modelParams) > 1 
@@ -218,7 +220,7 @@ methods
             disp(currExpData.expID{:})
             
             % ------- Create intial table of predictor and response variables --------
-            tbl = table(abs(currExpData.fwSpeed{:}'), 'variableNames', {'fwSpeed'});
+            tbl = table(abs(currExpData.(speedType){:}'), 'variableNames', {speedType});
             if mp.useYaw
                 tbl.yawSpeed = currExpData.yawSpeed{:}';
             end

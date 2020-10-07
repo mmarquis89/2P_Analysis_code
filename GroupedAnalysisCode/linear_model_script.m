@@ -30,7 +30,7 @@ mp = [];
 mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
-mp.upper = ['linear'];
+mp.upper = [];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
@@ -43,24 +43,24 @@ mp.fwSpeedIntegrationWin = [];
 expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
 % 
-% Type F
-expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
-        '20181020-1', '20190226-3'};
+% % Type F
+% expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
+%         '20181020-1', '20190226-3'};
 
 skipTrials = {[], [], [], [], ...
-              [], [], [], []};
+              [], [], [], [], []};
           
-% skipVols = {[], [1:1500], [], [], [], ...
-%               [], [], [], [1:2200]};
+skipVols = {[], [1:1500], [], [], [], ...
+              [], [], [], [1:2200]};
 
-skipVols = repmat({[]}, 1, numel(skipTrials));
+% skipVols = repmat({[]}, 1, numel(skipTrials));
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
         'skipVols'});
 
 % Create analysis object
-rm = RegressionModelAnalysis_PPM1201(expInfoTbl, p);
+rm = RegressionModelAnalysis(expInfoTbl, p);
 
 % Initialize models
 rm = rm.initialize_models(mp);
@@ -220,7 +220,7 @@ rm.modelData.noSpeedHistMdlAdjR2 = noSpeedHistMdlAdjR2';
 
 
 catch ME; rethrow(ME); end
-%% Train initial models
+    %% Train initial models for speed history windows
 try
 fullMdls = {};
 fullMdlPredFl = {};
