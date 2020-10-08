@@ -290,6 +290,10 @@ methods
             speedNorm = 0;
         end
         
+        % Calculate correlation coefficient
+        c = corrcoef(speedData, flData, 'rows', 'complete');
+        r = c(2, 1);
+        
         [speedBinMidpoints, flBinMeans, SEM] = obj.bin_data(speedData, flData, ...
                 obj.params.nAnalysisBins, obj.params.plotting_minSpeed);
 
@@ -299,6 +303,7 @@ methods
         obj.analysisOutput.binnedData.flType = flType;
         obj.analysisOutput.binnedData.speedType = speedType;
         obj.analysisOutput.binnedData.speedNorm = speedNorm;
+        obj.analysisOutput.corrCoeff = r;
     end
     
     % ---------- Generate summary plots (pre-analysis) ----------
