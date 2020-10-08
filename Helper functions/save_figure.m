@@ -40,7 +40,14 @@ end
 % Save figure files
 if overwrite 
     export_fig(fullfile(saveDir, fileName), '-png', '-nocrop', figHandle);
-    print(figHandle, '-dpdf', '-bestfit', fullfile(saveDir, fileName));
+    s = warning('error', 'export_fig:transparency');
+    try
+        export_fig(fullfile(saveDir, fileName), '-pdf', '-nocrop', figHandle);
+    catch
+        disp('Transparency detected...using print() instead of export_fig() to save PDF')
+        print(figHandle, '-dpdf', '-bestfit', fullfile(saveDir, fileName));
+    end
+    warning(s);
     if ~isdir(fullfile(saveDir, 'figFiles'))
         mkdir(fullfile(saveDir, 'figFiles'))
     end
