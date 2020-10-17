@@ -164,7 +164,6 @@ for iFile = 1:numel(imgDataFiles)
     
     % Extract the trial number and expID from the fileName
     trialNum = get_trialNum(imgDataFiles(iFile).name);
-    expID = imgDataFiles(iFile).name(1:10);
     
     % Reformat ScanImage metadata
     siMetadata = parse_scanimage_metadata(siMetadata);
@@ -182,24 +181,31 @@ for iFile = 1:numel(imgDataFiles)
     % Flatten structure so the contents of trialSettings are at the root level
     mD = rmfield(setstructfields(mD, mD.trialSettings), 'trialSettings');
     
-    % Calculate panels information
-    xPosFunc = mD.xDimPosFun.func;
-    yPosFunc = mD.yDimPosFun.func;
-    panelsCycleFrames = numel(mD.xDimPosFun.func);
-    panelsCycleTime = panelsCycleFrames / double(mD.displayRate);
-    xPosRep = repmat(xPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
-    yPosRep = repmat(yPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
-    nPanelsFrames = mD.displayRate * mD.trialDuration;
-    panelsPosX = xPosRep(1:nPanelsFrames);
-    panelsPosY = yPosRep(1:nPanelsFrames);
+    % Calculate panels information if available
+    if mD.usingPanels
+        xPosFunc = mD.xDimPosFun.func;
+        yPosFunc = mD.yDimPosFun.func;
+        panelsCycleFrames = numel(mD.xDimPosFun.func);
+        panelsCycleTime = panelsCycleFrames / double(mD.displayRate);
+        xPosRep = repmat(xPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
+        yPosRep = repmat(yPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
+        nPanelsFrames = mD.displayRate * mD.trialDuration;
+        panelsPosX = xPosRep(1:nPanelsFrames);
+        panelsPosY = yPosRep(1:nPanelsFrames);
+    else
+        xPosFunc = [];
+        yPosFunc = [];
+        panelsPosX = [];
+        panelsPosY = [];
+    end
     
     % Separate panels metadata
     pMdRow = table({mD.expID}, 'VariableNames', {'expID'});
     pMdRow.trialNum = trialNum;
-    pMdRow.panelsMode = mD.panelsMode;
-    pMdRow.pattern = mD.pattern;
-    pMdRow.xDimPosFunc = {mD.xDimPosFun.func};
-    pMdRow.yDimPosFunc = {mD.yDimPosFun.func};
+    pMdRow.panelsMode = {mD.panelsMode};
+    pMdRow.pattern = {mD.pattern};
+    pMdRow.xDimPosFunc = {xPosFunc};
+    pMdRow.yDimPosFunc = {yPosFunc};
     pMdRow.panelsPosX = {panelsPosX};
     pMdRow.panelsPosY = {panelsPosY};
     
@@ -225,6 +231,9 @@ for iFile = 1:numel(imgDataFiles)
         expMd.panelsDisplayRate = double(mD.displayRate);
         expMd.volumeRate = siMetadata.SI.hRoiManager.scanVolumeRate;
         expMd.nPlanes = siMetadata.SI.hStackManager.numSlices;
+    elseif isempty(expMd.panelsDisplayRate) && ~isempty(mD.displayRate)
+        % If panels were used in at least one trial but not the first, update expMd data
+        expMd.panelsDisplayRate = mD.displayRate;
     end
     
     % Append to metadata structs
@@ -236,14 +245,14 @@ end
 expMd.nTrials = numel(trialMd);
 
 % Convert from structs to tables
-expMd = struct2table(expMd);
+expMd = struct2table(expMd, 'AsArray', 1);
 trialMetadata = struct2table(trialMd);
 panelsMetadata = panelsMd;
 
 % Save metadata files
-writetable(expMd, fullfile(outputDir, [expMd.expID, '_expMetadata.csv']));
-save(fullfile(outputDir, [expMd.expID, '_trialMetadata.mat']), 'trialMetadata');
-save(fullfile(outputDir, [expMd.expID, '_panelsMetadata.mat']), 'panelsMetadata');
+writetable(expMd, fullfile(outputDir, [expMd.expID{:}, '_expMetadata.csv']));
+save(fullfile(outputDir, [expMd.expID{:}, '_trialMetadata.mat']), 'trialMetadata');
+save(fullfile(outputDir, [expMd.expID{:}, '_panelsMetadata.mat']), 'panelsMetadata');
 
 catch ME; rethrow(ME); end
 
@@ -299,7 +308,7 @@ for iFile = 1:numel(ftVidFiles)
     % Load main FicTrac data file
     rawFtData = csvread(fullfile(ftDir, ftDataFiles(iFile).name));
     
-    % Deal with dropped frames
+    % Deal with dropped frames by repeating last recorded value
     for iFrame = 2:(size(rawFtData, 1) - 1)
         if rawFtData(iFrame, 1) ~= (rawFtData(iFrame - 1, 1) + 1)
             

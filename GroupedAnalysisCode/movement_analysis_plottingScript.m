@@ -27,7 +27,7 @@ useSavedObj = 1;
 speedType = 'move';
 roiName = 'TypeF';
 flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
-figDims = [];
+figDims = [1520 840];
 
 xLim = [];
 yLim = [];

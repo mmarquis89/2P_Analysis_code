@@ -4,7 +4,7 @@ startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 expDir = uigetdir(startDir, 'Select an experiment directory');
 outputDir = fullfile(expDir, 'ProcessedData');
 
-if ~isdir(outputDir)
+if ~isfolder(outputDir)
     mkdir(outputDir)
 end
 
