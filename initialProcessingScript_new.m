@@ -249,7 +249,7 @@ expMd = struct2table(expMd, 'AsArray', 1);
 trialMetadata = struct2table(trialMd);
 panelsMetadata = panelsMd;
 
-% Save metadata files
+% % Save metadata files
 writetable(expMd, fullfile(outputDir, [expMd.expID{:}, '_expMetadata.csv']));
 save(fullfile(outputDir, [expMd.expID{:}, '_trialMetadata.mat']), 'trialMetadata');
 save(fullfile(outputDir, [expMd.expID{:}, '_panelsMetadata.mat']), 'panelsMetadata');
@@ -437,10 +437,10 @@ save(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
 
 catch ME; rethrow(ME); end
 
-%% Choose threshold for defining flailing epochs
+%% Choose threshold for defining movement epochs
 
 moveThresh = 0.045;
-flowYLim = [0 0.6];
+flowYLim = [0 0.3];
 
 try
     
@@ -450,7 +450,7 @@ expID = imgDataFiles(1).name(1:10);
 
 % Load trial and experiment metadata
 expMd = readtable(fullfile(outputDir, [expID, '_expMetadata.csv']));
-trialMd = load(fullfile(outputDir, [expID, '_trialMetadata.mat']), 'trialMetadata');
+load(fullfile(outputDir, [expID, '_trialMetadata.mat']), 'trialMetadata');
 
 % Load optic flow data
 load(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
@@ -461,7 +461,7 @@ set(gcf, 'color', [1 1 1])
 
 for iTrial = 1:expMd.nTrials
     
-    subaxis(expMd.nTrials, 1, iTrial, 'S', 0.02);
+    subaxis(expMd.nTrials, 1, iTrial, 'S', 0.02, 'mt', 0.02, 'mb', 0.02);
 
     % Optic flow data to identify flailing
     currFlow = meanFlow{iTrial};

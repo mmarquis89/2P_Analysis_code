@@ -33,6 +33,10 @@ for iExp = 1:numel(expList)
         eventDataFiles = [eventDataFiles; eventFiles];
     end
 end
+if isempty(eventDataFiles)
+   eventObjects = [];
+   return
+end
 
 % Identify unique event types
 eventFileNames = {eventDataFiles.name};

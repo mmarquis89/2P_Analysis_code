@@ -29,14 +29,19 @@ end
 methods
     
     % Constructor
-    function obj = MoveSpeedAnalysis(expList)
+    function obj = MoveSpeedAnalysis(expList, parentDir)
         
         % Load metadata, FicTrac data, ROI data for all experiments
-        parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
+        if nargin < 2
+            parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
+        end
+        if isa(expList, 'table')
+            expList = expList.expID;
+        end
         allExpData = [];
         for iExp = 1:size(expList, 1)
             
-            currExpID = expList.expID{iExp};
+            currExpID = expList{iExp};
             disp(currExpID);
             
             % Generate full paths to data files
@@ -74,7 +79,11 @@ methods
     
     %  ---------- Dependent property methods ----------
     function eventNames = get.eventNames(obj)
-        eventNames = fieldnames(obj.eventObjects)';
+        if ~isempty(obj.eventObjects)
+            eventNames = fieldnames(obj.eventObjects)';
+        else
+            eventNames = [];
+        end
     end
     
     % Initialize filters on the source DataTable using obj.filterDefs
@@ -599,10 +608,11 @@ function paramStruct = initialize_analysis_params(obj)
     paramStruct.smWinVols = 1;
     paramStruct.smWinFrames = 1;
     paramStruct.nSmoothRepsFrames = 15;
+    paramStruct.frameRate = 25;
+    paramStruct.convertSpeedUnits = 1;
     paramStruct.lagVols = 2;
     paramStruct.nHistBins = 50;
     paramStruct.maxHistBinCount = [];
-    paramStruct.nAnalysisBins = 100; 
     paramStruct.plotting_minSpeed = 0;
     paramStruct.skipTrials = [];
     paramStruct.nAnalysisBins = 30;
@@ -631,30 +641,34 @@ end
 
 % Generate a matrix containing smoothed, padded, and capped moveSpeed data for all trials in subset
 function outputMat = generate_speedMat(obj, speedType)
-    if nargin < 2
-        speedType = 'move';
-    end
-    currSubset = obj.sourceDataTable.subset;
-    p = obj.params;
-    switch speedType
-        case 'forward'
-            outputMat = cell2padded_mat(currSubset.fwSpeed); % --> [frame, trial]
-        case 'move'
-             outputMat = cell2padded_mat(currSubset.moveSpeed);
-        case 'yaw'
-            outputMat = cell2padded_mat(currSubset.yawSpeed);
-        case 'side'
-            outputMat = cell2padded_mat(currSubset.sideSpeed);
-    end
-    outputMat = repeat_smooth(outputMat, p.nSmoothReps, 'dim', 1, 'smWin', p.smWinFrames);
-    switch speedType
-        case {'forward', 'move', 'side'}
-            outputMat = outputMat * 25 * 4.5; % Convert from rad/frame to mm/sec
-            outputMat(outputMat > p.max_moveSpeed) = nan;
-        case 'yaw'
-            outputMat = rad2deg(outputMat) * 25; % Convert from rad/frame to deg/sec
-            outputMat(abs(outputMat) > p.max_yawSpeed) = nan;
-    end
+if nargin < 2
+    speedType = 'move';
+end
+currSubset = obj.sourceDataTable.subset;
+p = obj.params;
+switch speedType
+    case 'forward'
+        outputMat = cell2padded_mat(currSubset.fwSpeed); % --> [frame, trial]
+    case 'move'
+        outputMat = cell2padded_mat(currSubset.moveSpeed);
+    case 'yaw'
+        outputMat = cell2padded_mat(currSubset.yawSpeed);
+    case 'side'
+        outputMat = cell2padded_mat(currSubset.sideSpeed);
+end
+outputMat = repeat_smooth(outputMat, p.nSmoothRepsFrames, 'dim', 1, 'smWin', p.smWinFrames);
+switch speedType
+    case {'forward', 'move', 'side'}
+        if p.convertSpeedUnits
+            outputMat = outputMat * p.frameRate * 4.5; % Convert from rad/frame to mm/sec
+        end
+        outputMat(outputMat > p.max_moveSpeed) = nan;
+    case 'yaw'
+        if p.convertSpeedUnits
+            outputMat = rad2deg(outputMat) * p.frameRate; % Convert from rad/frame to deg/sec
+        end
+        outputMat(abs(outputMat) > p.max_yawSpeed) = nan;
+end
 end
 
 % Generate a matrix containing smoothed and padded fluorescence data for all trials in subset
