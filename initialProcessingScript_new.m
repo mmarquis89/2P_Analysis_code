@@ -197,6 +197,7 @@ for iFile = 1:numel(imgDataFiles)
         yPosFunc = [];
         panelsPosX = [];
         panelsPosY = [];
+        nPanelsFrames = 0;
     end
     
     % Separate panels metadata
@@ -216,7 +217,7 @@ for iFile = 1:numel(imgDataFiles)
     tMd.trialDuration = mD.trialDuration;
     tMd.nVolumes = siMetadata.SI.hFastZ.numVolumes;
     tMd.nDaqSamples = size(trialData, 1);
-    tMd.nPanelsFrames = mD.displayRate * mD.trialDuration;
+    tMd.nPanelsFrames = nPanelsFrames;
     tMd.usingOptoStim = mD.usingOptoStim;
     tMd.usingPanels = double(mD.usingPanels);
     tMd.using2P = double(mD.using2P);
@@ -437,6 +438,8 @@ save(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
 
 catch ME; rethrow(ME); end
 
+
+
 %% Choose threshold for defining movement epochs
 
 moveThresh = 0.045;
@@ -602,10 +605,52 @@ save(fullfile(outputDir, [expID, '_roiData.mat']), 'roiData');
 
 catch ME; rethrow(ME); end
 
-%% TODO: add panels flash and odor stim event processing
+%% Combine two or more ROIs into a new ROI and add it to the ROI def file
 
+combROIs = {'EB', 'BU-L', 'BU-R'};
+newROI = 'EB-DAN';
+% combROIs = {'FB-1', 'FB-7', 'FB-8'};
+% newROI = 'FB-DAN';
 
+try
+    
+roiDefFiles = dir(fullfile(outputDir, ['roiDefs*.mat']));
+for iFile = 1:numel(roiDefFiles)
+    
+    disp(iFile)
+    
+    % Load roiDef data
+    load(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
+    
+    % Create combined ROIs
+    newRoiDef = struct();
+    newRoiDef.name = newROI;
+    newRoiDef.subROIs = [roiDefs(ismember({roiDefs.name}, combROIs)).subROIs];
+    newRoiDef.color = roiDefs(1).color;
+    
+    % Add to original ROI defs and save file
+    roiDefs = [roiDefs, newRoiDef];
+    save(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
+end
 
+catch ME; rethrow(ME); end
+
+%% Update all files in the EB-DAN grouped analysis data directory
+
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
+expList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2'};
+
+for iExp = 1:numel(expList)
+    currExpID = expList{iExp};
+    disp(currExpID)
+    currExpDir = dir(fullfile(parentDir, [currExpID, '*']));
+    dataFiles = dir(fullfile(parentDir, currExpDir.name, 'ProcessedData', [currExpID, '*']));
+    for iFile = 1:numel(dataFiles)
+        copyfile(fullfile(dataFiles(iFile).folder, dataFiles(iFile).name), ...
+                fullfile(analysisDir, dataFiles(iFile).name));
+    end
+end
 
 
 
