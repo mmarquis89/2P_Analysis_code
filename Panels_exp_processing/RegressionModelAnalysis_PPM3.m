@@ -151,9 +151,13 @@ methods
             disp(currExpData.expID{:})
             
             % ------- Create intial table of predictor and response variables --------
-            tbl = table(abs(currExpData.(speedType){:}'), 'variableNames', {speedType});
-            if mp.useYaw
-                tbl.yawSpeed = currExpData.yawSpeed{:}';
+            if mp.useRunSpeed
+                tbl = table(abs(currExpData.(speedType){:}'), 'variableNames', {speedType});
+                if mp.useYaw
+                    tbl.yawSpeed = currExpData.yawSpeed{:}';
+                end
+            else
+                tbl = table(currExpData.yawSpeed{:}', 'variableNames', {'yawSpeed'});
             end
             if mp.useDriftCorrection
                 tbl.volsFromExpStart = (1:size(tbl, 1))';
@@ -183,6 +187,48 @@ methods
         disp('All model data ready for training')
     end% Function
 
+    % Train initial models
+    function obj = train_initial_models(obj)
+        
+        fullMdls = {};
+        fullMdlPredFl = {};
+        fullMdlAdjR2 = [];
+        disp('Training initial models...')
+        
+        for iExp = 1:size(obj.sourceData, 1)
+            if numel(obj.modelParams) > 1
+                mp = obj.modelParams(iExp);
+            else
+                mp = obj.modelParams;
+            end
+            disp(obj.sourceData.expID{iExp})
+            
+            % Select and split up data from current experiment
+            currModelData = obj.modelData(iExp, :);
+            tblFit = currModelData.fullDataTbl{:}(currModelData.fitRowInds{:}, :);
+            tblTest = currModelData.fullDataTbl{:}(currModelData.testRowInds{:}, :);
+            tblPred = currModelData.fullDataTbl{:};
+            
+            % Use all training data to create and evaluate a stepwise model
+            kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
+                mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
+            emptyArgs = cellfun(@isempty, kvArgs);
+            kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
+            fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
+            
+            [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
+                1:end-1));
+            [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), ...
+                predFl, fullMdls{iExp}.NumCoefficients);
+            [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
+                tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
+        end
+        disp('Final models created');
+        obj.modelData.fullMdls = fullMdls';
+        obj.modelData.fullMdlPredFl = fullMdlPredFl';
+        obj.modelData.fullMdlAdjR2 = fullMdlAdjR2';
+        disp(obj.modelData)
+    end
 end%methods
 
 methods(Static)

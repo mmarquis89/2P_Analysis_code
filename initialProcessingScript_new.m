@@ -635,11 +635,11 @@ end
 
 catch ME; rethrow(ME); end
 
-%% Update all files in the EB-DAN grouped analysis data directory
+%% Copy files over to the EB-DAN grouped analysis data directory
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2'};
+expList = {'20201023-1', '20201023-2'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

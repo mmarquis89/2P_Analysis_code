@@ -1,8 +1,10 @@
 %% Set expList
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2'};
+expList = {'20201023-1'};
 
+fileList = dir(fullfile(parentDir, '2020*'));
+expList = unique(cellfun(@(x) x(1:10), {fileList.name}, 'uniformoutput', 0));
 
 %% Load data for the selected experiments
 
@@ -26,9 +28,9 @@ panelsMetadata = load_panels_metadata(expList, parentDir);
 
 %% 
 
-currExpID = '20201019-2';
-roiName = 'EB';
-skipTrials = [1:4 9:13];
+currExpID = '20201023-1';
+roiName = 'EB-DAN';
+skipTrials = [7:10];
 
 a = MoveSpeedAnalysis({currExpID}, ... 
         ['D:\Dropbox (HMS)\2P Data\Imaging Data\', currExpID, '_75B10_7f\ProcessedData']);
@@ -37,8 +39,8 @@ a.params.roiName = roiName;
 a.params.nHistBinds = 25;
 a.params.flType = 'expDff';
 a.params.convertSpeedUnits = 0;
-a.params.smWinVols = 3;
-a.params.smWinFrames = 5;
+a.params.smWinVols = 5;
+a.params.smWinFrames = 7;
 a.params.nSmoothRepsFrames = 20;
 a.params.skipTrials = skipTrials;
 % a.params.frameRate = 1 / median(cellfun(@(x) median(diff(x)), a.sourceDataTable.sourceData.frameTimes));
@@ -51,43 +53,76 @@ a = a.analyze();
 
 %%
 
-speedType = 'yaw';
+speedType = 'move';
 
 a = a.generate_binned_flData([], speedType);
-a.plot_binned_fl();
+a.plot_binned_fl(gca);
 
 
 
 
 %% Plot ROI data
 
-% roiNames = {'EB', 'BU-L', 'BU-R'};
-% roiNames = {'FB-1', 'FB-2', 'FB-3', 'FB-4', 'FB-5', 'FB-6'};
-roiNames = {'EB-DAN'};
-% roiNames = {'EB-DAN', 'FB-PPM3'};
 
-smWin = 5;
+expID = '20201023-1';
+
+roiNames = {'EB-DAN'};
+roiNames = {'EB-DAN'};
+
+smWin = 7;
 smReps = 50;
 
-trialNums = 13;
+trialNums = 8;
 
 f = figure(2);clf; hold on;
 f.Color = [1 1 1];
 
-ax1 = subaxis(2, 1, 1, 'sv', 0.04, 'm', 0.05);
-hold on;
+% Extract ROI data
+currRoiData = roiData(strcmp(roiData.expID, expID), :);
 flMat = [];
 for iROI = 1:numel(roiNames)
-    currFl = cell2mat(roiData(strcmp(roiData.roiName, roiNames{iROI}), :).rawFl');
+    currFl = cell2mat(currRoiData(strcmp(currRoiData.roiName, roiNames{iROI}), :).rawFl');
     flMat = [flMat, currFl(:, trialNums)];
 end
 flMat = smoothdata(flMat, 1, 'gaussian', smWin);
-xx = (1:size(flMat, 1)) ./ expMd.volumeRate;
-for iROI = 1:numel(roiNames)
-    plot(xx, flMat(:, iROI), 'linewidth', 2);
+
+% Extract FicTrac data
+currFtData = ftData(strcmp(ftData.expID, expID), :);
+moveSpeed = repeat_smooth(currFtData.moveSpeed{trialNums}, smReps, 'smWin', smWin);
+fwSpeed = repeat_smooth(currFtData.fwSpeed{trialNums}, smReps, 'smWin', smWin);
+yawSpeed = repeat_smooth(currFtData.yawSpeed{trialNums}, smReps, 'smWin', smWin);
+sideSpeed = repeat_smooth(currFtData.sideSpeed{trialNums}, smReps, 'smWin', smWin);
+totalSpeed = (abs(fwSpeed) + abs(yawSpeed) + abs(sideSpeed)) ./ 3;
+frameRate = 1/ median(diff(currFtData.frameTimes{trialNums}));
+
+% Get downsampled FicTrac data
+volTimes = (1:size(flMat, 1)) ./ expMd.volumeRate;
+moveSpeedVols = []; fwSpeedVols = []; yawSpeedVols = [];
+for iVol = 1:numel(volTimes)
+    dsFrame = argmin(abs(currFtData.frameTimes{trialNums} - volTimes(iVol)));
+    moveSpeedVols(iVol) = moveSpeed(dsFrame);
+    fwSpeedVols(iVol) = fwSpeed(dsFrame);
+    yawSpeedVols(iVol) = yawSpeed(dsFrame);
 end
-legend(roiNames)
+
+flMat = flMat - min(flMat);
+
+% Plot 1
+ax1 = subaxis(2, 1, 1, 'sv', 0.04, 'm', 0.05);
+hold on;
+xx = (1:size(flMat, 1)) ./ expMd(strcmp(expMd.expID, expID), :).volumeRate;
+for iROI = 1:numel(roiNames)
+    plot(xx, flMat(:, iROI) ./ max(flMat(:, iROI)), 'linewidth', 2, 'color', 'k');
+end
+
 xlim([xx(1), xx(end)])
+
+% yyaxis right
+plot(xx, fwSpeedVols ./ max(fwSpeedVols), 'linewidth', 2, 'color', 'b')
+hold on;
+plotYaw = smoothdata(abs(yawSpeedVols), 2, 'gaussian', smWin);
+plot(xx, plotYaw ./ max(plotYaw), '-', 'linewidth', 2, 'color', 'r')
+legend([roiNames, {'fwSpeed', 'yawSpeed'}])
 
 % % ROI 1 + ROI 2
 % allFl = cell2mat(roiData(strcmp(roiData.roiName, roiNames{1}), :).rawFl');
@@ -110,20 +145,14 @@ xlim([xx(1), xx(end)])
 % %         'linewidth', 1)
 % %   
 
-% FicTrac
+% Plot 2
 ax2 = subaxis(2, 1, 2);
-moveSpeed = repeat_smooth(ftData.moveSpeed{trialNums}, smReps, 'smWin', smWin);
-fwSpeed = repeat_smooth(ftData.fwSpeed{trialNums}, smReps, 'smWin', smWin);
-yawSpeed = repeat_smooth(ftData.yawSpeed{trialNums}, smReps, 'smWin', smWin);
-sideSpeed = repeat_smooth(ftData.sideSpeed{trialNums}, smReps, 'smWin', smWin);
-totalSpeed = (abs(fwSpeed) + abs(yawSpeed) + abs(sideSpeed)) ./ 3;
-frameRate = 1/ median(diff(ftData.frameTimes{trialNums}));
 xx = (1:numel(moveSpeed))' ./ frameRate;
 plot(xx, fwSpeed, 'linewidth', 2); hold on;
 xlim([xx(1), xx(end)])
-ylim([0 12])
+ylim([0 20])
 yyaxis right
-plot(xx, abs(yawSpeed), 'linewidth', 2);
+plot(xx, abs(rad2deg(yawSpeed)), 'linewidth', 2);
 legend({'Fw', 'Yaw'})
 % yyaxis right
 % plot((1:numel(moveSpeed))/numel(moveSpeed), abs(yawSpeed), 'linewidth', 1);
@@ -131,24 +160,19 @@ legend({'Fw', 'Yaw'})
 % plot((1:numel(fwSpeed))/numel(fwSpeed), abs(fwSpeed), 'linewidth', 1);
 linkaxes([ax1, ax2], 'x')
 %
-volTimes = (1:size(flMat, 1)) ./ expMd.volumeRate;
-moveSpeedVols = []; fwSpeedVols = []; yawSpeedVols = [];
-for iVol = 1:numel(volTimes)
-    dsFrame = argmin(abs(ftData.frameTimes{trialNums} - volTimes(iVol)));
-    moveSpeedVols(iVol) = moveSpeed(dsFrame);
-    fwSpeedVols(iVol) = fwSpeed(dsFrame);
-    yawSpeedVols(iVol) = yawSpeed(dsFrame);
+
+% Calculate fl-speed correlations for each ROI
+for iRoi = 1:size(flMat, 2)
+    moveR = corrcoef(flMat(:, iRoi), moveSpeedVols');
+    fwR = corrcoef(flMat(:, iRoi), abs(fwSpeedVols)');
+    yawR = corrcoef(flMat(:, iRoi), abs(yawSpeedVols)');
+    
+    disp('  ')
+    disp(roiNames{iRoi})
+    disp(['move: ', num2str(moveR(2,1), 2)])
+    disp(['fw: ', num2str(fwR(2,1), 2)])
+    disp(['yaw: ', num2str(yawR(2,1), 2)])
 end
-
-moveR = corrcoef(flMat, moveSpeedVols');
-fwR = corrcoef(flMat, abs(fwSpeedVols)');
-yawR = corrcoef(flMat, abs(yawSpeedVols)');
-
-disp('  ')
-disp(['move: ', num2str(moveR(2,1), 2)])
-disp(['fw: ', num2str(fwR(2,1), 2)])
-disp(['yaw: ', num2str(yawR(2,1), 2)])
-
 
 %% Pairwise scatter plots of all ROIs
 

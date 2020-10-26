@@ -3,16 +3,16 @@
 % Set source data parameters;
 p = [];
 p.maxSpeed = 100;
-p.smWinVols = 3;
+p.smWinVols = 5;
 p.roiName = 'EB-DAN';
-p.smWinFrames = 5;
+p.smWinFrames = 7;
 p.smReps = 20;
 p.ftLagVols = 3;
-p.speedType = 'fwSpeed';
+p.speedType = 'forwardSpeed';
 
-expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2'};
+expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2'};
 
-skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13]};
+skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12};
 
 skipVols = repmat({[]}, 1, numel(skipTrials));
                      
@@ -32,55 +32,95 @@ mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
 mp.useYaw = 1;
+mp.useRunSpeed = 1;
 mp.useDriftCorrection = 0;
 
 % Initialize models
 rm = rm.initialize_models(mp);
 
-%% Train initial models
+%% Train initial models with and without yaw and running speed
 try
-fullMdls = {};
-fullMdlPredFl = {};
-fullMdlAdjR2 = [];
-disp('Training initial models...')
-for iExp = 1:size(rm.sourceData, 1)
-    if numel(rm.modelParams) > 1
-        mp = rm.modelParams(iExp);
-    else
-        mp = rm.modelParams;
-    end
-    disp(rm.sourceData.expID{iExp})
-    
-    % Select and split up data from current experiment
-    currModelData = rm.modelData(iExp, :);
-    tblFit = currModelData.fullDataTbl{:}(currModelData.fitRowInds{:}, :);
-    tblTest = currModelData.fullDataTbl{:}(currModelData.testRowInds{:}, :);
-    tblPred = currModelData.fullDataTbl{:}; 
-    
-    % Use all training data to create and evaluate a stepwise model
-    kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
-            mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
-    emptyArgs = cellfun(@isempty, kvArgs);
-    kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
-    fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
 
-    [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
-            1:end-1));
-    [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), ...
-            predFl, fullMdls{iExp}.NumCoefficients);
-    [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
-            tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
-end
-disp('Final models created');
-rm.modelData.fullMdls = fullMdls';
-rm.modelData.fullMdlPredFl = fullMdlPredFl';
-rm.modelData.fullMdlAdjR2 = fullMdlAdjR2';
-disp(rm.modelData)
+mp.useYaw = 1;
+mp.useRunSpeed = 1;
+rm_full = rm.initialize_models(mp);
+rm_full = rm_full.train_initial_models();
+
+mp.useYaw = 0;
+mp.useRunSpeed = 1;
+rm_noYawSpeed = rm.initialize_models(mp);
+rm_noYawSpeed.modelData.fitRowInds = rm_full.modelData.fitRowInds;
+rm_noYawSpeed.modelData.testRowInds = rm_full.modelData.testRowInds;
+rm_noYawSpeed = rm_noYawSpeed.train_initial_models(); 
+
+mp.useYaw = 1;
+mp.useRunSpeed = 0;
+rm_noRunSpeed = rm.initialize_models(mp);
+rm_noRunSpeed.modelData.fitRowInds = rm_full.modelData.fitRowInds;
+rm_noRunSpeed.modelData.testRowInds = rm_full.modelData.testRowInds;
+rm_noRunSpeed = rm_noRunSpeed.train_initial_models();    
+
+rm = rm_full;
+
 catch ME; rethrow(ME); end
+
+
+%% Plot summary of adjusted R2 values for each condition
+
+saveFig = 0;
+try
+    
+plotArr = [rm_full.modelData.fullMdlAdjR2, rm_noRunSpeed.modelData.fullMdlAdjR2, ...
+        rm_noYawSpeed.modelData.fullMdlAdjR2]';
+
+groupNames = {'Full model', ['No ', rm_noRunSpeed.sourceDataParams.speedType], 'No yawSpeed'};
+
+f = figure(3);clf; hold on 
+f.Color = [1 1 1];
+f.Position = [f.Position(1:2), 500, 500];
+if (f.Position(2) + f.Position(4)) > 1000
+    f.Position(2) = 1000 - f.Position(4);
+end
+plot(plotArr, '-o', 'Color', rgb('black'), ...
+        'markerfacecolor', rgb('green'), 'markerEdgeColor', rgb('green')); 
+SEM = std_err(plotArr, 2);
+errorbar(1:size(plotArr, 1), mean(plotArr, 2)', SEM, '-s', ...
+        'color', 'k', 'markerFaceColor', 'k', 'linewidth', 3, 'markerSize', 10)
+xlim([0.5, size(plotArr, 1) + 0.5])
+ylim([-0.001, 1])
+ax = gca();
+ax.XTick = 1:size(plotArr, 1);
+ax.XTickLabel = groupNames;
+ylabel('Model adjusted R^2');
+ax.FontSize = 14;
+if strcmpi(rm_full.modelParams.upper, 'linear')
+    titleStr = 'No interaction terms';
+    fileNameStr = 'no';
+else
+    titleStr = 'Interaction terms allowed';
+    fileNameStr = 'with';
+end
+title({['Adj. R^2 step thresh: ', num2str(rm_full.modelParams.pEnter)], titleStr});
+f.UserData.sourceDataParams = rm_full.sourceDataParams;
+f.UserData.modelParams = rm_full.modelParams;
+if saveFig
+    pEnterStr = num2str(rm_full.modelParams.pEnter);
+    saveFileName = ['adj_R2_summary_stepThresh_', pEnterStr(3:end), ...
+            '_', fileNameStr, '_interactions'];
+    save_figure(f, figDir, saveFileName);
+end
+    
+    
+    
+        
+catch ME; rethrow(ME); end
+
 
 %% Plot summary grid of coefficients used in the models
 
+saveFig = 0;
 try
+    
 allCoeffNames = {};
 for iExp = 1:size(rm.modelData, 1)
     allCoeffNames = [allCoeffNames, rm.modelData.fullMdls{iExp}.CoefficientNames];    
@@ -88,7 +128,7 @@ end
 uniqueCoeffs = unique(allCoeffNames);
 uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
 %%
-saveFig = 0;
+
 uniqueCoeffs = uniqueCoeffs;%([1 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1) 
@@ -158,6 +198,7 @@ if saveFig
 end
 catch ME; rethrow(ME); end
 
+
 %% Plot predicted vs. measured fluorescence
 
 saveFigs = 0;
@@ -166,7 +207,7 @@ fileNameStr = 'fullExp_';
 predictorVars = {'fwSpeed', 'yawSpeed'}; % odorResp, fwSpeed, moveSpeed, yawSpeed
 legendLocs = {'sw', 'sw', 'nw', 'nw'};
 % legendLocs = {'best', 'best', 'best', 'best'};
-xLimits = repmat({[]}, 1, 4);
+xLimits = repmat({[]}, 1, size(rm.modelData,1));
 
 try
 legendStr = {'predicted fl', 'measured fl'};
