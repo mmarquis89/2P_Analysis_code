@@ -665,8 +665,9 @@ switch speedType
         outputMat(outputMat > p.max_moveSpeed) = nan;
     case 'yaw'
         if p.convertSpeedUnits
-            outputMat = rad2deg(outputMat) * p.frameRate; % Convert from rad/frame to deg/sec
+            outputMat = outputMat * p.frameRate; % Convert from rad/frame to deg/sec
         end
+        outputMat = rad2deg(outputMat);
         outputMat(abs(outputMat) > p.max_yawSpeed) = nan;
 end
 end

@@ -4,7 +4,7 @@
 p = [];
 p.maxSpeed = 100;
 p.smWinVols = 5;
-p.roiName = 'EB-DAN';
+p.roiName = 'FB-DAN';
 p.smWinFrames = 7;
 p.smReps = 20;
 p.ftLagVols = 3;
@@ -67,13 +67,14 @@ catch ME; rethrow(ME); end
 
 %% Plot summary of adjusted R2 values for each condition
 
-saveFig = 0;
+saveFig = 1;
 try
     
 plotArr = [rm_full.modelData.fullMdlAdjR2, rm_noRunSpeed.modelData.fullMdlAdjR2, ...
         rm_noYawSpeed.modelData.fullMdlAdjR2]';
 
-groupNames = {'Full model', ['No ', rm_noRunSpeed.sourceDataParams.speedType], 'No yawSpeed'};
+% groupNames = {'Full model', ['No ', rm_noRunSpeed.sourceDataParams.speedType], 'No yawSpeed'};
+groupNames = {'Full model', 'No fwSpeed', 'No yawSpeed'};
 
 f = figure(3);clf; hold on 
 f.Color = [1 1 1];
@@ -105,7 +106,7 @@ f.UserData.sourceDataParams = rm_full.sourceDataParams;
 f.UserData.modelParams = rm_full.modelParams;
 if saveFig
     pEnterStr = num2str(rm_full.modelParams.pEnter);
-    saveFileName = ['adj_R2_summary_stepThresh_', pEnterStr(3:end), ...
+    saveFileName = [p.roiName, '_adj_R2_summary_stepThresh_', pEnterStr(3:end), ...
             '_', fileNameStr, '_interactions'];
     save_figure(f, figDir, saveFileName);
 end
@@ -118,7 +119,7 @@ catch ME; rethrow(ME); end
 
 %% Plot summary grid of coefficients used in the models
 
-saveFig = 0;
+saveFig = 1;
 try
     
 allCoeffNames = {};
@@ -127,7 +128,7 @@ for iExp = 1:size(rm.modelData, 1)
 end
 uniqueCoeffs = unique(allCoeffNames);
 uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
-%%
+%
 
 uniqueCoeffs = uniqueCoeffs;%([1 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
@@ -185,15 +186,15 @@ for iRow = 1:(numel(rm.modelData.expID))
         plot(xL, [iRow iRow] - 0.5, 'color', 'k', 'linewidth', 1.5)
     end
     plot(xL, [iRow iRow] + 0.5, 'color', 'k', 'linewidth', 1.5)
-    text(1.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.fullMdlAdjR2(iRow), 2)], ...
+    text(0.5, iRow, ['   Adj. R^2 = ', num2str(rm.modelData.fullMdlAdjR2(iRow), 2)], ...
             'FontSize', 12);
 end
-title('Drift-corrected model coefficients')
+title('Model coefficients')
 f.UserData.sourceDataParams = rm.sourceDataParams;
 f.UserData.modelParams = rm.modelParams;
 if saveFig
     pEnterStr = num2str(rm.modelParams.pEnter);
-    saveFileName = ['model_coeff_summary_moveSpeed_noYaw_withInteractions'];
+    saveFileName = ['FB-DAN_model_coeff_summary_fwSpeed_noInteractions'];
     save_figure(f, figDir, saveFileName);
 end
 catch ME; rethrow(ME); end
@@ -268,7 +269,7 @@ for iExp = 1:size(rm.modelData, 1)
     ax = subaxis(24, 1, 1:6); hold on
     legendStr = {};
     if any(strcmpi('fwSpeed', predictorVars))
-        plot(xx, fullDataTbl.fwSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
+        plot(xx, fullDataTbl.forwardSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
                 'color', rgb('blue'), 'linewidth', 1);
         legendStr{end + 1} = 'abs(fwSpeed)';
     end
