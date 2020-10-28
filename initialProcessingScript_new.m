@@ -607,10 +607,10 @@ catch ME; rethrow(ME); end
 
 %% Combine two or more ROIs into a new ROI and add it to the ROI def file
 
-combROIs = {'EB', 'BU-L', 'BU-R'};
-newROI = 'EB-DAN';
-% combROIs = {'FB-1', 'FB-7', 'FB-8'};
-% newROI = 'FB-DAN';
+% combROIs = {'EB', 'BU-L', 'BU-R'};
+% newROI = 'EB-DAN';
+combROIs = {'FB-1', 'FB-2', 'FB-3', 'FB-4'};
+newROI = 'FB-DAN';
 
 try
     
@@ -639,7 +639,7 @@ catch ME; rethrow(ME); end
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201023-1', '20201023-2'};
+expList = {'20201027-1'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

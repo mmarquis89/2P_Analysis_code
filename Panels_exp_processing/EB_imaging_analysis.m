@@ -203,23 +203,24 @@ catch ME; rethrow(ME); end
 
 %% Plot ROI data
 
-roiNames = {'FB-DAN'};
-
 smWin = 5;
 smReps = 50;
 
 % expNums = [];
 % trialNums = repmat({[]}, numel(expList), 1);
-expNums = [5 6];
+expNums = [7];
 trialNums = {[], []};
 % trialNums = {[1:6, 11:16], [1:7, 13:17]};
 
 % roiNames, moveSpeed, fwSpeed, yawSpeed
-ax1_varNames = {'FB-DAN', 'fwSpeed', 'yawSpeed'};
-ax2_varNames = {};
+ax1_varNames = {'FB-DAN', 'fwSpeed'};
+ax2_varNames = {'fwSpeed', 'yawSpeed'};
+
+
+allVarNames = [ax1_varNames, ax2_varNames];
+roiNames = unique(allVarNames(ismember(allVarNames, unique(roiData.roiName))));
 
 cm = custom_colormap(numel(ax1_varNames) + numel(ax2_varNames));
-
 cm = [0, 0, 0; cm];
 
 if isempty(expNums)
@@ -243,7 +244,7 @@ for iExp = 1:numel(currExpList)
     flMat = []; flData = [];
     for iROI = 1:numel(roiNames)
         currFl = cell2mat(currRoiData(strcmp(currRoiData.roiName, roiNames{iROI}), :).rawFl');
-        flMat = [flMat, currFl(:, currTrialNums)];
+        flMat = currFl(:, currTrialNums);
         flData(:, iROI) = as_vector(smoothdata(flMat, 1, 'gaussian', smWin));
     end
 
@@ -269,6 +270,12 @@ for iExp = 1:numel(currExpList)
             fwSpeedVols(iVol) = fwSpeed(dsFrame);
             yawSpeedVols(iVol) = yawSpeed(dsFrame);
         end
+        
+        % Get panels X position data
+        nPanelsFrames = double(currTrialMd.nPanelsFrames(iTrial));
+        panelsFrameTimes = (1:nPanelsFrames) ./ ...
+                expMd(strcmp(expMd.expID, currExpID), :).panelsDisplayRate;
+        panelsPosX = panelsMetadata
         
         allMoveSpeed = [allMoveSpeed; smoothdata(moveSpeedVols', 1, 'gaussian', smWin)];
         allFwSpeed = [allFwSpeed; smoothdata(fwSpeedVols', 1, 'gaussian', smWin)];
@@ -317,6 +324,9 @@ for iExp = 1:numel(currExpList)
         xlim([xx(1), xx(end)])
         legend(ax2_varNames);
     end
+    
+    % Link X-axis limits
+    linkaxes([ax1, ax2], 'x')    
     
     
 %     % yyaxis right
@@ -380,7 +390,10 @@ end
 
 %% Pairwise scatter plots of all ROIs
 
-roiNames = unique(roiData.roiName);
+currRoiData = roiData(strcmp(roiData.expID, '20201027-1'), :);
+
+try
+roiNames = unique(currRoiData.roiName);
 
 roiNames = roiNames();
 
@@ -391,10 +404,11 @@ ax = subaxis(nROIs, nROIs, 1, 'sv', 0.04, 'm', 0.05);
 count = 1;
 for i = 1:nROIs
     ROI_1 = roiNames{i};
-    fl_1 = cell2mat(roiData(strcmp(roiData.roiName, ROI_1), :).rawFl);
+    disp(ROI_1)
+    fl_1 = cell2mat(currRoiData(strcmp(currRoiData.roiName, ROI_1), :).rawFl);
     for j = 1:nROIs
         ROI_2 = roiNames{j};
-        fl_2 = cell2mat(roiData(strcmp(roiData.roiName, ROI_2), :).rawFl);
+        fl_2 = cell2mat(currRoiData(strcmp(currRoiData.roiName, ROI_2), :).rawFl);
         if i ~= j 
             subaxis(nROIs, nROIs, count)
             scatter(fl_1, fl_2);
@@ -403,4 +417,4 @@ for i = 1:nROIs
         count = count + 1;
     end
 end
-
+catch ME; rethrow(ME); end

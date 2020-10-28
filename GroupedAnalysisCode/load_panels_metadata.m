@@ -1,4 +1,4 @@
-function panelsMetadata = load_panels_metadata(expList, parentDir)
+function panelsMd = load_panels_metadata(expList, parentDir)
 % ==================================================================================================   
 %  Loads panels metadata files for a set of expIDs and compiles them into a single table. 
 %
