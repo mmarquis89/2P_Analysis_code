@@ -565,6 +565,7 @@ methods
             ylabel(['Mean ', binnedData.flType]);
         end
     end
+    
 end%methods  
 
 methods(Static)

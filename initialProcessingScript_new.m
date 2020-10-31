@@ -299,8 +299,8 @@ for iFile = 1:numel(ftVidFiles)
     % Determine which video frames mark the beginning and end of the trial
     baseSubLum = medLum - median(medLum);
     lumThresh = 7;
-    startVidFrame = find(medLum > lumThresh, 1); % Index of first frame with >90% of max luminance
-    endVidFrame = find(medLum > lumThresh, 1, 'last');
+    startVidFrame = find(baseSubLum > lumThresh, 1); % Index of first frame with >90% of max luminance
+    endVidFrame = find(baseSubLum > lumThresh, 1, 'last');
     
     % Load vid frame log and identify first and last FicTrac data frames from the trial period
     frameLog = csvread(fullfile(ftDir, ftFrameLogFiles(iFile).name));
@@ -371,7 +371,9 @@ catch ME; rethrow(ME); end
 try 
     
 % Define an ROI around the fly
-vidRoi = select_video_ROIs(outputDir);
+% vidRoi = select_video_ROIs(outputDir);
+
+vidRoi = roiData;
 
 % Extract mean flow within ROI for each FicTrac vid
 ftVids = dir(fullfile(outputDir, 'FicTrac*.mp4'));
@@ -649,7 +651,7 @@ catch ME; rethrow(ME); end
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201029-4'};
+expList = {'20201030-2'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

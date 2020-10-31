@@ -36,7 +36,8 @@ saveFig = 0;
 
 expNums = [];
 
-skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11}';
+skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
+        7:10}';
 
 useSavedObj = 0;
 
@@ -208,7 +209,7 @@ smReps = 50;
 % expNums = [];
 % trialNums = repmat({[]}, numel(expList), 1);
 expNums = [11];
-trialNums = {[1, 3:11], []};
+trialNums = {[], []};
 % trialNums = {[1:6, 11:16], [1:7, 13:17]};
 
 % roiNames, moveSpeed, fwSpeed, yawSpeed, 'barPos'
