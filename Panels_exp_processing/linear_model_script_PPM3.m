@@ -4,15 +4,16 @@
 p = [];
 p.maxSpeed = 100;
 p.smWinVols = 5;
-p.roiName = 'FB-DAN';
+p.roiName = 'EB-DAN';
 p.smWinFrames = 7;
 p.smReps = 20;
 p.ftLagVols = 3;
 p.speedType = 'forwardSpeed';
 
-expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2'};
+expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...
+        '20201027-1', '20201029-1', '20201029-2', '20201029-3', '20201029-4'};
 
-skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12};
+skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11};
 
 skipVols = repmat({[]}, 1, numel(skipTrials));
                      
@@ -27,7 +28,7 @@ rm = RegressionModelAnalysis_PPM3(expInfoTbl, p);
 mp = [];
 mp.trainTestSplit = 0.8;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
-mp.upper = ['linear'];
+mp.upper = [];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
@@ -67,7 +68,7 @@ catch ME; rethrow(ME); end
 
 %% Plot summary of adjusted R2 values for each condition
 
-saveFig = 1;
+saveFig = 0;
 try
     
 plotArr = [rm_full.modelData.fullMdlAdjR2, rm_noRunSpeed.modelData.fullMdlAdjR2, ...
@@ -119,7 +120,7 @@ catch ME; rethrow(ME); end
 
 %% Plot summary grid of coefficients used in the models
 
-saveFig = 1;
+saveFig = 0;
 try
     
 allCoeffNames = {};

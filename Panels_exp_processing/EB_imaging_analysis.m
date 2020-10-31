@@ -32,26 +32,24 @@ a = MoveSpeedAnalysis(expList', parentDir);
 
 %% RUN MOVE SPEED ANALYSIS
 
-saveFig = 1;
+saveFig = 0;
 
 expNums = [];
 
-skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12}';
+skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11}';
 
 useSavedObj = 0;
 
 speedType = 'yaw';
 
 plotting_minSpeed = 0;
-nAnalysisBins = 40;
+nAnalysisBins = 45;
 
-roiName = 'FB-DAN';
+roiName = 'EB-DAN';
 flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
 figDims = [1520 840];
-
-try
     
-xLim = [0 360];
+xLim = [];
 yLim = [];
 fontSize = 12;
 
@@ -63,6 +61,7 @@ MR = 0.02;
 MT = 0.04;
 MB = 0.07;
 
+try
 if isempty(expNums)
    expNums = 1:numel(expList);
 else
@@ -129,20 +128,20 @@ for iExp = 1:numel(expNums)
         a = savedAnalysisObjects.obj{expNums(iExp)};
     end
 %     
-%     % Plot binned speed vs. dF/F
-%     a = a.generate_binned_flData(flType, speedType);
-%     a.plot_binned_fl(ax);
-%     ax.FontSize = fontSize;
-%     ax.YLabel.String = 'Mean dF/F';
-%     if strcmp(speedType, 'forward')
-%         cf = a.analysisOutput.r(1);
-%     else
-%         cf = a.analysisOutput.r(2);
-%     end
-%     allRs(end + 1) = cf;
-%     ax.Title.String = [currExpID, ' — ', roiName, ' — r = ', num2str(cf, 2)];
-%     box off
-%     yStr = flType;
+    % Plot binned speed vs. dF/F
+    a = a.generate_binned_flData(flType, speedType);
+    a.plot_binned_fl(ax);
+    ax.FontSize = fontSize;
+    ax.YLabel.String = 'Mean dF/F';
+    if strcmp(speedType, 'forward')
+        cf = a.analysisOutput.r(1);
+    else
+        cf = a.analysisOutput.r(2);
+    end
+    allRs(end + 1) = cf;
+    ax.Title.String = [currExpID, ' — ', roiName, ' — r = ', num2str(cf, 2)];
+    box off
+    yStr = flType;
 
 %     % Forward speed vs. Yaw
 %     [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.fwSpeedData, ...
@@ -154,17 +153,17 @@ for iExp = 1:numel(expNums)
 %     ax.Title.String = [currExpID, ' — ', roiName];    
 %     yStr = 'yawSpeed';
 %     box off
-% 
-     % Yaw vs. forward speed
-    [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.yawSpeedData, ...
-            a.analysisOutput.fwSpeedData, a.params.nAnalysisBins, a.params.plotting_minSpeed);
-    errorbar(ax, binMidpoints, binMeans, binSEM, '-o', 'color', 'k', 'linewidth', 1);
-    ax.XLabel.String = 'Yaw speed (deg/sec)';
-    ax.YLabel.String = 'Mean forward speed (mm/sec)';
-    ax.FontSize = fontSize;
-    ax.Title.String = [currExpID, ' — ', roiName];   
-    yStr = 'fwSpeed';
-    box off
+% % 
+%      % Yaw vs. forward speed
+%     [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.yawSpeedData, ...
+%             a.analysisOutput.fwSpeedData, a.params.nAnalysisBins, a.params.plotting_minSpeed);
+%     errorbar(ax, binMidpoints, binMeans, binSEM, '-o', 'color', 'k', 'linewidth', 1);
+%     ax.XLabel.String = 'Yaw speed (deg/sec)';
+%     ax.YLabel.String = 'Mean forward speed (mm/sec)';
+%     ax.FontSize = fontSize;
+%     ax.Title.String = [currExpID, ' — ', roiName];   
+%     yStr = 'fwSpeed';
+%     box off
 
     % Remove axis labels if not in last row (for X) or first column (for Y)
     if iExp <= numel(expNums) - plotLayoutDims(2)
@@ -208,21 +207,26 @@ smReps = 50;
 
 % expNums = [];
 % trialNums = repmat({[]}, numel(expList), 1);
-expNums = [7];
-trialNums = {[], []};
+expNums = [11];
+trialNums = {[1, 3:11], []};
 % trialNums = {[1:6, 11:16], [1:7, 13:17]};
 
-% roiNames, moveSpeed, fwSpeed, yawSpeed
-ax1_varNames = {'FB-DAN', 'fwSpeed'};
-ax2_varNames = {'fwSpeed', 'yawSpeed'};
+% roiNames, moveSpeed, fwSpeed, yawSpeed, 'barPos'
+ax1_varNames = {'FB-DAN', 'fwSpeed', 'barPos'};
+ax2_varNames = {'EB-DAN', 'yawSpeed', 'barPos'};
 
+plotTrialBounds = 1;
 
+try
 allVarNames = [ax1_varNames, ax2_varNames];
 roiNames = unique(allVarNames(ismember(allVarNames, unique(roiData.roiName))));
 
 cm = custom_colormap(numel(ax1_varNames) + numel(ax2_varNames));
 cm = [0, 0, 0; cm];
 
+if numel(plotTrialBounds) == 1
+   plotTrialBounds = [plotTrialBounds, plotTrialBounds]; 
+end
 if isempty(expNums)
    expNums = 1:numel(expList); 
 end
@@ -270,32 +274,58 @@ for iExp = 1:numel(currExpList)
             fwSpeedVols(iVol) = fwSpeed(dsFrame);
             yawSpeedVols(iVol) = yawSpeed(dsFrame);
         end
-        
-        % Get panels X position data
-        nPanelsFrames = double(currTrialMd.nPanelsFrames(iTrial));
-        panelsFrameTimes = (1:nPanelsFrames) ./ ...
-                expMd(strcmp(expMd.expID, currExpID), :).panelsDisplayRate;
-        panelsPosX = panelsMetadata
-        
+
         allMoveSpeed = [allMoveSpeed; smoothdata(moveSpeedVols', 1, 'gaussian', smWin)];
         allFwSpeed = [allFwSpeed; smoothdata(fwSpeedVols', 1, 'gaussian', smWin)];
         allYawSpeed = [allYawSpeed; smoothdata(yawSpeedVols', 1, 'gaussian', smWin)];
         
     end%iTrial
     
+    % Extract panels X position data
+    allPanelsPosX = [];
+    for iTrial = 1:numel(currTrialNums)
+
+        % Get position data
+        currPanelsMd = panelsMetadata(strcmp(ftData.expID, currExpID) & ...
+            ftData.trialNum == currTrialNums(iTrial), :);
+        nPanelsFrames = double(currTrialMd(currTrialMd.trialNum == currTrialNums(iTrial), ...
+            :).nPanelsFrames);
+        panelsFrameTimes = (1:nPanelsFrames) ./ ...
+                expMd(strcmp(expMd.expID, currExpID), :).panelsDisplayRate;
+        panelsPosX = currPanelsMd.panelsPosX{:};
+        
+        % Downsample to match volume rate
+        volTimes = (1:currTrialMd(currTrialMd.trialNum == currTrialNums(iTrial), :).nVolumes) ...
+                ./ expMd(strcmp(expMd.expID, currExpID), :).volumeRate;
+        panelsPosXVols = [];
+        if ~isempty(panelsFrameTimes)
+            for iVol = 1:numel(volTimes)
+                dsFrame = argmin(abs(panelsFrameTimes - volTimes(iVol)));
+                panelsPosXVols(iVol) = panelsPosX(dsFrame);
+            end
+        else
+            panelsPosXVols = zeros(size(volTimes));
+        end
+
+        allPanelsPosX = [allPanelsPosX; panelsPosXVols'];
+    end
+
     % Create source data table, normalizing each variable so its max == 1
     tbl = table(allMoveSpeed ./ max(allMoveSpeed), allFwSpeed ./ max(allFwSpeed), allYawSpeed ...
-            ./ max(allYawSpeed), 'variablenames', {'moveSpeed', 'fwSpeed', 'yawSpeed'});
+            ./ max(allYawSpeed), allPanelsPosX ./ max(allPanelsPosX), 'variablenames', ...
+            {'moveSpeed', 'fwSpeed', 'yawSpeed', 'barPos'});
     for iRoi = 1:numel(roiNames)
         currFl = flData(:, iRoi) - min(flData(:, iRoi));
         tbl.(roiNames{iRoi}) = currFl ./ max(currFl);
     end
     
+    trialStartVols = 1:size(flMat, 1):size(flData, 1);
+    
     % Create figure
     f = figure(iExp);clf; hold on;
     f.Color = [1 1 1];
     
-    % Plot 1
+    % ----- Plot 1 -----
     if isempty(ax2_varNames)
         nPlots = 1;
     else
@@ -305,22 +335,51 @@ for iExp = 1:numel(currExpList)
     hold on;
     cmCount = 1;
     xx = (1:size(flData, 1)) ./ expMd(strcmp(expMd.expID, currExpID), :).volumeRate;
+    
+    % Plot data
     for iVar = 1:numel(ax1_varNames)
         plot(xx, tbl.(ax1_varNames{iVar}), 'linewidth', 1.5, 'color', cm(cmCount, :));
         cmCount = cmCount + 1;
     end
+            
+    % Plot trial start times if necessary
+    if plotTrialBounds(1)
+        yL = ylim();
+        for iTrial = 1:numel(trialStartVols)
+            currStartTime = xx(trialStartVols(iTrial));
+            plot([currStartTime, currStartTime], yL, 'linewidth', 2, 'color', 'k');
+        end
+        ylim(yL);
+    end
+    
+    % Set xlims and add legend
     xlim([xx(1), xx(end)])
     legend(ax1_varNames);
     
-    % Plot 2
+    
+    % ----- Plot 2 -----
     if nPlots == 2
         ax2 = subaxis(2, 1, 2);
         hold on;
         xx = (1:size(flData, 1)) ./ expMd(strcmp(expMd.expID, currExpID), :).volumeRate;
+        
+        % Plot data
         for iVar = 1:numel(ax2_varNames)
             plot(xx, tbl.(ax2_varNames{iVar}), 'linewidth', 1.5, 'color', cm(cmCount, :));
             cmCount = cmCount + 1;
         end
+        
+        % Plot trial start times if necessary
+        if plotTrialBounds(2)
+            yL = ylim();
+            for iTrial = 1:numel(trialStartVols)
+                currStartTime = xx(trialStartVols(iTrial));
+                plot([currStartTime, currStartTime], yL, 'linewidth', 2, 'color', 'k');
+            end
+            ylim(yL);
+        end
+        
+        % Set xlims and add legend
         xlim([xx(1), xx(end)])
         legend(ax2_varNames);
     end
@@ -387,10 +446,11 @@ for iExp = 1:numel(currExpList)
 %     end
 
 end
+catch ME; rethrow(ME); end
 
 %% Pairwise scatter plots of all ROIs
 
-currRoiData = roiData(strcmp(roiData.expID, '20201027-1'), :);
+currRoiData = roiData(strcmp(roiData.expID, '20201029-1'), :);
 
 try
 roiNames = unique(currRoiData.roiName);

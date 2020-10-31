@@ -297,7 +297,8 @@ for iFile = 1:numel(ftVidFiles)
     end
 
     % Determine which video frames mark the beginning and end of the trial
-    lumThresh = 0.9 * max(medLum);
+    baseSubLum = medLum - mean(medLum);
+    lumThresh = 5 * std(baseSubLum);
     startVidFrame = find(medLum > lumThresh, 1); % Index of first frame with >90% of max luminance
     endVidFrame = find(medLum > lumThresh, 1, 'last');
     
@@ -339,6 +340,9 @@ for iFile = 1:numel(ftVidFiles)
     ftData(iFile).trialData = currFtData;
     ftData(iFile).frameLog = frameLog;
     ftData(iFile).medLum = medLum;
+    ftData(iFile).startVidFrame = startVidFrame;
+    ftData(iFile).endVidFrame = endVidFrame;
+    ftData(iFile).lumThresh = lumThresh;
     
     % Write video data from within the trial period to a new file
     trialVidFrames = frameLog >= startVidFrame & frameLog <= endVidFrame;
@@ -437,7 +441,6 @@ end
 save(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
 
 catch ME; rethrow(ME); end
-
 
 
 %% Choose threshold for defining movement epochs
@@ -607,10 +610,10 @@ catch ME; rethrow(ME); end
 
 %% Combine two or more ROIs into a new ROI and add it to the ROI def file
 
-% combROIs = {'EB', 'BU-L', 'BU-R'};
-% newROI = 'EB-DAN';
-combROIs = {'FB-1', 'FB-2', 'FB-3', 'FB-4'};
-newROI = 'FB-DAN';
+combROIs = {'EB', 'BU-L', 'BU-R'};
+newROI = 'EB-DAN';
+% combROIs = {'FB-1', 'FB-2', 'FB-3', 'FB-4'};
+% newROI = 'FB-DAN';
 
 try
     
@@ -622,14 +625,21 @@ for iFile = 1:numel(roiDefFiles)
     % Load roiDef data
     load(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
     
+%     % Rename ROI
+%     for iRoi = 1:numel(roiDefs)
+%         roiDefs(iRoi).name = regexprep(roiDefs(iRoi).name, 'FN-DAN', 'FB-DAN');
+%     end
+    
     % Create combined ROIs
     newRoiDef = struct();
     newRoiDef.name = newROI;
     newRoiDef.subROIs = [roiDefs(ismember({roiDefs.name}, combROIs)).subROIs];
     newRoiDef.color = roiDefs(1).color;
     
-    % Add to original ROI defs and save file
+    % Add to original ROI defs
     roiDefs = [roiDefs, newRoiDef];
+
+    % Save modified roiDefs file
     save(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
 end
 
@@ -639,7 +649,7 @@ catch ME; rethrow(ME); end
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201027-1'};
+expList = {'20201029-4'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};
@@ -651,13 +661,4 @@ for iExp = 1:numel(expList)
                 fullfile(analysisDir, dataFiles(iFile).name));
     end
 end
-
-
-
-
-
-
-
-
-
 
