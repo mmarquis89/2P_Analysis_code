@@ -297,8 +297,8 @@ for iFile = 1:numel(ftVidFiles)
     end
 
     % Determine which video frames mark the beginning and end of the trial
-    baseSubLum = medLum - mean(medLum);
-    lumThresh = 5 * std(baseSubLum);
+    baseSubLum = medLum - median(medLum);
+    lumThresh = 7;
     startVidFrame = find(medLum > lumThresh, 1); % Index of first frame with >90% of max luminance
     endVidFrame = find(medLum > lumThresh, 1, 'last');
     
