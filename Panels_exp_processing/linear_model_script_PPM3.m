@@ -4,16 +4,18 @@
 p = [];
 p.maxSpeed = 100;
 p.smWinVols = 5;
-p.roiName = 'EB-DAN';
+p.roiName = 'FB-DAN';
 p.smWinFrames = 7;
 p.smReps = 20;
 p.ftLagVols = 3;
 p.speedType = 'forwardSpeed';
 
 expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...
-        '20201027-1', '20201029-1', '20201029-2', '20201029-3', '20201029-4'};
+        '20201027-1', '20201029-1', '20201029-2', '20201029-3', '20201029-4', '20201030-1', ...
+        '20201030-2'};
 
-skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11};
+skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, ...
+        7:9, 7:10};
 
 skipVols = repmat({[]}, 1, numel(skipTrials));
                      
@@ -68,7 +70,7 @@ catch ME; rethrow(ME); end
 
 %% Plot summary of adjusted R2 values for each condition
 
-saveFig = 0;
+saveFig = 1;
 try
     
 plotArr = [rm_full.modelData.fullMdlAdjR2, rm_noRunSpeed.modelData.fullMdlAdjR2, ...
@@ -120,7 +122,10 @@ catch ME; rethrow(ME); end
 
 %% Plot summary grid of coefficients used in the models
 
-saveFig = 0;
+saveFig = 1;
+
+interactionStr = 'with';
+
 try
     
 allCoeffNames = {};
@@ -195,7 +200,7 @@ f.UserData.sourceDataParams = rm.sourceDataParams;
 f.UserData.modelParams = rm.modelParams;
 if saveFig
     pEnterStr = num2str(rm.modelParams.pEnter);
-    saveFileName = ['FB-DAN_model_coeff_summary_fwSpeed_noInteractions'];
+    saveFileName = [p.roiName, '_model_coeff_summary_fwSpeed_', interactionStr, 'Interactions'];
     save_figure(f, figDir, saveFileName);
 end
 catch ME; rethrow(ME); end
@@ -203,7 +208,7 @@ catch ME; rethrow(ME); end
 
 %% Plot predicted vs. measured fluorescence
 
-saveFigs = 0;
+saveFigs = 1;
 fileNameStr = 'fullExp_';
 
 predictorVars = {'fwSpeed', 'yawSpeed'}; % odorResp, fwSpeed, moveSpeed, yawSpeed

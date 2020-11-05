@@ -371,9 +371,7 @@ catch ME; rethrow(ME); end
 try 
     
 % Define an ROI around the fly
-% vidRoi = select_video_ROIs(outputDir);
-
-vidRoi = roiData;
+vidRoi = select_video_ROIs(outputDir);
 
 % Extract mean flow within ROI for each FicTrac vid
 ftVids = dir(fullfile(outputDir, 'FicTrac*.mp4'));
@@ -651,7 +649,7 @@ catch ME; rethrow(ME); end
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201030-2'};
+expList = {'20201029-3', '20201029-4'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};
