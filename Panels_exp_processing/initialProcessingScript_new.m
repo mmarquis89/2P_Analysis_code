@@ -565,13 +565,13 @@ for iFile = 1:numel(roiDefFiles)
             rawData = [rawData; currImgData];                           % --> [pixel, volume]
         end
         
-        % Average data cross pixels and subROIs
+        % Average data across pixels and subROIs
         roiDataAvg = mean(rawData, 1)'; % --> [volume]
         currRoiData.rawFl{iRoi} = roiDataAvg;
         
         % Calculate trial baseline using bottom 5th percentile of whole trial's Fl data
         currDataSorted = sort(roiDataAvg);
-        trialBaselines(iRoi, 1) = currDataSorted(round(numel(currDataSorted * 0.05))); 
+        trialBaselines(iRoi, 1) = currDataSorted(round(numel(currDataSorted) * 0.05)); 
         
     end%iRoi   
     
@@ -589,6 +589,7 @@ if expMinVal < 0
     disp(['Subtracting minimum value of ', num2str(expMinVal) ' from all ROI data'])
     for iRow = 1:size(roiData, 1)
         roiData.rawFl{iRow} = (roiData.rawFl{iRow} - expMinVal) + 1; % Add one to allow division
+        roiData.trialBaseline(iRow) = roiData.trialBaseline(iRow) - expMinVal + 1;
     end
 end
 
@@ -607,6 +608,7 @@ roiData = innerjoin(roiData, baselineTable);
 save(fullfile(outputDir, [expID, '_roiData.mat']), 'roiData');
 
 catch ME; rethrow(ME); end
+
 
 %% Combine two or more ROIs into a new ROI and add it to the ROI def file
 

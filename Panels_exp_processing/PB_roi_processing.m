@@ -31,6 +31,11 @@ panelsMetadata = load_panels_metadata(expList, parentDir);
 expList = unique(expMd.expID);
 
 try
+    
+glomPairNames = table((1:8)', {'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8'}', ...
+    {'R1', 'R8', 'R7', 'R6', 'R5', 'R4', 'R3', 'R2'}', 'variablenames', ...
+    {'wedge', 'leftGlom', 'rightGlom'});
+
 for iExp = 1:size(expMd, 1)
     
     currExpID = expMd.expID{iExp};
@@ -40,7 +45,26 @@ for iExp = 1:size(expMd, 1)
     flMat = [];
     for iTrial = 1:max(currExpRoiData.trialNum)
         currTrialRoiData = currExpRoiData(currExpRoiData.trialNum == iTrial, :);
-        currFl = (cell2mat(currTrialRoiData.rawFl'));
+        
+        currLeftFl = [];
+        currRightFl = [];
+        for iWedge = 1:8
+            leftData = currTrialRoiData.rawFl(strcmp(currTrialRoiData.roiName, ...
+                    glomPairNames.leftGlom{iWedge}));
+            rightData = currTrialRoiData.rawFl(strcmp(currTrialRoiData.roiName, ...
+                    glomPairNames.rightGlom{iWedge}));
+            if ~isempty(leftData)
+                currLeftFl(:, iWedge) = leftData{:};
+            else
+                currLeftFl(:, iWedge) = nan(size(currTrialRoiData.rawFl{1}));
+            end
+            if ~isempty(rightData)
+                currRightFl(:, iWedge) = rightData{:};
+            else
+                currRightFl(:, iWedge) = nan(size(currTrialRoiData.rawFl{1}));
+            end
+        end
+        currFl = [currLeftFl, currRightFl];
         flMat = [flMat; currFl];
     end
     
@@ -48,6 +72,7 @@ for iExp = 1:size(expMd, 1)
     R = corrcoef(flMat);
     LRCorrMat = R(1:8, 9:16);
 
+    % Plot figure
     f = figure(iExp); clf;
     f.Color = [1 1 1];
     imagesc(LRCorrMat);
@@ -55,20 +80,25 @@ for iExp = 1:size(expMd, 1)
     colormap('bluewhitered')
     ax.YTick = 1:8;
     ax.XTick = 1:8;
-    ax.YTickLabel = currTrialRoiData.roiName(1:8);
-    ax.XTickLabel = currTrialRoiData.roiName(9:16);
+    ax.YTickLabel = glomPairNames.leftGlom;
+    ax.XTickLabel = glomPairNames.rightGlom;
     axis square
     title(currExpID)
     
 end
 catch ME; rethrow(ME); end
     
+%% Calculate PVA and the corresponding amplitude for every imaging volume
+
+wedgeData = roiData(~cellfun(@isempty, regexp(roiData.roiName, 'EB-', 'match')), :);
 
 
+wedgeData.trialDff = cellfun(@(x, y) (x - y) ./ y, wedgeData.rawFl, ...
+        mat2cell(wedgeData.trialBaseline, ones(size(wedgeData.trialBaseline))), 'uniformoutput', 0);
+wedgeData.expDff = cellfun(@(x, y) (x - y) ./ y, wedgeData.rawFl, ...
+        mat2cell(wedgeData.expBaseline, ones(size(wedgeData.expBaseline))), 'uniformoutput', 0);
 
-
-
-
+%% 
 
 
 
