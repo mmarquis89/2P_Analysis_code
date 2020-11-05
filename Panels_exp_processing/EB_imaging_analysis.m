@@ -17,7 +17,7 @@ roiData = load_roi_data(expList, parentDir);
 % Load FicTrac data
 ftData = load_ft_data(expList, parentDir);
 
-% Load flailing event data
+% Load flailing event data (if any exists)
 try
     eventData = load_event_data(expList, parentDir);
     flailingEvents = eventData.flailing;

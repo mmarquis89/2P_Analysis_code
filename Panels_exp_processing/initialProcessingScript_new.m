@@ -612,44 +612,29 @@ catch ME; rethrow(ME); end
 
 combROIs = {'EB', 'BU-L', 'BU-R'};
 newROI = 'EB-DAN';
-% combROIs = {'FB-1', 'FB-2', 'FB-3', 'FB-4'};
-% newROI = 'FB-DAN';
 
-try
-    
-roiDefFiles = dir(fullfile(outputDir, ['roiDefs*.mat']));
-for iFile = 1:numel(roiDefFiles)
-    
-    disp(iFile)
-    
-    % Load roiDef data
-    load(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
-    
-%     % Rename ROI
-%     for iRoi = 1:numel(roiDefs)
-%         roiDefs(iRoi).name = regexprep(roiDefs(iRoi).name, 'FN-DAN', 'FB-DAN');
-%     end
-    
-    % Create combined ROIs
-    newRoiDef = struct();
-    newRoiDef.name = newROI;
-    newRoiDef.subROIs = [roiDefs(ismember({roiDefs.name}, combROIs)).subROIs];
-    newRoiDef.color = roiDefs(1).color;
-    
-    % Add to original ROI defs
-    roiDefs = [roiDefs, newRoiDef];
+combine_roiDefs(outputDir, combROIs, newROI);
 
-    % Save modified roiDefs file
-    save(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
+%% Combine PB glomerulus ROIs into EB wedge ROIs
+       
+glomPairNames = table((1:8)', {'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8'}', ...
+    {'R1', 'R8', 'R7', 'R6', 'R5', 'R4', 'R3', 'R2'}', 'variablenames', ...
+    {'wedge', 'leftGlom', 'rightGlom'});
+
+for iWedge = 1:8
+    disp(iWedge)
+    combine_roiDefs(outputDir, {glomPairNames.leftGlom{iWedge}, glomPairNames.rightGlom{iWedge}}, ...
+            ['EB-', num2str(iWedge)]);
 end
+disp('Complete')
 
-catch ME; rethrow(ME); end
+%% Copy files over to a grouped analysis data directory
 
-%% Copy files over to the EB-DAN grouped analysis data directory
+groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f_bath_DA';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
-analysisDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\EB-DAN_GroupedAnalysisData';
-expList = {'20201029-3', '20201029-4'};
+analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
+expList = {'20201104-1', '20201104-2'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};
