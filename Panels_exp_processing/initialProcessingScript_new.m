@@ -58,6 +58,11 @@ for iFile = 1:numel(imgDataFiles)
     % Save raw imaging data as a .mat file
     save(fullfile(outputDir, ['imagingData_raw_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
             '.mat']), 'imgData');
+        
+    % Also save reference images
+    refImages = mean(imgData, 4); % --> [y, x, plane]
+    save(fullfile(outputDir, ['refImages_raw_trial_', pad(num2str(trialNum), 3, 'left', '0'), ...
+            '.mat']), 'refImages');
 end
 
 % Save summary statistics and list of volume counts for all trials
