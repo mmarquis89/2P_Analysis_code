@@ -21,7 +21,7 @@ end
 %%
 
 
-currTrial = 17;
+currTrial = 1;
 
 currTrialInd = find([mD.trialNum] == currTrial);
 

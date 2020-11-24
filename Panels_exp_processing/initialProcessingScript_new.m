@@ -298,7 +298,7 @@ for iFile = 1:numel(ftVidFiles)
 
     % Determine which video frames mark the beginning and end of the trial
     baseSubLum = medLum - median(medLum);
-    lumThresh = 7;
+    lumThresh = 20;
     startVidFrame = find(baseSubLum > lumThresh, 1); % Index of first frame with >90% of max luminance
     endVidFrame = find(baseSubLum > lumThresh, 1, 'last');
     
@@ -445,8 +445,8 @@ catch ME; rethrow(ME); end
 
 %% Choose threshold for defining movement epochs
 
-moveThresh = 0.045;
-flowYLim = [0 0.3];
+moveThresh = 0.05;
+flowYLim = [0 0.8];
 
 try
     
@@ -632,11 +632,11 @@ disp('Complete')
 
 %% Copy files over to a grouped analysis data directory
 
-groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f_bath_DA';
+groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201104-1', '20201104-2'};
+expList = {'20201120-1', '20201120-2', '20201120-3'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

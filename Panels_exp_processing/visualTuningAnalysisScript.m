@@ -40,64 +40,6 @@ bl = extract_block_data(mD, blTrials, ...
         'flowSmWin', flowSmWin, 'moveThresh', moveThresh, 'ExpType', expType);
 
     
-    
-    
-    
-%% Compare correlations across the two halves of the PB
-
-try 
-flData = bl.expDffArr;
-flData = permute(flData, [2 1 3]);
-rsFlData = reshape(flData, size(flData, 1), [])';
-R = corrcoef(rsFlData);
-% R = cov(rsFlData);
-LRCorrMat = R(1:8, 9:end);
-% LRCorrMat = R;
-figure(3); clf; 
-imagesc(LRCorrMat); 
-axis square
-ax = gca;
-colormap('bluewhitered')
-
-ax.YTick = 1:8;
-ax.XTick = 1:8;
-ax.YTickLabel = {td.roiData(1:8).name};
-ax.XTickLabel = {td.roiData(16:-1:9).name};
-
-% ax.YTick = 1:16;
-% ax.XTick = 1:16;
-% ax.YTickLabel = {td.roiData([1:8, 16:-1:9]).name};
-% ax.XTickLabel = {td.roiData([1:8, 16:-1:9]).name};
-
-[~, test] = max(LRCorrMat')
-
-   
-% Plot boxes around midline squares
-xx = [repelem(0:7, 2), 8] + 0.5;
-yy = [0, repelem(1:8, 2)] + 0.5;
-hold on;
-plot(xx, yy, 'color', rgb('lawngreen'), 'linewidth', 3)
-plot(xx, yy - 1, 'color', rgb('lawngreen'), 'linewidth', 3)
-
-
-% Plot boxes around anticorrelate squares
-plot(xx(1:9), yy(9:end), 'color', 'k', 'linewidth', 3)
-plot(xx(9:end), yy(1:9), 'color', 'k', 'linewidth', 3)
-yy = yy - 1;
-plot(xx(2:10), [yy(10:end), 8.5], 'color', 'k', 'linewidth', 3)
-plot(xx(9:end), yy(1:9), 'color', 'k', 'linewidth', 3) 
-
-figure(4);clf
-shiftMat = LRCorrMat;
-for iCol = 1:size(shiftMat, 2)
-   shiftMat(:, iCol) = shiftMat([(iCol):end, 1:(iCol) - 1], iCol);
-end
-shiftMat = circshift(shiftMat, 3);
-imagesc(shiftMat);
-axis square
-
-catch ME; rethrow(ME); end
-
 %% PLOT SUMMARY OF MOVEMENT THROUGHOUT EXPERIMENT
 
 saveFig = 0;
