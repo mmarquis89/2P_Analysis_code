@@ -212,13 +212,13 @@ smReps = 50;
 
 % expNums = [];
 % trialNums = repmat({[]}, numel(expList), 1);
-expNums = [12];
-trialNums = {[], []};
+expNums = [15];
+trialNums = {[]};
 % trialNums = {[1:6, 11:16], [1:7, 13:17]};
 
 % roiNames, moveSpeed, fwSpeed, yawSpeed, 'barPos'
-ax1_varNames = {'FB-DAN', 'fwSpeed', 'barPos'};
-ax2_varNames = {'EB-DAN', 'yawSpeed', 'barPos'};
+ax1_varNames = {'EB', 'BU-L', 'BU-R'};
+ax2_varNames = {'EB-DAN'};
 
 plotTrialBounds = 1;
 
@@ -316,7 +316,7 @@ for iExp = 1:numel(currExpList)
     end
 
     % Create source data table, normalizing each variable so its max == 1
-    tbl = table(allMoveSpeed ./ max(allMoveSpeed), allFwSpeed ./ max(allFwSpeed), allYawSpeed ...
+    h = table(allMoveSpeed ./ max(allMoveSpeed), allFwSpeed ./ max(allFwSpeed), allYawSpeed ...
             ./ max(allYawSpeed), allPanelsPosX ./ max(allPanelsPosX), 'variablenames', ...
             {'moveSpeed', 'fwSpeed', 'yawSpeed', 'barPos'});
     for iRoi = 1:numel(roiNames)

@@ -96,6 +96,7 @@ td = currExpData(currExpData.trialNum == trialNum, :);
 
 flMat = td.(flType){:};
 
+try 
 
 % 50 = 344
 % 65 = 447
@@ -308,7 +309,7 @@ linkaxes(allAx([4 5 6 7]), 'x');
 xlim([0 td.trialDuration])
 
 
-
+catch ME; rethrow(ME); end
 
 
 

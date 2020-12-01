@@ -607,9 +607,7 @@ for iPlot = 1:8
                 end
             end%iSection
         end%iColor 
-    
-    end%if 
-    
+    end%if  
 end%iPlot
 
 % Add figure title
@@ -798,7 +796,7 @@ for iPlot = 1:nPlots
     end
     xL = xlim;
     xlim([0, size(tuningAmp, 2) + 1])
-%     ylabel(num2str(iPlot))
+    ylabel(num2str(iPlot))
 end
 
 for iAx = 1:numel(f.Children)
@@ -975,6 +973,7 @@ for iTrial = 1:nStimTrials
        figYLims = [min([figYLims(1), currYLims(1)]), max([figYLims(2), currYLims(2)])];
     end
 end
+
 % Make each plot use the same Y limits
 for iAx = 1:numel(f.Children)
     try

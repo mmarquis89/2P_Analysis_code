@@ -450,7 +450,7 @@ catch ME; rethrow(ME); end
 
 %% Choose threshold for defining movement epochs
 
-moveThresh = 0.05;
+moveThresh = 0.07;
 flowYLim = [0 0.8];
 
 try
@@ -523,6 +523,9 @@ flailingEvents.export_csv(outputDir, 'fileNamePrefix', expMd.expID{1});
 catch ME; rethrow(ME); end
 
 %% Extract ROI data (after creating ROIs with panels_ROI_GUI)
+
+imgDataType = 'reg'; % 'raw' or 'reg'
+
 try
     
 % Scan file names in experiment directory to get the expID
@@ -542,8 +545,8 @@ for iFile = 1:numel(roiDefFiles)
     load(fullfile(outputDir, roiDefFiles(iFile).name), 'roiDefs');
     
     % Load imaging data
-    load(fullfile(outputDir, regexprep(roiDefFiles(iFile).name, 'roiDefs', 'imagingData_reg')), ...
-            'imgData');
+    load(fullfile(outputDir, regexprep(roiDefFiles(iFile).name, 'roiDefs', ['imagingData_', ...
+            imgDataType])), 'imgData');
         
     % Reshape imaging data into 1D frames
     sz = size(imgData);
@@ -637,11 +640,11 @@ disp('Complete')
 
 %% Copy files over to a grouped analysis data directory
 
-groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
+groupedAnalysisDirName = 'EB-DAN_GroupedAnalysisData';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201120-1', '20201120-2', '20201120-3'};
+expList = {'20201124-3'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};
@@ -653,4 +656,3 @@ for iExp = 1:numel(expList)
                 fullfile(analysisDir, dataFiles(iFile).name));
     end
 end
-

@@ -950,27 +950,6 @@ for iPlot = 1:nPlots
 end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 % f = figure(8); clf;
 % f.Color = [1 1 1];
 % 
