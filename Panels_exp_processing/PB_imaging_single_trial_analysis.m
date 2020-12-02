@@ -1,7 +1,7 @@
 
 %% Load data
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
-expList = [];
+expList = {'20201201-1'}%[];
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -9,7 +9,7 @@ expList = [];
 
 %% CHECK CORRELATION BETWEEN GLOMERULI
 
-expList = {'20201120-1', '20201120-2', '20201120-3'}%unique(expMd.expID);
+expList = {'20201201-1'}%unique(expMd.expID);
 
 try
 
@@ -75,9 +75,9 @@ catch ME; rethrow(ME); end
    
 %% 
 
-expID = '20201117-1';
+expID = '20201201-1';
 
-trialNum = 1;
+trialNum = 7;
 
 sourceData = glomData;
 sourceData = wedgeData;
@@ -89,7 +89,8 @@ flMax = [];
 smWin = 5;
 % trialDuration = 300;
 
-currData = inner_join(sourceData, expMd, trialMd, panelsMetadata, ftData);
+currData = inner_join(sourceData, expMd, trialMd, panelsMetadata);
+currData = outerjoin(currData, ftData, 'type', 'left', 'mergekeys', 1);
 
 currExpData = currData(strcmp(currData.expID, expID), :);
 td = currExpData(currExpData.trialNum == trialNum, :);
@@ -257,19 +258,21 @@ subaxis(5, 3, 10:12)
 allAx(end + 1) = gca;
 if useFlow
     currFlow = td.meanFlow{:};
-    currFlow(end) = median(currFlow);
-    currFlow(1:20) = median(currFlow);
-    plotData = repeat_smooth(currFlow, 20, 'dim', 1, 'smwin', smWin);
-%     plotData2 = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
-    plotData = plotData - min(plotData);
-%     plotData2 = plotData2 - min(plotData2);
-    flowFrameDur = median(diff(td.frameTimes{:}));
-    flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur;
-    plot(flowFrameTimes, plotData, 'color', 'k', 'linewidth', 1);
-    hold on;
-%     plot(flowFrameTimes, plotData2, 'color', 'g');
-    cb = colorbar;
-    cb.Visible = 'off';
+    if ~isempty(currFlow)
+        currFlow(end) = median(currFlow);
+        currFlow(1:20) = median(currFlow);
+        plotData = repeat_smooth(currFlow, 20, 'dim', 1, 'smwin', smWin);
+        %     plotData2 = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
+        plotData = plotData - min(plotData);
+        %     plotData2 = plotData2 - min(plotData2);
+        flowFrameDur = median(diff(td.frameTimes{:}));
+        flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur;
+        plot(flowFrameTimes, plotData, 'color', 'k', 'linewidth', 1);
+        hold on;
+        %     plot(flowFrameTimes, plotData2, 'color', 'g');
+        cb = colorbar;
+        cb.Visible = 'off';
+    end
 else
     HD = repeat_smooth(unwrap(td.intHD{:}), 20, 'smWin', smWin);
     plot(td.frameTimes{:}, 2*pi - mod(HD, 2*pi), 'color', 'k');

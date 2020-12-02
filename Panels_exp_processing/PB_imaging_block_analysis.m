@@ -23,13 +23,14 @@ washoutTime = 0;
 flSmWin = 5;
 
 flowSmWin = 6;
-moveThresh = unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
-        expID)));
+moveThresh = 0.08;%unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
+        %expID)));
 
 try 
     
 % Generate consolidated source data table
-currData = inner_join(sourceData, expMd, trialMd, panelsMetadata, ftData);
+currData = inner_join(sourceData, expMd, trialMd, panelsMetadata);
+currData = outerjoin(currData, ftData, 'type', 'left', 'mergekeys', 1);
 currExpData = currData(strcmp(currData.expID, expID), :);
 currExpData = outerjoin(currExpData, drugTimingMd, 'type', 'left', 'mergekeys', 1);
 if ~isempty(trialNums)
@@ -45,12 +46,14 @@ flowFrameDur = median(diff(currExpData.frameTimes{1}));
 flowFrameTimes = (1:1:size(flowMat, 1)) * flowFrameDur;
 for iTrial = 1:nTrials 
     currFlow = currExpData.meanFlow{iTrial};
-    currFlow(end) = median(currFlow);
-    currFlow(1:20) = median(currFlow);
-    if numel(currFlow) < size(flowMat, 1)
-        currFlow(end + 1:size(flowMat, 1)) = nan;
+    if ~isempty(currFlow)
+        currFlow(end) = median(currFlow);
+        currFlow(1:20) = median(currFlow);
+        if numel(currFlow) < size(flowMat, 1)
+            currFlow(end + 1:size(flowMat, 1)) = nan;
+        end
+        flowMat(:, iTrial) = currFlow;
     end
-    flowMat(:, iTrial) = currFlow;
 end
 smFlowMat = repeat_smooth(flowMat, 20, 'dim', 1, 'smwin', flowSmWin); 
 catch ME; rethrow(ME); end
@@ -150,97 +153,101 @@ fullTrialVectorStrength = [];
 fullTrialVectorPhase = [];
 for iTrial = 1:nTrials
     
-    panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
-        currExpData.panelsDisplayRate(iTrial);
-    panelsPosVols = [];
-    
-    % Identify bar location during each volume
-    for iVol = 1:nVolumes
-        [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
-        panelsPosVols(iVol) = currExpData.panelsPosX{iTrial}(currVol);
-    end
-    
-    % Get Fl data for current trial
-    currExpDff = expDffMat(:, :, iTrial);
-    
-    % Set volumes before and during drug application to nan
-    if ismember(currExpData.trialNum(iTrial), drugTrials)
-        currExpDff(volTimes < (currExpData.startTime(iTrial) + ...
-            currExpData.duration(iTrial) + washoutTime), :) = nan;
-    end
-    
-    % Convert panels position to a phase
-    panelsPhase = 2 * pi * (panelsPosVols ./ max(panelsPosVols));
-    
-    % Calculate expDff vector strength and phase for current trial
-    for iRoi = 1:nRois
-        currFlData = smoothdata(currExpDff(:, iRoi), 1, 'gaussian', flSmWin);
-        currFlData = currFlData(~isnan(currFlData));
-        currPanelsPhase = panelsPhase(~isnan(currFlData));
-        oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
-        adjacentVector = sum(currFlData' .* cos(currPanelsPhase));
-        oppositeMeanVector =  oppositeVector / numel(currPanelsPhase);
-        adjacentMeanVector =  adjacentVector / numel(currPanelsPhase);
+    if currExpData.usingPanels(iTrial)
+        panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
+                currExpData.panelsDisplayRate(iTrial);
+        panelsPosVols = [];
         
-        fullTrialVectorStrength(iTrial, iRoi) = sqrt(oppositeVector^2 + adjacentVector^2) / ...
-                numel(currPanelsPhase);
-        fullTrialVectorPhase(iTrial, iRoi) = wrapTo2Pi(atan(oppositeMeanVector / ...
-                adjacentMeanVector));            
-            
-    end   
-    
-end
-catch ME; rethrow(ME); end
-
-% Calculate vector strength and phase for each individual bar rotation cycle
-for iTrial = 1:nTrials
-    
-    panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
-        currExpData.panelsDisplayRate(iTrial);
-    panelsPosVols = [];
-    
-    % Identify bar location during each volume
-    for iVol = 1:nVolumes
-        [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
-        panelsPosVols(iVol) = currExpData.panelsPosX{iTrial}(currVol);
-    end
-    
-    % Identify the start and end of each bar cycle
-    cycleStartVols = panelsPosVols == 0;
-    cycleEndVols = panelsPosVols == 95;
-    cycleEndVols(end) = 1;
-    nCycles = sum(cycleStartVols);
-    cycleStartInds = find(cycleStartVols);
-    cycleEndInds = find(cycleEndVols);
-    
-    % Get Fl data for current trial
-    currExpDff = expDffMat(:, :, iTrial);
-    
-    % Convert panels position to a phase
-    panelsPhase = 2 * pi * (panelsPosVols ./ max(panelsPosVols));
-    
-    % Calculate vector strength and phase
-    cycleVectorStrength = [];
-    cycleVectorPhase = [];
-    for iRoi = 1:nRois
-        for iCycle = 1:nCycles
-            startInd = cycleStartInds(iCycle);
-            endInd = cycleEndInds(iCycle);
-            currFlData = smoothdata(currExpDff(startInd:endInd, iRoi), 1, 'gaussian', flSmWin);
-            currPanelsPhase = panelsPhase(startInd:endInd);
-            
+        % Identify bar location during each volume
+        for iVol = 1:nVolumes
+            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+            panelsPosVols(iVol) = currExpData.panelsPosX{iTrial}(currVol);
+        end
+        
+        % Get Fl data for current trial
+        currExpDff = expDffMat(:, :, iTrial);
+        
+        % Set volumes before and during drug application to nan
+        if ismember(currExpData.trialNum(iTrial), drugTrials)
+            currExpDff(volTimes < (currExpData.startTime(iTrial) + ...
+                    currExpData.duration(iTrial) + washoutTime), :) = nan;
+        end
+        
+        % Convert panels position to a phase
+        panelsPhase = 2 * pi * (panelsPosVols ./ max(panelsPosVols));
+        
+        % Calculate expDff vector strength and phase for current trial
+        for iRoi = 1:nRois
+            currFlData = smoothdata(currExpDff(:, iRoi), 1, 'gaussian', flSmWin);
+            currFlData = currFlData(~isnan(currFlData));
+            currPanelsPhase = panelsPhase(~isnan(currFlData));
             oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
             adjacentVector = sum(currFlData' .* cos(currPanelsPhase));
             oppositeMeanVector =  oppositeVector / numel(currPanelsPhase);
             adjacentMeanVector =  adjacentVector / numel(currPanelsPhase);
             
-            cycleVectorStrength(iTrial, iRoi, iCycle) = sqrt(oppositeVector^2 ...
-                    + adjacentVector^2) / numel(currPanelsPhase);
-            cycleVectorPhase(iTrial, iRoi, iCycle) = wrapTo2Pi(atan(oppositeMeanVector / ...
-                adjacentMeanVector));
+            fullTrialVectorStrength(iTrial, iRoi) = sqrt(oppositeVector^2 + adjacentVector^2) / ...
+                    numel(currPanelsPhase);
+            fullTrialVectorPhase(iTrial, iRoi) = wrapTo2Pi(atan(oppositeMeanVector / ...
+                    adjacentMeanVector));
+            
         end
     end
+end
+catch ME; rethrow(ME); end
+
+% Calculate vector strength and phase for each individual bar rotation cycle
+cycleVectorStrength = [];
+cycleVectorPhase = [];
+test = [];
+for iTrial = 1:nTrials
     
+    panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
+        currExpData.panelsDisplayRate(iTrial);
+    if currExpData.usingPanels(iTrial)
+        panelsPosVols = [];
+        
+        % Identify bar location during each volume
+        for iVol = 1:nVolumes
+            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+            panelsPosVols(iVol) = currExpData.panelsPosX{iTrial}(currVol);
+        end
+        
+        % Identify the start and end of each bar cycle
+        cycleStartVolsStr = regexprep(num2str(panelsPosVols == 0), ' ', '');
+        cycleStartVols = regexp(cycleStartVolsStr, '01');
+        cycleStartVols = [1, cycleStartVols];
+        cycleEndVols = cycleStartVols(2:end) - 1;
+        cycleEndVols = [cycleEndVols, nVolumes];
+        nCycles = numel(cycleStartVols);
+        
+        % Get Fl data for current trial
+        currExpDff = expDffMat(:, :, iTrial);
+        
+        % Convert panels position to a phase
+        panelsPhase = 2 * pi * (panelsPosVols ./ max(panelsPosVols));
+        
+        % Calculate vector strength and phase
+        for iRoi = 1:nRois
+            for iCycle = 1:nCycles
+                startInd = cycleStartVols(iCycle);
+                endInd = cycleEndVols(iCycle);
+                currFlData = smoothdata(currExpDff(startInd:endInd, iRoi), 1, 'gaussian', flSmWin);
+                currPanelsPhase = panelsPhase(startInd:endInd);
+                test{iTrial, iRoi, iCycle} = currFlData;
+                
+                oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
+                adjacentVector = sum(currFlData' .* cos(currPanelsPhase));
+                oppositeMeanVector =  oppositeVector / numel(currPanelsPhase);
+                adjacentMeanVector =  adjacentVector / numel(currPanelsPhase);
+                
+                cycleVectorStrength(iTrial, iRoi, iCycle) = sqrt(oppositeVector^2 ...
+                        + adjacentVector^2) / numel(currPanelsPhase);
+                cycleVectorPhase(iTrial, iRoi, iCycle) = wrapTo2Pi(atan(oppositeMeanVector / ...
+                        adjacentMeanVector));
+            end
+        end
+    end
 end
 
 
@@ -921,8 +928,6 @@ for iPlot = 1:nPlots
     pax.FontSize = 12;
     pax.RLim(2) = 1.01 * max(as_vector(smoothdata(flData, 1, 'gaussian', smWin)));
     title(['#', num2str(iPlot)], 'fontSize', 14)
-    
-    disp(pax.RLim)
     
     % Indicate transitions to drug application trials
     if ~isempty(drugTrials) && ismember(iPlot, drugTrials)
