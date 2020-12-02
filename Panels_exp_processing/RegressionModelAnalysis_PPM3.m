@@ -8,7 +8,8 @@ classdef RegressionModelAnalysis_PPM3
 %       modelParams (scalar struct)
 %
 % Methods:
-%       initialize_models(modelParams)   
+%       initialize_models(modelParams)  
+%       train_initial_models(mdl)
 %       (Static) plot_coeffs(mdl, axesHandle);
 % ==================================================================================================
 
@@ -264,7 +265,3 @@ methods(Static)
 end%Static methods
 
 end%class
-
-% ==================================================================================================
-% Local functions
-% ==================================================================================================

@@ -381,12 +381,24 @@ vidRoi = select_video_ROIs(outputDir);
 % Extract mean flow within ROI for each FicTrac vid
 ftVids = dir(fullfile(outputDir, 'FicTrac*.mp4'));
 meanFlowMags = {};
+validTrialNums = [];
 parfor iTrial = 1:numel(ftVids)
     disp(ftVids(iTrial).name);
     tic
+    trialNum = get_trialNum(ftVids(iTrial).name);
     meanFlowMags{iTrial} = optic_flow_calc(fullfile(outputDir, ftVids(iTrial).name), 'roiMask', ...
             vidRoi);
+    validTrialNums(iTrial) = trialNum;
     disp(['Flow calculation completed in ', num2str(toc, '%.1f'), ' sec']);
+end
+
+% Adjust indexing if data is missing for any trials
+newFlowMags = {};
+if numel(validTrialNums) ~= numel(ftVids)
+    for iTrial = 1:numel(validTrialNums)
+        newFlowMags{validTrialNums(iTrial)} = meanFlowMags{iTrial};
+    end
+    meanFlowMags = newFlowMags;
 end
 
 % Save flow data
@@ -413,33 +425,36 @@ ftData = [];
 for iTrial = 1:numel(rawFt)
     currFt = rawFt(iTrial).trialData;
     
-    newRow = table({expID}, rawFt(iTrial).trialNum, 'VariableNames', {'expID', 'trialNum'});
-    
-    % Get frame times relative to start of trial (column 24 is nanosec since previous frame)
-    ftFrameTimes = cumsum(currFt(:, 24)) ./ 1e9;
-    
-    % Copy important variables, converting units as needed
-    IFI = [ftFrameTimes(1); diff(ftFrameTimes)];
-    newRow.intX = {currFt(:, 15) * 4.5};               % mm
-    newRow.intY = {currFt(:, 16) * 4.5};               % mm
-    newRow.intHD = {currFt(:, 17)};                    % radians
-    newRow.moveSpeed = {(currFt(:, 19) * 4.5) ./ IFI}; % mm/sec
-    newRow.intFwMove = {currFt(:, 20) * 4.5};          % mm
-    newRow.intSideMove = {currFt(:, 21) * 4.5};        % mm
-    
-    % Calculate derived FicTrac variables
-    newRow.yawSpeed = {[0; diff(smoothdata(unwrap(newRow.intHD{:}, [], 1), 1, 'gaussian', 7), 1)] ...
-            ./ IFI}; % radians/sec
-    newRow.fwSpeed = {[0; diff(smoothdata(newRow.intFwMove{:}, 1, 'gaussian', 7), 1)] ./ IFI};     % mm/sec
-    newRow.sideSpeed = {[0; diff(smoothdata(newRow.intSideMove{:}, 1, 'gaussian', 7), 1)] ./ IFI}; % mm/sec
-    
-    % Add video-related data
-    newRow.frameTimes = {ftFrameTimes};
-    newRow.badVidFrames = {zeros(size(ftFrameTimes))};
-    newRow.meanFlow = {meanFlowMags{iTrial}'};
-    
-    % Append to main table
-    ftData = [ftData; newRow];
+    if ~isempty(currFt)
+        newRow = table({expID}, rawFt(iTrial).trialNum, 'VariableNames', {'expID', 'trialNum'});
+        
+        % Get frame times relative to start of trial (column 24 is nanosec since previous frame)
+        ftFrameTimes = cumsum(currFt(:, 24)) ./ 1e9;
+        
+        % Copy important variables, converting units as needed
+        IFI = [ftFrameTimes(1); diff(ftFrameTimes)];
+        newRow.intX = {currFt(:, 15) * 4.5};               % mm
+        newRow.intY = {currFt(:, 16) * 4.5};               % mm
+        newRow.intHD = {currFt(:, 17)};                    % radians
+        newRow.moveSpeed = {(currFt(:, 19) * 4.5) ./ IFI}; % mm/sec
+        newRow.intFwMove = {currFt(:, 20) * 4.5};          % mm
+        newRow.intSideMove = {currFt(:, 21) * 4.5};        % mm
+        
+        % Calculate derived FicTrac variables
+        newRow.yawSpeed = {[0; diff(smoothdata(unwrap(newRow.intHD{:}, [], 1), 1, 'gaussian', 7), 1)] ...
+                ./ IFI}; % radians/sec
+        newRow.fwSpeed = {[0; diff(smoothdata(newRow.intFwMove{:}, 1, 'gaussian', 7), 1)] ./ IFI};     % mm/sec
+        newRow.sideSpeed = {[0; diff(smoothdata(newRow.intSideMove{:}, 1, 'gaussian', 7), 1)] ...
+                ./ IFI}; % mm/sec
+        
+        % Add video-related data
+        newRow.frameTimes = {ftFrameTimes};
+        newRow.badVidFrames = {zeros(size(ftFrameTimes))};
+        newRow.meanFlow = {meanFlowMags{iTrial}'};
+        
+        % Append to main table
+        ftData = [ftData; newRow];
+    end
 end
 
 % Save processed data
@@ -469,10 +484,10 @@ meanFlow = ftData.meanFlow;
 
 figure(1);clf;
 set(gcf, 'color', [1 1 1])
-
-for iTrial = 1:expMd.nTrials
+nTrials = size(ftData, 1);
+for iTrial = 1:nTrials
     
-    subaxis(expMd.nTrials, 1, iTrial, 'S', 0.02, 'mt', 0.02, 'mb', 0.02);
+    subaxis(nTrials, 1, iTrial, 'S', 0.02, 'mt', 0.02, 'mb', 0.02);
 
     % Optic flow data to identify flailing
     currFlow = meanFlow{iTrial};
@@ -498,6 +513,7 @@ try
     
 ftFrameTimes = ftData.frameTimes;
 flowFrameTimes = {};
+currTrialData = innerjoin(ftData, trialMetadata);
 for iTrial = 1:numel(meanFlow)
     
     % NOTE: this is an approximation, but there is mostly a 1:1 correspondence between FicTrac data
@@ -507,7 +523,7 @@ for iTrial = 1:numel(meanFlow)
     flowFrameTimes{iTrial} = (1:1:numel(meanFlow{iTrial})) * flowFrameDur; 
     
     % Warn user if there's a discrepency in the flow frame times based on total trial duration
-    discrepVal = abs(flowFrameTimes{iTrial}(end) - trialMetadata.trialDuration(iTrial));
+    discrepVal = abs(flowFrameTimes{iTrial}(end) - currTrialData.trialDuration(iTrial));
     if discrepVal > 0.5
         warning([num2str(discrepVal, 4), ' sec discrepancy in estimated trial duration from flow', ...
             ' frame times for trial #', num2str(iTrial)]);
@@ -515,7 +531,7 @@ for iTrial = 1:numel(meanFlow)
 end
 
 flailingEvents = behaviorEvent('flailing');
-flailingEvents = flailingEvents.append_flow_data(expMd.expID{1}, trialMetadata.trialNum, ...
+flailingEvents = flailingEvents.append_flow_data(expMd.expID{1}, currTrialData.trialNum, ...
         meanFlow, flowFrameTimes, moveThresh);
 
 flailingEvents.export_csv(outputDir, 'fileNamePrefix', expMd.expID{1});
@@ -640,11 +656,11 @@ disp('Complete')
 
 %% Copy files over to a grouped analysis data directory
 
-groupedAnalysisDirName = 'EB-DAN_GroupedAnalysisData';
+groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201124-3'};
+expList = {'20201201-1'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

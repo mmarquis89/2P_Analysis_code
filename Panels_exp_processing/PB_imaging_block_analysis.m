@@ -3,7 +3,7 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 figDir = fullfile(parentDir, 'Figs');
 
-expList = [];
+expList = {'20201201-1'}%[];
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -13,16 +13,18 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 
 %% Group data from several compatible trials into a single block
 
-expID = '20201104-1';
-trialNums = [1:4];
+expID = '20201201-1';
+trialNums = [];
 
-sourceData = wedgeData;
+sourceData = wedgeData; %glomData;%
 
 washoutTime = 0;
 
+flSmWin = 5;
+
 flowSmWin = 6;
-moveThresh = 0.08%unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
-        %expID)));
+moveThresh = unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
+        expID)));
 
 try 
     
@@ -159,7 +161,6 @@ for iTrial = 1:nTrials
     end
     
     % Get Fl data for current trial
-    expDffTuningData = [];
     currExpDff = expDffMat(:, :, iTrial);
     
     % Set volumes before and during drug application to nan
@@ -173,7 +174,7 @@ for iTrial = 1:nTrials
     
     % Calculate expDff vector strength and phase for current trial
     for iRoi = 1:nRois
-        currFlData = smoothdata(currExpDff(:, iRoi), 1, 'gaussian', smWin);
+        currFlData = smoothdata(currExpDff(:, iRoi), 1, 'gaussian', flSmWin);
         currFlData = currFlData(~isnan(currFlData));
         currPanelsPhase = panelsPhase(~isnan(currFlData));
         oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
@@ -186,10 +187,62 @@ for iTrial = 1:nTrials
         fullTrialVectorPhase(iTrial, iRoi) = wrapTo2Pi(atan(oppositeMeanVector / ...
                 adjacentMeanVector));            
             
-    end  
+    end   
     
 end
 catch ME; rethrow(ME); end
+
+% Calculate vector strength and phase for each individual bar rotation cycle
+for iTrial = 1:nTrials
+    
+    panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
+        currExpData.panelsDisplayRate(iTrial);
+    panelsPosVols = [];
+    
+    % Identify bar location during each volume
+    for iVol = 1:nVolumes
+        [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+        panelsPosVols(iVol) = currExpData.panelsPosX{iTrial}(currVol);
+    end
+    
+    % Identify the start and end of each bar cycle
+    cycleStartVols = panelsPosVols == 0;
+    cycleEndVols = panelsPosVols == 95;
+    cycleEndVols(end) = 1;
+    nCycles = sum(cycleStartVols);
+    cycleStartInds = find(cycleStartVols);
+    cycleEndInds = find(cycleEndVols);
+    
+    % Get Fl data for current trial
+    currExpDff = expDffMat(:, :, iTrial);
+    
+    % Convert panels position to a phase
+    panelsPhase = 2 * pi * (panelsPosVols ./ max(panelsPosVols));
+    
+    % Calculate vector strength and phase
+    cycleVectorStrength = [];
+    cycleVectorPhase = [];
+    for iRoi = 1:nRois
+        for iCycle = 1:nCycles
+            startInd = cycleStartInds(iCycle);
+            endInd = cycleEndInds(iCycle);
+            currFlData = smoothdata(currExpDff(startInd:endInd, iRoi), 1, 'gaussian', flSmWin);
+            currPanelsPhase = panelsPhase(startInd:endInd);
+            
+            oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
+            adjacentVector = sum(currFlData' .* cos(currPanelsPhase));
+            oppositeMeanVector =  oppositeVector / numel(currPanelsPhase);
+            adjacentMeanVector =  adjacentVector / numel(currPanelsPhase);
+            
+            cycleVectorStrength(iTrial, iRoi, iCycle) = sqrt(oppositeVector^2 ...
+                    + adjacentVector^2) / numel(currPanelsPhase);
+            cycleVectorPhase(iTrial, iRoi, iCycle) = wrapTo2Pi(atan(oppositeMeanVector / ...
+                adjacentMeanVector));
+        end
+    end
+    
+end
+
 
 disp('Block data ready')
 
@@ -285,7 +338,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 flType = 'expDff';
@@ -405,7 +458,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT TUNING HEATMAPS FOR EACH WEDGE ACROSS TRIALS
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -511,7 +564,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT AS LINES INSTEAD OF USING IMAGESC
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -799,7 +852,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT ALL TUNING CURVES ON OVERLAID POLAR PLOTS
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -890,6 +943,7 @@ end
 catch ME; rethrow(ME); end
 
 %% PLOT VECTOR STRENGTH FOR EACH INDIVIDUAL BAR SWING
+
 
 
 %% PLOT WHOLE-TRIAL VECTOR STRENGTH FOR EACH EB WEDGE
