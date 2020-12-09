@@ -288,7 +288,12 @@ for iFile = 1:numel(ftVidFiles)
     
     % Load output video and extract the median luminance from each frame
     currFile = fullfile(ftDir, ftVidFiles(iFile).name);
-    currVid = VideoReader(currFile);
+    try
+        currVid = VideoReader(currFile);
+    catch
+       disp(['Video read error! Skipping trial #', num2str(trialNum)])
+       continue 
+    end
     vidData = []; medLum = [];
     frameCount = 0;
     while hasFrame(currVid)
@@ -392,11 +397,20 @@ parfor iTrial = 1:numel(ftVids)
     disp(['Flow calculation completed in ', num2str(toc, '%.1f'), ' sec']);
 end
 
+% Load trialMetadata file to get a full trial list 
+trialMdFile = dir(fullfile(outputDir, '*trialMetadata.mat'));
+load(fullfile(outputDir, trialMdFile.name), 'trialMetadata');
+trialList = [trialMetadata.trialNum];
+
 % Adjust indexing if data is missing for any trials
 newFlowMags = {};
-if numel(validTrialNums) ~= numel(ftVids)
-    for iTrial = 1:numel(validTrialNums)
-        newFlowMags{validTrialNums(iTrial)} = meanFlowMags{iTrial};
+if numel(validTrialNums) ~= numel(trialList)
+    for iTrial = 1:numel(trialList)
+        if ismember(iTrial, validTrialNums)
+            newFlowMags{iTrial} = meanFlowMags{validTrialNums == iTrial};
+        else
+            newFlowMags{iTrial} = [];
+        end
     end
     meanFlowMags = newFlowMags;
 end
@@ -408,7 +422,7 @@ catch ME; rethrow(ME); end
 
 %% Additional FicTrac processing
 try
-    
+
 % Scan file names in experiment directory to get the expID
 imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
 expID = imgDataFiles(1).name(1:10);
@@ -465,7 +479,7 @@ catch ME; rethrow(ME); end
 
 %% Choose threshold for defining movement epochs
 
-moveThresh = 0.07;
+moveThresh = 0.1;
 flowYLim = [0 0.8];
 
 try
@@ -660,7 +674,7 @@ groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201201-1'};
+expList = {'20201203-1', '20201203-2'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

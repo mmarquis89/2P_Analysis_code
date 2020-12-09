@@ -3,7 +3,7 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 figDir = fullfile(parentDir, 'Figs');
 
-expList = {'20201201-1'}%[];
+expList = [];% [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', '20201201-3'}];%%
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -13,10 +13,14 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 
 %% Group data from several compatible trials into a single block
 
-expID = '20201201-1';
+expID = '20201203-2';
+% expID = expMd.expID{17};
+
 trialNums = [];
 
 sourceData = wedgeData; %glomData;%
+
+showBehaviorPlots = 1;
 
 washoutTime = 0;
 
@@ -196,10 +200,13 @@ for iTrial = 1:nTrials
 end
 catch ME; rethrow(ME); end
 
-% Calculate vector strength and phase for each individual bar rotation cycle
+% Calculate vector strength/phase and extract dF/F data for each individual bar rotation cycle
+try
 cycleVectorStrength = [];
 cycleVectorPhase = [];
-test = [];
+cycleFlData = [];
+cycleDffData = {};
+allCycleStartVols = {};
 for iTrial = 1:nTrials
     
     panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
@@ -220,6 +227,7 @@ for iTrial = 1:nTrials
         cycleEndVols = cycleStartVols(2:end) - 1;
         cycleEndVols = [cycleEndVols, nVolumes];
         nCycles = numel(cycleStartVols);
+        allCycleStartVols{iTrial} = cycleStartVols;
         
         % Get Fl data for current trial
         currExpDff = expDffMat(:, :, iTrial);
@@ -234,7 +242,7 @@ for iTrial = 1:nTrials
                 endInd = cycleEndVols(iCycle);
                 currFlData = smoothdata(currExpDff(startInd:endInd, iRoi), 1, 'gaussian', flSmWin);
                 currPanelsPhase = panelsPhase(startInd:endInd);
-                test{iTrial, iRoi, iCycle} = currFlData;
+                cycleFlData{iTrial, iRoi, iCycle} = currFlData;
                 
                 oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
                 adjacentVector = sum(currFlData' .* cos(currPanelsPhase));
@@ -247,9 +255,22 @@ for iTrial = 1:nTrials
                         adjacentMeanVector));
             end
         end
+        
+        % Extract dF/F data, pad with nan, and consolidate into single array
+        currTrialCycleFl = squeeze(cycleFlData(iTrial, :, :));
+        maxVolCount = max(cellfun(@numel, currTrialCycleFl(1, :)));
+        currCycleDffArr = [];
+        for iCycle = 1:nCycles
+            currCycleFl = cell2mat(currTrialCycleFl(:, iCycle)');
+            if size(currCycleFl, 1) < maxVolCount
+                currCycleFl(size(currCycleFl, 1) + 1:maxVolCount, :) = nan;
+            end
+            currCycleDffArr = cat(3, currCycleDffArr, currCycleFl); % [vol, glom, cycle]
+        end
+        cycleDffData{iTrial} = currCycleDffArr;
     end
 end
-
+catch ME; rethrow(ME); end
 
 disp('Block data ready')
 
@@ -258,7 +279,6 @@ catch ME; rethrow(ME); end
 % PLOT SUMMARY OF MOVEMENT THROUGHOUT EXPERIMENT
 
 try 
-    
 % Heatmap of slightly smoothed flow throughout experiment
 f = figure(1);clf;
 f.Color = [1 1 1];
@@ -266,20 +286,20 @@ ax = gca;
 imagesc([0, currExpData.trialDuration(1)], [1, nTrials], smFlowMat')
 colormap(viridis)
 hold on;
-drugTrials = currExpData.trialNum(~isnan(currExpData.startTime));
+drugTrials = find(~isnan(currExpData.startTime));
 if ~isempty(drugTrials)
     for iTrial = 1:numel(drugTrials)
-        currTrialNum = drugTrials(iTrial);
-        xx_1 = [1, 1] .* currExpData.startTime(currTrialNum);
-        xx_2 = [1, 1] .* currExpData.startTime(currTrialNum) + currExpData.duration(currTrialNum);
-        yy = [-0.5, 0.5] + currTrialNum;
+        xx_1 = [1, 1] .* currExpData.startTime(drugTrials(iTrial));
+        xx_2 = [1, 1] .* currExpData.startTime(drugTrials(iTrial)) + ...
+                currExpData.duration(drugTrials(iTrial));
+        yy = [-0.5, 0.5] + currExpData.trialNum(drugTrials(iTrial));
         plot(xx_1, yy, 'color', 'r', 'linewidth', 5);
         plot(xx_2, yy, 'color', 'r', 'linewidth', 5);
     end
 end
 titleStr = {[expID, '  —  Optic flow']};
 if ~isempty(drugTrials)
-    titleStr = [titleStr, {['(red lines = ', currExpData.drugName{drugTrials(1)}, ...
+    titleStr = [titleStr, {['(red lines = ', currExpData.drugName{drugTrials(iTrial)}, ...
             ' onset and offset)']}];
 end
 title(titleStr);
@@ -287,12 +307,15 @@ ax.YTick = 1:nTrials;
 xlabel('Time (sec)')
 ylabel('Trial')
 ax.FontSize = 14;
+if ~showBehaviorPlots
+   close(f); 
+end
 
 % Plot avg flow value and percentage of movement vols for each trial (after the onset of any drug
 % application)
 f = figure(2); clf; hold on;
 f.Color = [1 1 1];
-f.Position(3:4) = [1200 400];
+f.Position(3:4) = [1000 350];
 ax = subaxis(1, 1, 1, 'mt', 0.1, 'mb', 0.16, 'ml', 0.08, 'mr', 0.08); hold on
 postDrugFlowMat = smFlowMat;
 if ~isempty(drugTrials)
@@ -341,6 +364,10 @@ t = title(titleStr);
 t.Position(2) = t.Position(2) * 1.01;
 xlim(xlim() + [0.5, -0.5])
 box off
+if ~showBehaviorPlots
+   close(f)
+end
+
 catch ME; rethrow(ME); end
 
 %% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
@@ -349,6 +376,7 @@ saveFig = 0;
 
 smWin = 5;
 flType = 'expDff';
+plotBarCycles = 1;
 
 figPos = [1800 950];
 
@@ -385,7 +413,7 @@ if ~isempty(figPos)
     end
 end
 colormap(magma);
-drugTrials = currExpData.trialNum(~isnan(currExpData.startTime));
+drugTrials = find(~isnan(currExpData.startTime));
 for iTrial = 1:nTrials 
     
     % Plot Fl Data and PVA
@@ -399,14 +427,24 @@ for iTrial = 1:nTrials
     end
     
     % Plot any drug applications in the current trial
-    if ~isempty(drugTrials) && ismember(currExpData.trialNum(iTrial), drugTrials)
-        currTrialNum = currExpData.trialNum(iTrial);
+    if ~isempty(drugTrials) && ismember(iTrial, drugTrials)
         yL = ylim();
-        xx_1 = [1, 1] .* currExpData.startTime(currTrialNum);
-        xx_2 = [1, 1] .* currExpData.startTime(currTrialNum) + currExpData.duration(currTrialNum);
+        xx_1 = [1, 1] .* currExpData.startTime(iTrial);
+        xx_2 = [1, 1] .* currExpData.startTime(iTrial) + currExpData.duration(iTrial);
         plot(xx_1, yL, 'color', 'g', 'linewidth', 5);
         plot(xx_2, yL, 'color', 'g', 'linewidth', 5);
         ylim(yL)
+    end
+    
+    % Plot bar cycle boundaries if necessary
+    currStartVols = allCycleStartVols{iTrial};
+    if plotBarCycles && ~isempty(currStartVols)
+        yL = ylim();
+        for iCycle = 1:numel(currStartVols)
+            xx = [1, 1] .* volTimes(currStartVols(iCycle));
+            plot(xx, yL, 'color', 'r', 'linewidth', 1)
+        end
+        ylim(yL);
     end
     
     % Label each plot with trial number
@@ -738,6 +776,9 @@ if ~isempty(drugTrials)
     for iTrial = 1:numel(drugTrials)
         preStim = drugTrials(iTrial) - 1;
         postStim = drugTrials(iTrial);
+        if ~currExpData.usingPanels(postStim)
+            postStim = postStim + 1;
+        end
         blockAmps(:, :, iTrial) = tuningAmp(:, [preStim, postStim]); % --> [wedge, trial, stim trial num]
     end
     blockAmps = permute(blockAmps, [2, 1 3]); % --> [trial, wedge, stim trial Num]
