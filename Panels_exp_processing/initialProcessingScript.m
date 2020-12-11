@@ -476,10 +476,9 @@ save(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
 
 catch ME; rethrow(ME); end
 
-
 %% Choose threshold for defining movement epochs
 
-moveThresh = 0.1;
+moveThresh = 0.07;
 flowYLim = [0 0.8];
 
 try
@@ -674,7 +673,7 @@ groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201203-1', '20201203-2'};
+expList = {'20201210-1', '20201210-2'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

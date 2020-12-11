@@ -1,7 +1,7 @@
 
 %% Load data
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
-expList = {'20201203-1', '20201203-2'};
+expList = {'20201210-1', '20201210-2'};
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -11,7 +11,7 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 
 %% CHECK CORRELATION BETWEEN GLOMERULI
 
-expList = {'20201203-2'}%unique(expMd.expID);
+expList = unique(expMd.expID);%{'20201210-1'}%
 
 try
 
@@ -77,9 +77,9 @@ catch ME; rethrow(ME); end
    
 %% 
 
-expID = '20201203-2';
+expID = '20201210-2';
 
-trialNum = 9;
+trialNum = 6;
 
 sourceData = glomData;
 sourceData = wedgeData;

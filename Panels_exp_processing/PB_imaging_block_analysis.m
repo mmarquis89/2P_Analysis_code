@@ -13,7 +13,7 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 
 %% Group data from several compatible trials into a single block
 
-expID = '20201203-2';
+expID = '20201210-1';
 % expID = expMd.expID{17};
 
 trialNums = [];
@@ -22,7 +22,7 @@ sourceData = wedgeData; %glomData;%
 
 showBehaviorPlots = 1;
 
-washoutTime = 0;
+washoutTime = 20;
 
 flSmWin = 5;
 
@@ -289,12 +289,17 @@ hold on;
 drugTrials = find(~isnan(currExpData.startTime));
 if ~isempty(drugTrials)
     for iTrial = 1:numel(drugTrials)
+        if strcmp(currExpData.visualStim{drugTrials(iTrial)}, 'yes')
+            lineColor = 'r';
+        else
+            lineColor = 'm';
+        end
         xx_1 = [1, 1] .* currExpData.startTime(drugTrials(iTrial));
         xx_2 = [1, 1] .* currExpData.startTime(drugTrials(iTrial)) + ...
                 currExpData.duration(drugTrials(iTrial));
         yy = [-0.5, 0.5] + currExpData.trialNum(drugTrials(iTrial));
-        plot(xx_1, yy, 'color', 'r', 'linewidth', 5);
-        plot(xx_2, yy, 'color', 'r', 'linewidth', 5);
+        plot(xx_1, yy, 'color', lineColor, 'linewidth', 5);
+        plot(xx_2, yy, 'color', lineColor, 'linewidth', 5);
     end
 end
 titleStr = {[expID, '  —  Optic flow']};
@@ -372,7 +377,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 5;
 flType = 'expDff';
@@ -428,11 +433,16 @@ for iTrial = 1:nTrials
     
     % Plot any drug applications in the current trial
     if ~isempty(drugTrials) && ismember(iTrial, drugTrials)
+        if strcmp(currExpData.visualStim{iTrial}, 'yes')
+            lineColor = 'g';
+        else
+            lineColor = rgb('yellow');
+        end
         yL = ylim();
         xx_1 = [1, 1] .* currExpData.startTime(iTrial);
         xx_2 = [1, 1] .* currExpData.startTime(iTrial) + currExpData.duration(iTrial);
-        plot(xx_1, yL, 'color', 'g', 'linewidth', 5);
-        plot(xx_2, yL, 'color', 'g', 'linewidth', 5);
+        plot(xx_1, yL, 'color', lineColor, 'linewidth', 5);
+        plot(xx_2, yL, 'color', lineColor, 'linewidth', 5);
         ylim(yL)
     end
     
@@ -503,7 +513,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT TUNING HEATMAPS FOR EACH WEDGE ACROSS TRIALS
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 5;
 
@@ -584,7 +594,12 @@ for iPlot = 1:nPlots
     if ~isempty(drugTrials)
         for iTrial = 1:numel(drugTrials)
             xL = xlim();
-            plot(xL, [-0.5, -0.5] + drugTrials(iTrial), 'color', 'g', 'linewidth', 3)
+            if strcmp(currExpData.visualStim{drugTrials(iTrial)}, 'yes')
+                lineColor = 'g';
+            else
+                lineColor = rgb('yellow');
+            end
+            plot(xL, [-0.5, -0.5] + drugTrials(iTrial), 'color', lineColor, 'linewidth', 3)
         end
     end
     
@@ -609,7 +624,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT AS LINES INSTEAD OF USING IMAGESC
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 5;
 
@@ -707,8 +722,13 @@ for iPlot = 1:size(flDataOffset, 2)
         offsetsRev = offsets(end:-1:1);
         for iTrial = 1:numel(drugTrials)
             xL = xlim();
+            if strcmp(currExpData.visualStim{drugTrials(iTrial)}, 'yes')
+                lineColor = 'g';
+            else
+                lineColor = rgb('yellow');
+            end
             plotOffset = offsetsRev(drugTrials(iTrial) - 1) - (range/2);
-            plot(xL, [1, 1] .* plotOffset, 'color', 'g', 'linewidth', 3)
+            plot(xL, [1, 1] .* plotOffset, 'color', lineColor, 'linewidth', 3)
         end
     end
     
@@ -746,7 +766,7 @@ SV = 0.03;
 SH = 0.03;
 ML = 0.1;
 MR = 0.02;
-MT = 0.05;
+MT = 0.1;
 MB = 0.07;
 
 try
@@ -771,6 +791,7 @@ end
 tuningAmp = maxVals - minVals; % --> [wedge, trial]
 
 % Group into pre- and post- drug trials
+titleStr = [];
 if ~isempty(drugTrials)
     blockAmps = [];
     for iTrial = 1:numel(drugTrials)
@@ -778,6 +799,9 @@ if ~isempty(drugTrials)
         postStim = drugTrials(iTrial);
         if ~currExpData.usingPanels(postStim)
             postStim = postStim + 1;
+            titleStr{iTrial} = 'In darkness';
+        else
+            titleStr{iTrial} = 'With visual stim';
         end
         blockAmps(:, :, iTrial) = tuningAmp(:, [preStim, postStim]); % --> [wedge, trial, stim trial num]
     end
@@ -822,7 +846,12 @@ for iPlot = 1:nPlots
     if ~isempty(drugTrials)
         for iTrial = 1:numel(drugTrials)
             yL = ylim();
-           plot([-0.5, -0.5] + drugTrials(iTrial), yL, 'color', 'g', 'linewidth', 3)
+            if strcmp(currExpData.visualStim{drugTrials(iTrial)}, 'yes')
+                lineColor = 'g';
+            else
+                lineColor = rgb('yellow');
+            end
+            plot([-0.5, -0.5] + drugTrials(iTrial), yL, 'color', lineColor, 'linewidth', 3)
         end
     end
     
@@ -839,11 +868,12 @@ for iPlot = 1:nPlots
 %     box off;
 end
 
-titleStr = {expID, ['EB wedge ', flType, ' tuning curve amplitudes']};
+figTitleStr = {expID, ['EB wedge ', flType, ' tuning curve amplitudes']};
 if ~isempty(drugTrials)
-    titleStr = [titleStr, ['(Green lines = ', currExpData.drugName{drugTrials(1)}, ' application)']];
+    figTitleStr = [figTitleStr, ['(Green lines = ', currExpData.drugName{drugTrials(1)}, ...
+            ' application)']];
 end
-h = suptitle(titleStr);
+h = suptitle(figTitleStr);
 h.FontSize = 16;
 
 
@@ -863,6 +893,7 @@ for iTrial = 1:nStimTrials
     ax.XTickLabel = {'Before', 'After'};
     ax.FontSize = 14;
     xlim([0.75 2.25]);
+    title(titleStr{iTrial}, 'fontsize', 12, 'verticalalignment', 'top');
     
     % Plot mean amplitude for each group
     plot([mean(blockAmps(1, :, iTrial)), mean(blockAmps(2, :, iTrial))], ...
@@ -900,7 +931,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT ALL TUNING CURVES ON OVERLAID POLAR PLOTS
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 5;
 
