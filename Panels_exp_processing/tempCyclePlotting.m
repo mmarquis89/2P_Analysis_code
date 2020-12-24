@@ -61,7 +61,7 @@ end
 
 %% Plot vector strength for each bar cycle
 
-smWin = 2;
+smWin = 3;
 
 f = figure(9); clf
 hold on;
@@ -77,8 +77,13 @@ end
 plot(mean(test2, 1), 'color', 'k', 'linewidth', 5)
 for iTrial = 1:numel(trialBounds)
     yL = ylim();
+    if strcmp(currExpData.visualStim{iTrial}, 'yes')
+        lineColor = 'g';
+    else
+        lineColor = rgb('yellow');
+    end
     if ismember(iTrial, drugTrials)
-        plot([1, 1] * trialBounds(iTrial), yL, 'g', 'linewidth', 3)
+        plot([1, 1] * trialBounds(iTrial), yL, 'color', lineColor, 'linewidth', 3)
     else
         plot([1, 1] * trialBounds(iTrial), yL, 'k', 'linewidth', 3)
     end
@@ -101,8 +106,13 @@ end
 % plot(mean(test2, 1), 'color', 'k', 'linewidth', 5)
 for iTrial = 1:numel(trialBounds)
     yL = ylim();
+    if strcmp(currExpData.visualStim{iTrial}, 'yes')
+        lineColor = 'g';
+    else
+        lineColor = rgb('yellow');
+    end
     if ismember(iTrial, drugTrials)
-        plot([1, 1] * trialBounds(iTrial), yL, 'g', 'linewidth', 3)
+        plot([1, 1] * trialBounds(iTrial), yL, 'color', lineColor, 'linewidth', 3)
     else
         plot([1, 1] * trialBounds(iTrial), yL, 'k', 'linewidth', 3)
     end

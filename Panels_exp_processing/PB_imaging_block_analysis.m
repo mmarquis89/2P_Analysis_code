@@ -13,7 +13,7 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 
 %% Group data from several compatible trials into a single block
 
-expID = '20201210-1';
+expID = '20201210-2';
 % expID = expMd.expID{17};
 
 trialNums = [];
@@ -22,7 +22,7 @@ sourceData = wedgeData; %glomData;%
 
 showBehaviorPlots = 1;
 
-washoutTime = 20;
+washoutTime = 0;
 
 flSmWin = 5;
 
@@ -752,7 +752,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT MIN AND MAX VALUES FROM THE TUNING CURVES
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 5;
 
@@ -937,6 +937,7 @@ smWin = 5;
 
 flType = 'expDff';
 
+matchRLims = 1;
 figPos = [];
 % figPos = [1850 320];
 
@@ -998,7 +999,9 @@ for iPlot = 1:nPlots
     pax.ThetaTickLabel = {'0' '+45', '+90' '+135' '-135', '-90', '-45'};
     pax.RTick = [];
     pax.FontSize = 12;
-    pax.RLim(2) = 1.01 * max(as_vector(smoothdata(flData, 1, 'gaussian', smWin)));
+    if matchRLims
+        pax.RLim(2) = 1.01 * max(as_vector(smoothdata(flData, 1, 'gaussian', smWin)));
+    end
     title(['#', num2str(iPlot)], 'fontSize', 14)
     
     % Indicate transitions to drug application trials
@@ -1008,6 +1011,11 @@ for iPlot = 1:nPlots
 end
 
 titleStr = [expID, '  —  EB wedge ', flType, ' tuning curves'];
+if matchRLims
+    titleStr = [titleStr, '  (axis limits matched across plots)'];
+else
+    titleStr = [titleStr, '  (axis limits set independently across plots)'];
+end
 h = suptitle(titleStr);
 h.FontSize = 16;
 

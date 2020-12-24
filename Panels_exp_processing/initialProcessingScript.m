@@ -224,6 +224,7 @@ for iFile = 1:numel(imgDataFiles)
     tMd.nDaqSamples = size(trialData, 1);
     tMd.nPanelsFrames = nPanelsFrames;
     tMd.usingOptoStim = mD.usingOptoStim;
+    tMd.optoStimTiming = mD.optoStimTiming;
     tMd.usingPanels = double(mD.usingPanels);
     tMd.using2P = double(mD.using2P);
     tMd.originalTrialCount = 1;
@@ -264,7 +265,7 @@ catch ME; rethrow(ME); end
 
 %% Process FicTrac data 
 try
-    
+
 ftDir = fullfile(expDir, 'FicTracData');
 
 % Identify all FicTrac output files
@@ -308,7 +309,7 @@ for iFile = 1:numel(ftVidFiles)
 
     % Determine which video frames mark the beginning and end of the trial
     baseSubLum = medLum - median(medLum);
-    lumThresh = 20;
+    lumThresh = 5 * std(baseSubLum) + mean(baseSubLum); % Set threshold at 4 SDs above average
     startVidFrame = find(baseSubLum > lumThresh, 1); % Index of first frame with >90% of max luminance
     endVidFrame = find(baseSubLum > lumThresh, 1, 'last');
     
@@ -562,7 +563,7 @@ imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
 expID = imgDataFiles(1).name(1:10);
 
 % Find ROI def files
-roiDefFiles = dir(fullfile(outputDir, ['roiDefs*.mat']));
+roiDefFiles = dir(fullfile(outputDir, ['roiDefs_trial*.mat']));
 roiData = [];
 for iFile = 1:numel(roiDefFiles)
     
@@ -669,11 +670,11 @@ disp('Complete')
 
 %% Copy files over to a grouped analysis data directory
 
-groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
+groupedAnalysisDirName = 'GroupedAnalysisData\all_experiments';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201210-1', '20201210-2'};
+expList = {'20201222-1', '20201222-2'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};
