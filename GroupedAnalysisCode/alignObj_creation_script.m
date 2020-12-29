@@ -1,10 +1,11 @@
 
 %% CREATE AND SAVE EventAlignedData OBJECTS
 
-saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Saved_AlignEvent_objects';
+saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\alignEvent_objects';
+expList = {'20201222-1', '20201222-2'};
 
 % Create a temporary EventAlignedData object just to get a list of the event types 
-alignObj = EventAlignedData(load_expList());
+alignObj = EventAlignedData(expList, 'dataDir', 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments');
 
 % Get list of all available event types
 eventNames = fieldnames(alignObj.eventObjects);
@@ -18,7 +19,7 @@ for iType = 1:numel(eventNames)
     
     % Reload alignObj if it's already been used
     if iType > 1
-        alignObj = EventAlignedData(load_expList());
+        alignObj = EventAlignedData(expList, 'dataDir', 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments');
     end
     
     % Set alignment event, then load and process data

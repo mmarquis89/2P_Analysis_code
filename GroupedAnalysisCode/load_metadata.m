@@ -28,6 +28,7 @@ function [expMetadata, trialMetadata] =  load_metadata(expList, parentDir)
 %                                       nDaqSamples
 %                                       nPanelsFrames
 %                                       usingOptoStim
+%                                       optoStimTiming
 %                                       usingPanels
 %                                       using2P
 %                                       originalTrialCount

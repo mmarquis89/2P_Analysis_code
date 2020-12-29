@@ -224,7 +224,7 @@ for iFile = 1:numel(imgDataFiles)
     tMd.nDaqSamples = size(trialData, 1);
     tMd.nPanelsFrames = nPanelsFrames;
     tMd.usingOptoStim = mD.usingOptoStim;
-    tMd.optoStimTiming = mD.optoStimTiming;
+    tMd.optoStimTiming = {mD.optoStimTiming};
     tMd.usingPanels = double(mD.usingPanels);
     tMd.using2P = double(mD.using2P);
     tMd.originalTrialCount = 1;
@@ -346,21 +346,27 @@ for iFile = 1:numel(ftVidFiles)
     currFtData = rawFtData(ftTrialFrames, :);%rawFtData(startFtFrame:endFtFrame, :);
     currFtData(:, 1) = currFtData(:,1) - startFtFrame; % Align FrameCount to trial start
     
+    % Calculate frame times for the trial video
+    trialVidFrames = false(size(frameLog));
+    trialVidFrames(startVidFrame:endVidFrame) = 1;
+    rawFtFrameTimes = cumsum(rawFtData(:, 24)) ./ 1e9;
+    rawVidFrameTimes = rawFtFrameTimes(frameLog + 1);
+    
     % Save processed data files along with luminance values and frame log
     ftData(iFile).trialNum = trialNum;
+    ftData(iFile).rawData = rawFtData;
     ftData(iFile).trialData = currFtData;
     ftData(iFile).frameLog = frameLog;
     ftData(iFile).medLum = medLum;
     ftData(iFile).startVidFrame = startVidFrame;
     ftData(iFile).endVidFrame = endVidFrame;
+    ftData(iFile).rawVidFrameTimes = rawVidFrameTimes;
     ftData(iFile).lumThresh = lumThresh;
     
-    % Write video data from within the trial period to a new file
-    trialVidFrames = frameLog >= startVidFrame & frameLog <= endVidFrame;
+    % Write video data from within the trial period to a new file    
     vidData = vidData(:, :, trialVidFrames);
     trialVid = VideoWriter(fullfile(outputDir, ['FicTrac_video_trial_', trialNumStr]), 'MPEG-4');
-    frameDurs = ftData(iFile).trialData(:, 24) ./ 1e9; % Inter-frame-interval in seconds
-    trialVid.FrameRate = round(median(1 ./ frameDurs));
+    trialVid.FrameRate = round(median(1 ./ diff(rawVidFrameTimes)));
     open(trialVid)
     for iFrame = 1:size(vidData, 3)
         if ~mod(iFrame, 1000)
@@ -466,6 +472,7 @@ for iTrial = 1:numel(rawFt)
         newRow.frameTimes = {ftFrameTimes};
         newRow.badVidFrames = {zeros(size(ftFrameTimes))};
         newRow.meanFlow = {meanFlowMags{iTrial}'};
+        
         
         % Append to main table
         ftData = [ftData; newRow];
@@ -668,9 +675,53 @@ for iWedge = 1:8
 end
 disp('Complete')
 
+%% Process odor event data
+
+odorNames = {'EtOH', 'ACV'};
+concentrations = {'neat', 'neat'};
+flowRates = {25, 25};
+trialNums = {[1:5], 6};
+
+try 
+    
+% Load metadata 
+expMdFile = dir(fullfile(outputDir, '*expMetadata.csv'));
+expID = {expMdFile.name(1:10)};
+[expMd, trialMd] = load_metadata(expID, outputDir);
+
+if any(trialMd.usingOptoStim)
+    odorStims = odorEvent();
+    odorTrials = find(trialMd.usingOptoStim);
+    for iCond = 1:numel(odorNames)
+        
+        % If there are multiple types of stim delivery append them one at a time
+        odorName = odorNames{iCond};
+        concentration = concentrations{iCond};
+        flowRate = flowRates{iCond};
+        currTrialNums = trialNums{iCond};
+        if isempty(currTrialNums)
+            currTrialNums = trialMd.trialNum;
+        end
+        for iTrial = 1:numel(currTrialNums)
+            currTrialMd = trialMd(trialMd.trialNum == currTrialNums(iTrial), :);
+            if currTrialMd.usingOptoStim
+                stimTiming = currTrialMd.optoStimTiming{:};
+                trialDuration = currTrialMd.trialDuration;
+                odorStims = odorStims.append_shorthand(expMd.expID{1}, ...
+                        currTrialNums(iTrial), stimTiming, trialDuration, odorName, concentration, ...
+                        flowRate);
+            end
+        end%iTrial
+    end
+    
+    % Export to .csv file
+    odorStims.export_csv(outputDir, 'fileNamePrefix', expMd.expID{1})
+end
+catch ME; rethrow(ME); end
+
 %% Copy files over to a grouped analysis data directory
 
-groupedAnalysisDirName = 'GroupedAnalysisData\all_experiments';
+groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
