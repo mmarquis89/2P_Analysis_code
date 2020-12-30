@@ -88,12 +88,15 @@ for iFile = 1:numel(imgDataFiles)
     % Load ROI
     disp('Loading and applying ROI data...')
     load(fullfile(parentDir, ['roiDefs_PCA_trial_', trialNumStr, '.mat']), 'roiDefs');
-    for iROI = 1:numel(roiDefs.subROIs)
-       currPlane = roiDefs.subROIs(iROI).plane;
-       currPlaneData = squeeze(imgData(:, :, currPlane, :)); % --> [y, x, vol]
-       roiMask = repmat(roiDefs.subROIs(iROI).mask, 1, 1, size(currPlaneData, 3));
-       currPlaneData(~roiMask) = nan;
-       imgData(:, :, currPlane, :) = currPlaneData;
+    planeList = unique([roiDefs.subROIs.plane]);
+    for iPlane = 1:numel(planeList)
+        currPlane = planeList(iPlane);
+        currSubRois = roiDefs.subROIs([roiDefs.subROIs.plane] == currPlane);
+        currPlaneData = squeeze(imgData(:, :, currPlane, :));
+        currPlaneMask = any(reshape([currSubRois.mask], size(imgData, 1), size(imgData, 2), []), 3);
+        currPlaneMask = repmat(currPlaneMask, 1, 1, size(currPlaneData, 3));
+        currPlaneData(~currPlaneMask) = nan;
+        imgData(:, :, currPlane, :) = currPlaneData;
     end
     
     % Run PCA on data within ROIs
@@ -122,16 +125,16 @@ catch ME; rethrow(ME); end
 
 % currTrials = [1 2 3 11 12 13]
 
-trialNum = 2; 
+trialNum = 1; 
 % trialNum = currTrials(6)
 
 nPCs = 9;
 offset = 0;
-targetPCs = [3 4 5];
+targetPCs = [1 3];
 useTargetPCs = 0;
-sigma = 0.5;
+sigma = 0.4;
 maxIntensity = 400;
-pcCLimScaleFactor = 0.2;
+pcCLimScaleFactor = 0.4;
 
 load(fullfile(parentDir, ['pcaData_ROI_trial_', pad(num2str(trialNum), 3, 'left', '0'), '.mat']), ...
         'pcaData')
@@ -202,6 +205,7 @@ for iPlane = 1:nPlanes
        h2 = imagesc(ax2, currData, 'alphadata', ~isnan(currData));
        colormap(ax2, 'bluewhitered'); axis image
        ax2.CLim = ax2.CLim * pcCLimScaleFactor;
+%        colorbar
        
        ax1.Visible = 'off';
        ax2.Visible = 'off';
@@ -215,10 +219,11 @@ catch ME; rethrow(ME); end
 
 planeNum = 6;
 
-maxIntensity = 301;
-compPCs = [3 5];
-directions = [1 1]; 
-thresholds = [10 20];
+maxIntensity = 300;
+compPCs = [3 3];
+directions = [1  -1  1]; 
+thresholds = [12 20 12];
+colors = {'magenta', 'lime', 'yellow'};
 
 pc_1 = 10000 * squeeze(pcaData(:, :, planeNum, compPCs(1))) .* directions(1);
 pc_2 = 10000 * squeeze(pcaData(:, :, planeNum, compPCs(2))) .* directions(2);
@@ -226,7 +231,15 @@ pc_2 = 10000 * squeeze(pcaData(:, :, planeNum, compPCs(2))) .* directions(2);
 pc_1_thresh = pc_1 > thresholds(1);
 pc_2_thresh = pc_2 > thresholds(2);
 
+if numel(compPCs) > 2
+    pc_3 = 10000 * squeeze(pcaData(:, :, planeNum, compPCs(3))) .* directions(3);
+    pc_3_thresh = pc_3 > thresholds(3);
+end
+
 combData = pc_1_thresh + (2 * pc_2_thresh);
+if numel(compPCs) > 2
+    combData = combData + (4 * pc_3_thresh);
+end
 combData(combData == 0) = nan;
 
 f = figure(7);clf; 
@@ -246,9 +259,13 @@ colormap(ax1, 'gray')
 % Plot PCA image over bottom axis
 ax2 = axes();
 ax2.Position = ax1.Position;
-imagesc(combData, 'alphadata', ~isnan(combData));
+plotData = combData;
+plotData(end, 1:7) = 1:7;
+imagesc(plotData, 'alphadata', ~isnan(combData));
 axis image
-colormap(gca, [rgb('magenta'); rgb('lime'); rgb('white')])
+%colormap(gca, [rgb('magenta'); rgb('lime'); rgb('white')])
+colormap(gca, [rgb(colors{1}); rgb(colors{2}); rgb('white'); rgb(colors{3}); rgb('white'); rgb('white'); ...
+        rgb('white')])
 axis off
 
 

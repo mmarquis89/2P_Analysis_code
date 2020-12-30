@@ -46,8 +46,6 @@ nRois = size(currExpData.rawFl{1}, 2);
 % Put all optic flow data in a single matrix, padding with nan at ends of trials if necessary
 try
 flowMat = zeros(max(cellfun(@numel, currExpData.meanFlow)), nTrials);
-flowFrameDur = median(diff(currExpData.frameTimes{1}));
-flowFrameTimes = (1:1:size(flowMat, 1)) * flowFrameDur;
 for iTrial = 1:nTrials 
     currFlow = currExpData.meanFlow{iTrial};
     if ~isempty(currFlow)
@@ -326,7 +324,8 @@ postDrugFlowMat = smFlowMat;
 if ~isempty(drugTrials)
     for iTrial = 1:numel(drugTrials)
         currTrialNum = drugTrials(iTrial);
-        postDrugFlowMat(flowFrameTimes < currExpData.startTime(currTrialNum)) = nan;
+        postDrugFlowMat(currExpData.vidFrameTimes{currTrialNum} < ...
+                currExpData.startTime(currTrialNum)) = nan;
     end
 end
 avgTrialFlow = mean(postDrugFlowMat, 1, 'omitnan');

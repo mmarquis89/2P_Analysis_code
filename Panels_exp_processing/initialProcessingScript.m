@@ -384,11 +384,17 @@ save(fullfile(expDir, 'rawFicTracData.mat'), 'ftData');
 
 catch ME; rethrow(ME); end
 
-%% Calculate optic flow in FicTrac videos
+%% Calculate optic flow in FLY ROI in FicTrac videos
 try 
     
 % Define an ROI around the fly
-vidRoi = select_video_ROIs(outputDir);
+roiDataFile = fullfile(outputDir, 'Behavior_Vid_ROI_Data.mat');
+if exist(roiDataFile, 'file')
+    load(roiDataFile, 'roiData');
+    vidRoi = roiData;
+else
+    vidRoi = select_video_ROIs(outputDir);
+end
 
 % Extract mean flow within ROI for each FicTrac vid
 ftVids = dir(fullfile(outputDir, 'FicTrac*.mp4'));
@@ -427,6 +433,55 @@ save(fullfile(outputDir, 'flowMags.mat'), 'meanFlowMags')
 
 catch ME; rethrow(ME); end
 
+%% Calculate optic flow in BALL ROI in FicTrac videos
+try 
+    
+% Define an ROI around the ball
+roiDataFile = fullfile(outputDir, 'Behavior_Vid_ROI_Data_Ball.mat');
+if exist(roiDataFile, 'file')
+    load(roiDataFile, 'roiData');
+    vidRoi = roiData;
+else
+    vidRoi = select_video_ROIs(outputDir);
+end
+
+% Extract mean flow within ROI for each FicTrac vid
+ftVids = dir(fullfile(outputDir, 'FicTrac*.mp4'));
+meanFlowMags = {};
+validTrialNums = [];
+parfor iTrial = 1:numel(ftVids)
+    disp(ftVids(iTrial).name);
+    tic
+    trialNum = get_trialNum(ftVids(iTrial).name);
+    meanFlowMags{iTrial} = optic_flow_calc(fullfile(outputDir, ftVids(iTrial).name), 'roiMask', ...
+            vidRoi);
+    validTrialNums(iTrial) = trialNum;
+    disp(['Flow calculation completed in ', num2str(toc, '%.1f'), ' sec']);
+end
+
+% Load trialMetadata file to get a full trial list 
+trialMdFile = dir(fullfile(outputDir, '*trialMetadata.mat'));
+load(fullfile(outputDir, trialMdFile.name), 'trialMetadata');
+trialList = [trialMetadata.trialNum];
+
+% Adjust indexing if data is missing for any trials
+newFlowMags = {};
+if numel(validTrialNums) ~= numel(trialList)
+    for iTrial = 1:numel(trialList)
+        if ismember(iTrial, validTrialNums)
+            newFlowMags{iTrial} = meanFlowMags{validTrialNums == iTrial};
+        else
+            newFlowMags{iTrial} = [];
+        end
+    end
+    meanFlowMags = newFlowMags;
+end
+
+% Save flow data
+save(fullfile(outputDir, 'flowMags_ballROI.mat'), 'meanFlowMags')
+
+catch ME; rethrow(ME); end
+
 %% Additional FicTrac processing
 try
 
@@ -435,6 +490,12 @@ imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
 expID = imgDataFiles(1).name(1:10);
 
 % Load FT vid optic flow data
+clear meanFlowMagsBallROI;
+ballRoiFlowFile = fullfile(outputDir, 'flowMags_ballROI.mat');
+if exist(ballRoiFlowFile, 'file')
+    load(ballRoiFlowFile, 'meanFlowMags')
+    meanFlowMagsBallROI = meanFlowMags;
+end
 load(fullfile(outputDir, 'flowMags.mat'), 'meanFlowMags')
 
 % Load raw FicTrac data
@@ -468,10 +529,20 @@ for iTrial = 1:numel(rawFt)
         newRow.sideSpeed = {[0; diff(smoothdata(newRow.intSideMove{:}, 1, 'gaussian', 7), 1)] ...
                 ./ IFI}; % mm/sec
         
-        % Add video-related data
+        % Add FT frame times
         newRow.frameTimes = {ftFrameTimes};
+        
+        % Add video-related data
         newRow.badVidFrames = {zeros(size(ftFrameTimes))};
         newRow.meanFlow = {meanFlowMags{iTrial}'};
+        if exist('meanFlowMagsBallROI', 'var')
+            newRow.meanFlowBall = {meanFlowMagsBallROI{iTrial}'};
+        end
+        rawVidFrameTimes = rawFt(iTrial).rawVidFrameTimes;
+        trialVidFrameTimes = rawVidFrameTimes(...
+                rawFt(iTrial).startVidFrame:rawFt(iTrial).endVidFrame);
+        trialVidFrameTimes = trialVidFrameTimes - rawVidFrameTimes(rawFt(iTrial).startVidFrame - 1);
+        newRow.vidFrameTimes = {trialVidFrameTimes};
         
         
         % Append to main table
@@ -513,8 +584,7 @@ for iTrial = 1:nTrials
     % Optic flow data to identify flailing
     currFlow = meanFlow{iTrial};
     currFlow(end) = 0;
-    flowFrameDur = median(diff(ftData.frameTimes{iTrial}));
-    flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur; % NOTE: this is only an approximation
+    flowFrameTimes = ftData.vidFrameTimes{iTrial};
     plotData = repeat_smooth(currFlow, 20, 'dim', 1, 'smwin', 6);
     plotData = plotData - min(plotData);
     plot(flowFrameTimes, plotData, 'color', 'k');
@@ -537,12 +607,7 @@ flowFrameTimes = {};
 currTrialData = innerjoin(ftData, trialMetadata);
 for iTrial = 1:numel(meanFlow)
     
-    % NOTE: this is an approximation, but there is mostly a 1:1 correspondence between FicTrac data
-    % frames and frames in the captured video, so the median IFI in the FicTrac data should 
-    % always correspond to the true video frame rate
-    flowFrameDur = median(diff(ftFrameTimes{iTrial}));
-    flowFrameTimes{iTrial} = (1:1:numel(meanFlow{iTrial})) * flowFrameDur; 
-    
+    flowFrameTimes{iTrial} = ftData.vidFrameTimes{iTrial};
     % Warn user if there's a discrepency in the flow frame times based on total trial duration
     discrepVal = abs(flowFrameTimes{iTrial}(end) - currTrialData.trialDuration(iTrial));
     if discrepVal > 0.5
@@ -725,7 +790,7 @@ groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201222-1', '20201222-2'};
+expList = {'20201222-1'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

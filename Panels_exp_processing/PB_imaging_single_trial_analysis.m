@@ -267,11 +267,9 @@ if useFlow
         %     plotData2 = repeat_smooth(currFlow, 20, 'dim', 2, 'smwin', 6);
         plotData = plotData - min(plotData);
         %     plotData2 = plotData2 - min(plotData2);
-        flowFrameDur = median(diff(td.frameTimes{:}));
-        flowFrameTimes = (1:1:numel(currFlow)) * flowFrameDur;
-        plot(flowFrameTimes, plotData, 'color', 'k', 'linewidth', 1);
+        plot(td.vidFrameTimes{:}, plotData, 'color', 'k', 'linewidth', 1);
         hold on;
-        %     plot(flowFrameTimes, plotData2, 'color', 'g');
+        %     plot(td.vidFrameTimes{:}, plotData2, 'color', 'g');
         cb = colorbar;
         cb.Visible = 'off';
     end
