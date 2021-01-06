@@ -1,4 +1,4 @@
-classdef RegressionModelAnalysis
+classdef RegressionModelAnalysis_PPL203
 % ==================================================================================================
 %
 % Properties:
@@ -9,8 +9,11 @@ classdef RegressionModelAnalysis
 %
 % Methods:
 %       initialize_models(modelParams)
+%       optimize_odor_integration_windows()
+%       optimize
 %       ax = plot_odor_filter(expID, axesHandle)       
 %       plot_mean_moveSpeed(expID, axesHandle)
+%       
 %       (Static) plot_coeffs(mdl, axesHandle);
 % ==================================================================================================
 
@@ -28,52 +31,37 @@ methods
         
         % expInfoTable = table with colums: [expID][skipTrials][skipVols]
         
-        % sourceDataParams = struct with fields: roiName 
-        %                                        maxSpeed 
-        %                                        smWinVols
-        %                                        smWinFrames
-        %                                        smReps 
-        %                                        ftLagVols 
-        %                                        speedType 
-        %                                        speedType
-        %                                        odorRespFilterDur
-        %                                        parentDir
-        %                                        dataDir
-        %                                        eventDataParentDir
-        %                                        alignEventDateStr
-        %                                        convertFtUnits
-        %                                        loadOneNoteData
-        %                                        alignObjFilterDefs
+        % sourceDataParams = struct with fields: maxSpeed, smWinVols, smWinFrames, smReps, 
+        %                                        ftLagVols, speedType, odorRespFilterDur
         
-        p = sourceDataParams;
+        obj.sourceDataParams = sourceDataParams;
+        
+        % Unpack sourceDataParams
+        maxSpeed = sourceDataParams.maxSpeed;
+        smWinVols = sourceDataParams.smWinVols;
+        smWinFrames = sourceDataParams.smWinFrames;
+        smReps = sourceDataParams.smReps;
+        ftLagVols = sourceDataParams.ftLagVols;
+        roiName = sourceDataParams.roiName;
         
         obj.modelData = [];
         
         % -------  Load source data for all experiments -------
-        if ~isfield(p.parentDir) || isempty(p.parentDir)
-            p.parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-        end
-        if ~isfield(p.dataDir) || isempty(p.dataDir)
-            p.dataDir = fullfile(p.parentDir, 'all_experiments');
-        end
-                
+        parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
+        dataDir = fullfile(parentDir, 'all_experiments');
+        FRAME_RATE = 25;
+        
         % Load AlignEvent object
         disp('Loading new AlignEvent object...');
-        if ~isfield(p.eventDataParentDir) || isempty(p.eventDataParentDir)
-            p.eventDataParentDir = p.parentDir;
-        end
-        if ~isfield(p.alignEventDateStr) || isempty(p.alignEventDateStr)
-            p.alignEventDateStr = '20200609';
-        end
-        load(fullfile(p.eventDataParentDir, 'Saved_AlignEvent_objects', [p.alignEventDateStr, ...
-                '_AlignEventObj_odor.mat']), 'alignObj');
+        load(fullfile(parentDir, 'Saved_AlignEvent_objects', '20200609_AlignEventObj_odor.mat'), ...
+                'alignObj');
         disp('Loading complete')
         
         % Load event DataTable
         disp('Loading event DataTable...')
         fileName = ['odor_pre_', num2str(sourceDataParams.odorRespFilterDur(1)), '_post_', ...
                 num2str(sourceDataParams.odorRespFilterDur(2)), '.mat'];
-        load(fullfile(p.eventDataParentDir, 'Saved_DataTable_objects', fileName), 'dt')
+        load(fullfile(parentDir, 'Saved_DataTable_objects', fileName), 'dt')
         disp('Loading complete')
         
         % Pre-process data for each experiment
@@ -83,23 +71,24 @@ methods
             currExpID = expInfoTbl.expID{iExp};
             
             % -------  Load source data -------
-            [expMd, trialMd] = load_metadata({currExpID}, p.dataDir);
-            roiData = load_roi_data({currExpID}, p.dataDir);
-            roiNames = regexp(roiData.roiName, [p.roiName, '-.'], 'match', 'once');
+            [expMd, trialMd] = load_metadata({currExpID}, dataDir);
+            roiData = load_roi_data({currExpID}, dataDir);
+            roiNames = regexp(roiData.roiName, [roiName, '-.'], 'match', 'once');
             roiNames(cellfun(@isempty, roiNames)) = [];   
             roiData = roiData(strcmp(roiData.roiName, roiNames{1}), :);
-            ft = load_ft_data({currExpID}, p.dataDir);
+            ft = load_ft_data({currExpID}, dataDir);
             
             % Load odor event data
-            eventData = load_event_data({currExpID}, p.dataDir);
+            eventData = load_event_data({currExpID}, dataDir);
             odorEventData = eventData.odor;
+            locEventData = eventData.locomotion;
             
             % Process data for each trial (assuming no time between trials)
             trialNums = trialMd.trialNum;
             if ~isempty(expInfoTbl.skipTrials{iExp})
                 trialNums(ismember(trialNums, expInfoTbl.skipTrials{iExp})) = [];
             end
-            allSpeed = []; allYawSpeed = []; allOdorVols = []; allFl = []; allVolTimes = [];
+            allFwSpeed = []; allYawSpeed = []; allOdorVols = []; allFl = []; allVolTimes = [];
             for iTrial = 1:numel(trialNums)
                 currTrialNum = trialNums(iTrial);
                 md = innerjoin(expMd, trialMd(currTrialNum, :));
@@ -108,41 +97,33 @@ methods
                 
                 % Smooth imaging rawFl data for current trial
                 currRoiData = roiData(currTrialNum, :);
-                currFl = smoothdata(currRoiData.rawFl{:}, 'gaussian', p.smWinVols);
+                currFl = smoothdata(currRoiData.rawFl{:}, 'gaussian', smWinVols);
                 if ~isnan(md.pmtShutoffVols{:})
                     currFl(md.pmtShutoffVols{:}) = nan;
                 end
                 
-                % Smooth FicTrac data and convert units if necessary (for older experiments)
-                currFt = ft(ft.trialNum == currTrialNum, :);
-                if strcmp(p.speedType, 'moveSpeed')
-                    currSpeed = repeat_smooth(currFt.moveSpeed{:}, p.smReps, ...
-                            'smWin', p.smWinFrames);
+                % Smooth FicTrac data, then downsample to match volume rate
+                currFt = ft(currTrialNum, :);
+                if strcmp(sourceDataParams.speedType, 'moveSpeed')
+                    currFwSpeed = repeat_smooth(currFt.moveSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
+                            'smWin', smWinFrames);
                 else
-                    currSpeed = repeat_smooth(currFt.fwSpeed{:}, p.smReps, ...
-                            'smWin', p.smWinFrames);
+                    currFwSpeed = repeat_smooth(currFt.fwSpeed{:} .* 4.5 .* FRAME_RATE, smReps, ...
+                            'smWin', smWinFrames);
                 end
-                if p.convertFtUnits
-                    currSpeed = currSpeed .* 4.5 .* 25; % Convert units if necessary
-                end
-                currSpeed(currSpeed > p.maxSpeed) = p.maxSpeed;
-                currYawSpeed = abs(repeat_smooth(currFt.yawSpeed{:}, p.smReps, 'smWin', ...
-                        p.smWinFrames));
-                if p.convertFtUnits
-                    currYawSpeed = rad2deg(currYawSpeed) * 25; % Convert units if necessary
-                end
-                
-                % Downsample to match volume rate
-                currSpeedVols = []; currYawSpeedVols = [];
+                currFwSpeed(currFwSpeed > maxSpeed) = maxSpeed;
+                currYawSpeed = abs(repeat_smooth(rad2deg(currFt.yawSpeed{:}) .* FRAME_RATE, ...
+                        smReps, 'smWin', smWinFrames));
+                currFwSpeedVols = []; currYawSpeedVols = [];
                 for iVol = 1:numel(volTimes)
                     dsFrame = argmin(abs(currFt.frameTimes{:} - volTimes(iVol)));
-                    currSpeedVols(iVol) = currSpeed(dsFrame);
+                    currFwSpeedVols(iVol) = currFwSpeed(dsFrame);
                     currYawSpeedVols(iVol) = currYawSpeed(dsFrame);
                 end
                 
                 % Apply a lag to the FicTrac data
-                currSpeedVols = currSpeedVols([ones(1, p.ftLagVols), 1:end-p.ftLagVols]);
-                currYawSpeedVols = currYawSpeedVols([ones(1, p.ftLagVols), 1:end-p.ftLagVols]);
+                currFwSpeedVols = currFwSpeedVols([ones(1, ftLagVols), 1:end-ftLagVols]);
+                currYawSpeedVols = currYawSpeedVols([ones(1, ftLagVols), 1:end-ftLagVols]);
                 
                 % Get odor command vector for current trial
                 currTrialOdorVols = odorEventData.create_logical_array(md.nVolumes, volTimes, ...
@@ -150,7 +131,7 @@ methods
                 
                 % Append variables to whole-experiment vectors
                 allFl = [allFl; currFl];
-                allSpeed = [allSpeed; currSpeedVols'];
+                allFwSpeed = [allFwSpeed; currFwSpeedVols'];
                 allYawSpeed = [allYawSpeed; currYawSpeedVols'];
                 allOdorVols = [allOdorVols; currTrialOdorVols];
                 if iTrial == 1
@@ -162,42 +143,26 @@ methods
             
             % Calculate the odor response filter from trial-averaged data
             disp('Generating odor response vector...');
-            if ~isfield(p.loadOneNoteData) || isempty(p.loadOneNoteData)
-                p.loadOneNoteData = 0;
-            end
-            if ~isfield(p.alignObjFilterDefs) || isempty(p.alignObjFilterDefs)
-                filterDefs = alignObj.create_filterDefs('loadOneNoteData', p.loadOneNoteData);
-                filterDefs.expID = currExpID;
-                filterDefs.roiName = roiNames{1};
-                filterDefs.odor = -1;
-                filterDefs.locomotion = [];
-                filterDefs.trialNum = trialNums;
-                p.alignObjFilterDefs = filterDefs;
-            end
-            dt = dt.initialize_filters(p.alignObjFilterDefs);
+            filterDefs = alignObj.create_filterDefs;
+            filterDefs.expID = currExpID;
+            filterDefs.roiName = roiNames{1};
+            filterDefs.odor = -1;
+%             filterDefs.locomotion = 0;
+            filterDefs.locomotion = [];
+            filterDefs.flailing = 0;
+            filterDefs.grooming = 0;
+            dt = dt.initialize_filters(filterDefs);
 
             meanTrace = smoothdata(mean(cell2mat(dt.subset.eventFl'), 2, 'omitnan'), ...
-                    'gaussian', p.smWinVols);
+                    'gaussian', smWinVols);
             odorRespFilter = meanTrace(dt.subset.volTimes{1} > 0); % Trim pre-onset volumes
             odorRespFilter = odorRespFilter - odorRespFilter(1);   % Offset to zero first volume
             
             % Also calculate a trial-averaged version of the move speed while we're at it
-            if strcmp(p.alignObjFilterDefs.roiName, 'TypeF-R')
-                filterDefs = p.alignObjFilterDefs;
-                filterDefs.expID = currExpID;
-                filterDefs.roiName = 'TypeF';
-                filterDefs.locomotion = [];
-                dt2 = dt.initialize_filters(filterDefs);
-            else
-                dt2 = dt;
-            end
-            moveSpeedArr = cell2mat(dt2.subset.moveSpeed');
-            if p.convertFtUnits
-                moveSpeedArr = moveSpeedArr .* 4.5 .* 25;
-            end
-            meanSpeed = repeat_smooth(mean(moveSpeedArr, 2, 'omitnan'), p.smReps, 'smWin', ...
-                    p.smWinFrames);
-            meanSpeed = meanSpeed(dt2.subset.frameTimes{1} > 0);
+            moveSpeedArr = cell2mat(dt.subset.moveSpeed') .* 4.5 .* FRAME_RATE;
+            meanSpeed = repeat_smooth(mean(moveSpeedArr, 2, 'omitnan'), smReps, 'smWin', ...
+                    smWinFrames);
+            meanSpeed = meanSpeed(dt.subset.frameTimes{1} > 0);
             
             % Extract onset volumes from odor command vector
             odorOnsetVols = (regexp(regexprep(num2str(allOdorVols'), ' ', ''), '01')) + 1;
@@ -212,7 +177,7 @@ methods
             newRow = expInfoTbl(iExp, :); 
             newRow = innerjoin(newRow, expMd(:, {'expID', 'expName', 'volumeRate', 'nTrials'}));
             newRow.fl = {allFl'};
-            newRow.(p.speedType) = {allSpeed'};
+            newRow.fwSpeed = {allFwSpeed'};
             newRow.yawSpeed = {allYawSpeed'};
             newRow.odorVols = {allOdorVols'};
             newRow.odorRespFilter = {odorRespFilter'};
@@ -227,25 +192,19 @@ methods
             
         end%iExp
         
-        % Save source data params to object
-        obj.sourceDataParams = p;
-        
     end% Constructor
     
     % Initialize model data
     function obj = initialize_models(obj, modelParams)
         
-        % modelParams = struct with fields: trainTestSplit, kFold, criterion, upper, pEnter, 
-        %                                   pRemove, verbose, useYaw, useDriftCorrection, 
-        %                                   odorIntegrationWin, speedPadDist, 
-        %                                   speedIntegrationWin, standardizeInputs, 
-        %                                   normalizeInputs
+        % modelParams = struct with fields: trainTestSplit, kFold, criterion, pEnter, pRemove,
+        %                                   verbose, odorIntegrationWin, speedPadDist, 
+        %                                   fwSpeedIntegrationWin
         % Can be either a scalar structure or have one set of params for each experiment in rm.
 
         disp('Initializing model data...')
         obj.modelParams = modelParams;
         obj.modelData = [];
-        speedType = obj.sourceDataParams.speedType;
         
         for iExp = 1:size(obj.sourceData, 1)
             if numel(modelParams) > 1 
@@ -259,16 +218,12 @@ methods
             disp(currExpData.expID{:})
             
             % ------- Create intial table of predictor and response variables --------
-            tbl = table(abs(currExpData.(speedType){:}'), 'variableNames', {speedType});
-            if mp.useYaw
-                tbl.yawSpeed = currExpData.yawSpeed{:}';
-            end
+            tbl = table(abs(currExpData.fwSpeed{:}'), 'variableNames', {'fwSpeed'});
+            tbl.yawSpeed = currExpData.yawSpeed{:}';
             tbl.odorResp = currExpData.odorRespVector{:}';
-            if mp.useDriftCorrection
-                tbl.volsFromExpStart = (1:size(tbl, 1))';
-            end
+            tbl.volsFromExpStart = (1:size(tbl, 1))';
             
-            % Calculate integrated odor values if necessary
+            % Calculate integrated odor values
             if ~isempty(mp.odorIntegrationWin)
                 odorIntegrationWinVols = round(mp.odorIntegrationWin * currExpData.volumeRate);
                 integratedOdor = [];
@@ -289,28 +244,27 @@ methods
                 end
             end
             
-            % Calculate mean speed history values if necessary
-            padDist = mp.speedPadDist;
+            % Calculate mean speed values
+            padDist = modelParams.speedPadDist;
             padDistVols = padDist * currExpData.volumeRate;
-            if ~isempty(mp.speedIntegrationWin)
-                speedIntegrationWinVols = round(mp.speedIntegrationWin * currExpData.volumeRate);
+            if ~isempty(mp.fwSpeedIntegrationWin)
+                speedIntegrationWinVols = round(mp.fwSpeedIntegrationWin * currExpData.volumeRate);
                 meanSpeed = [];
                 for iWin = 1:numel(speedIntegrationWinVols)
                     currIntegrationWin = speedIntegrationWinVols(iWin);
-                    for iVol = 1:numel(currExpData.(speedType){:})
+                    for iVol = 1:numel(currExpData.fwSpeed{:})
                         if iVol <= padDistVols
-                            meanSpeed(iWin, iVol) = sum(currExpData.(speedType){:}(1:iVol));
+                            meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(1:iVol));
                         elseif iVol <= currIntegrationWin + padDistVols
-                            meanSpeed(iWin, iVol) = sum(currExpData.(speedType){:}(1:(iVol - ...
-                                    padDistVols)));
+                            meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(1:(iVol - padDistVols)));
                         else
-                            meanSpeed(iWin, iVol) = sum(currExpData.(speedType){:}(iVol - ...
+                            meanSpeed(iWin, iVol) = sum(currExpData.fwSpeed{:}(iVol - ...
                                 currIntegrationWin:(iVol - padDistVols)));
                         end
                     end
                 end
                 for iWin = 1:size(meanSpeed, 1)
-                    varName = ['speedHistory_', num2str(mp.speedIntegrationWin(iWin))];
+                    varName = ['fwSpeedHistory_', num2str(mp.fwSpeedIntegrationWin(iWin))];
                     tbl.(varName) = meanSpeed(iWin, :)';
                 end
             end
@@ -321,22 +275,10 @@ methods
                 tbl.fl(currExpData.skipVols{:}) = nan;
             end
             
-            % Standardize or normalize the input variables as needed
+            % Scale all variables so that the max value is either 1 or -1 (and center?)
             for iCol = 1:(size(tbl, 2))
-                
-                if mp.standardizeInputs
-                    if mp.normalizeInputs
-                        error('"standardizeInputs" and "normalizeInputs" params cannot both be 1"');
-                    end
-                    
-                    % Standardize and center variables by Z-scoring
-                    tbl{:, iCol} = normalize(tbl{:, iCol}); 
-                    
-                elseif mp.normalizeInputs
-                    
-                    % Normalize inputs by re-scaling from 0-1
-                    tbl{:, iCol} = tbl{:, iCol} ./ max(abs(tbl{:, iCol}), [], 'omitnan');  
-                end
+                %         tbl{:, iCol} = tbl{:, iCol} - mean(tbl{:, iCol}, 'omitnan'); % Center mean of all variables at zero
+                tbl{:, iCol} = tbl{:, iCol} ./ max(abs(tbl{:, iCol}), [], 'omitnan');
             end
             
             % Add to model data table for future use in plotting model predictions
@@ -483,11 +425,11 @@ methods
             emptyArgs = cellfun(@isempty, kvArgs);
             kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
             varNames = tblTrain.Properties.VariableNames;
-            speedHistVars = ~cellfun(@isempty,regexp(varNames, 'speedHistory'));
+            speedHistVars = ~cellfun(@isempty,regexp(varNames, 'fwSpeedHistory'));
             speedHistVarInds = find(speedHistVars);
             
             % Select speed history window size using cross-validation
-            nWindows = numel(mp.speedIntegrationWin);
+            nWindows = numel(mp.fwSpeedIntegrationWin);
             loopTbls = [];
             for iWin = 1:nWindows
                 loopTbls{iWin} = tblTrain(:, [1:(speedHistVarInds(1) - 1), speedHistVarInds(iWin), ...
@@ -528,7 +470,7 @@ methods
             % Store result variables
             cvModels{iExp, 1} = allCvMdls;
             cvAdjR2Vals{iExp, 1} = predAdjR2;
-            bestWinSizes(iExp, 1) = mp.speedIntegrationWin(argmax(mean(predAdjR2, 2), 1));
+            bestWinSizes(iExp, 1) = mp.fwSpeedIntegrationWin(argmax(mean(predAdjR2, 2), 1));
             
         end%iExp
         
@@ -625,3 +567,6 @@ end%Static methods
 
 end%class
 
+% ==================================================================================================
+% Local functions
+% ==================================================================================================

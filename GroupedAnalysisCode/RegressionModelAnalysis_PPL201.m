@@ -199,7 +199,8 @@ methods
         
         % modelParams = struct with fields: trainTestSplit, kFold, criterion, pEnter, pRemove,
         %                                   verbose, odorIntegrationWin, speedPadDist, 
-        %                                   fwSpeedIntegrationWin
+        %                                   fwSpeedIntegrationWin, standardizeInputs, 
+        %                                   normalizeInputs, centerInputs
         % Can be either a scalar structure or have one set of params for each experiment in rm.
 
         disp('Initializing model data...')
@@ -277,8 +278,18 @@ methods
             
             % Scale all variables so that the max value is either 1 or -1 (and center?)
             for iCol = 1:(size(tbl, 2))
+                
+                if mp.standardizeInputs
+                   if mp.normlizeInputs
+                       error('"standardizeInputs" and "normalizeInputs" params cannot both be 1"');
+                   elseif ~mp.centerInputs
+                       error('"centerInputs" param cannot be 0 if "standardizeInputs" param is 1');
+                   end
+                end
                 %         tbl{:, iCol} = tbl{:, iCol} - mean(tbl{:, iCol}, 'omitnan'); % Center mean of all variables at zero
-                tbl{:, iCol} = tbl{:, iCol} ./ max(abs(tbl{:, iCol}), [], 'omitnan');
+                tbl{:, iCol} = tbl{:, iCol} ./ max(abs(tbl{:, iCol}), [], 'omitnan'); % Normalize by re-scaling from 0-1
+                
+%                 tbl{:, iCol} = zscore(tbl{:, iCol}); % Standardize and center variables by Z-scoring
             end
             
             % Add to model data table for future use in plotting model predictions

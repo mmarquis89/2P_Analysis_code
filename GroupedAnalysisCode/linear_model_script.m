@@ -26,6 +26,14 @@ p.ftLagVols = 3;
 p.speedType = 'moveSpeed';
 p.odorRespFilterDur = [6 7];
 
+p.parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
+p.dataDir = fullfile(parentDir, 'new_PPL201_experiments');
+p.eventDataParentDir = p.dataDir;
+p.alignEventDateStr = '20201231';
+p.convertFtUnits = 0;
+p.loadOneNoteData = 0;
+p.alignObjFilterDefs = [];
+
 % Set model parameters
 mp = [];
 mp.trainTestSplit = 0.8;
@@ -35,10 +43,12 @@ mp.upper = [];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
+mp.useYaw = 1;
+mp.useDriftCorrection = 1;
 mp.odorIntegrationWin = [30:20:200];
 % mp.odorIntegrationWin = [];
 mp.speedPadDist = 5;
-mp.fwSpeedIntegrationWin = [];
+mp.speedIntegrationWin = [];
 
 
 % expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
@@ -53,7 +63,7 @@ expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3
         '20210102-2', '20210102-3', '20210102-4'};
 
 skipTrials = {[6], [6], [6], [6], ...
-              [4 6], [6], [6], [6 7], [6 7]};
+              [4:6], [6], [6], [6 7], [6 7]};
           
 % skipVols = {[], [], [], [], [], [], []};
 
