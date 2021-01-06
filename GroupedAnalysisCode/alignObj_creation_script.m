@@ -1,8 +1,10 @@
 
 %% CREATE AND SAVE EventAlignedData OBJECTS
 
-saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\alignEvent_objects';
-expList = {'20201222-1', '20201222-2'};
+saveDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Saved_AlignEvent_objects';
+expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+        '20210102-2', '20210102-3', '20210102-4'};
+
 
 % Create a temporary EventAlignedData object just to get a list of the event types 
 alignObj = EventAlignedData(expList, 'dataDir', 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments');

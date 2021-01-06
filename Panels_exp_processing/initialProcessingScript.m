@@ -6,6 +6,42 @@ outputDir = fullfile(expDir, 'ProcessedData');
 if ~isfolder(outputDir)
     mkdir(outputDir)
 end
+%%
+
+clearvars
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-1_TH-C_cyRFP_7f';
+outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-1_TH-C_cyRFP_7f\ProcessedData';
+if ~isfolder(outputDir)
+    mkdir(outputDir)
+end
+%%
+
+clearvars
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-2_TH-C_cyRFP_7f';
+outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-2_TH-C_cyRFP_7f\ProcessedData';
+if ~isfolder(outputDir)
+    mkdir(outputDir)
+end
+
+%%
+clearvars
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-3_TH-C_cyRFP_7f';
+outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-3_TH-C_cyRFP_7f\ProcessedData';
+if ~isfolder(outputDir)
+    mkdir(outputDir)
+end
+
+%%
+clearvars
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-4_TH-C_cyRFP_7f';
+outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-4_TH-C_cyRFP_7f\ProcessedData';
+if ~isfolder(outputDir)
+    mkdir(outputDir)
+end
 
 %% Make anatomy stack
 try
@@ -742,10 +778,10 @@ disp('Complete')
 
 %% Process odor event data
 
-odorNames = {'EtOH', 'ACV'};
-concentrations = {'neat', 'neat'};
-flowRates = {25, 25};
-trialNums = {[1:5], 6};
+odorNames = {'EtOH', 'ACV', 'IBA'};
+concentrations = {'neat', 'neat', 'neat'};
+flowRates = {12, 12, 12};
+trialNums = {[1:5], 6, 7};
 
 try 
     
@@ -790,7 +826,8 @@ groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201222-1'};
+expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+        '20210102-2', '20210102-3', '20210102-4'};
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

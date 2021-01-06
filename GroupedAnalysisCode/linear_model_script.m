@@ -1,5 +1,6 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-dataDir = fullfile(parentDir, 'all_experiments');
+% dataDir = fullfile(parentDir, 'all_experiments');
+dataDir = fullfile(parentDir, 'new_PPL201_experiments')
 figDir = ...
         'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs\linear_regression_analysis';
 
@@ -16,51 +17,54 @@ end
 
 % Set source data parameters;
 p = [];
-p.roiName = 'TypeD';
-p.maxSpeed = 100;
+p.roiName = 'TypeB';
+p.maxSpeed = 35;
 p.smWinVols = 5;
 p.smWinFrames = 3;
 p.smReps = 10;
 p.ftLagVols = 3;
 p.speedType = 'moveSpeed';
-p.odorRespFilterDur = [7 5];
+p.odorRespFilterDur = [6 7];
 
 % Set model parameters
 mp = [];
 mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'rsquared'; % 'sse, 'aic', 'bic', 'rsquared', or 'adjrsquared'
-mp.upper = ['linear'];
+mp.upper = [];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
-mp.odorIntegrationWin = [30:10:200];
+mp.odorIntegrationWin = [30:20:200];
 % mp.odorIntegrationWin = [];
 mp.speedPadDist = 5;
 mp.fwSpeedIntegrationWin = [];
 
 
-expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
-               '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
+% expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
+%                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
 % 
 % % Type F
 % expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
 %         '20181020-1', '20190226-3'};
 
-skipTrials = {[], [], [], [], ...
-              [], [], [], [], []};
-          
-skipVols = {[], [1:1500], [], [], [], ...
-              [], [], [], [1:2200]};
+% PPL201
+expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+        '20210102-2', '20210102-3', '20210102-4'};
 
-% skipVols = repmat({[]}, 1, numel(skipTrials));
+skipTrials = {[6], [6], [6], [6], ...
+              [4 6], [6], [6], [6 7], [6 7]};
+          
+% skipVols = {[], [], [], [], [], [], []};
+
+skipVols = repmat({[]}, 1, numel(skipTrials));
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
         'skipVols'});
 
 % Create analysis object
-rm = RegressionModelAnalysis(expInfoTbl, p);
+rm = RegressionModelAnalysis_PPL201(expInfoTbl, p);
 
 % Initialize models
 rm = rm.initialize_models(mp);
@@ -123,7 +127,7 @@ disp(rm.modelData)
 
 catch ME; rethrow(ME); end
 
-%% Use best speed history window sizes instead of odor integration windows
+                    %% Use best speed history window sizes instead of odor integration windows
 try
 fullMdls = {};
 fullMdlPredFl = {};
@@ -220,7 +224,7 @@ rm.modelData.noSpeedHistMdlAdjR2 = noSpeedHistMdlAdjR2';
 
 
 catch ME; rethrow(ME); end
-    %% Train initial models for speed history windows
+                    %% Train initial models for speed history windows
 try
 fullMdls = {};
 fullMdlPredFl = {};
@@ -325,7 +329,7 @@ disp(rm.modelData)
 
 catch ME; rethrow(ME); end
 
-%% Re-fit the drift-corrected models without the odor history variables
+                    %% Re-fit the drift-corrected models without the odor history variables
 try
 noOdorHistReFitMdls = {};
 noOdorHistReFitMdlPredFl = {};
@@ -717,7 +721,7 @@ end
 uniqueCoeffs = unique(regexprep(allDcCoeffNames, 'odorHistory_.*', 'odorHistory'));
 uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
 % uniqueCoeffs = uniqueCoeffs([1 4 3 2 5]);
-uniqueCoeffs = uniqueCoeffs([1 3 2]);
+uniqueCoeffs = uniqueCoeffs([1 4 3 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1) 
     for iCoeff = 1:numel(uniqueCoeffs)
@@ -791,14 +795,14 @@ catch ME; rethrow(ME); end
 
 %% Plot predicted vs. measured fluorescence
 
-saveFigs = 0;
+saveFigs = 1;
 fileNameStr = 'fullExp_';
 
 
 predictorVars = {'odorHistory', 'odorResp', 'fwSpeed'}; % odorHistory, odorResp, fwSpeed, yawSpeed
-legendLocs = {'sw', 'sw', 'nw', 'nw'};
-% legendLocs = {'best', 'best', 'best', 'best'};
-xLimits = {[], [], [300 600], [1800 3200], [700 1900], [300 1000], [300 600], [100 1100], [1000 1600]}';
+% legendLocs = {'sw', 'sw', 'nw', 'nw'};
+legendLocs = {'best', 'best', 'best', 'best'};
+% xLimits = {[], [], [300 600], [1800 3200], [700 1900], [300 1000], [300 600], [100 1100], [1000 1600]}';
 xLimits = repmat({[]}, 1, 10);
 % xLimits = {[400 800], [200 600], [1 500], [1 500], [], [200 600], [500 800], [1 400]}'; 
 

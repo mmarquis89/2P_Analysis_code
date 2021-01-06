@@ -2,7 +2,12 @@
 expList = load_expList;
 expType = 'PPM2';
 expList = expList(contains(expList.expName, expType), :);
-a = MoveSpeedAnalysis(expList);
+
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments';
+expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+        '20210102-2', '20210102-3', '20210102-4'};
+
+a = MoveSpeedAnalysis(expList', parentDir);
 
 figDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs';
 if strcmp(expType, 'PPM2')
@@ -20,18 +25,21 @@ savedAnalysisObjects = [];
 
 %%
 
-expNums = [1:8];
+expNums = [];
 
-useSavedObj = 1;
+useSavedObj = 0;
+useSavedPlotParams = 0;
 
 speedType = 'move';
-roiName = 'TypeF';
-flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
+roiName = 'TypeD';
+flType = 'slidingbaseline'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
 figDims = [1520 840];
 
-xLim = [];
-yLim = [];
+xLim = [0 25];
+yLim = [0 0.37];
 fontSize = 12;
+
+neuronType = 'PPL203';
 
 % Adjust plot spacing and margins
 SV = 0.08;
@@ -50,30 +58,48 @@ else
     plotLayoutDims = numSubplots(numel(expNums));
 end
 if isempty(savedAnalysisObjects) || ~useSavedObj
+    if ~useSavedPlotParams
+        allPlotParams = table(expList', repmat({[]}, numel(expList), 1), 'variableNames', ...
+                {'expID', 'params'});
+    end
     savedAnalysisObjects = allPlotParams;
     savedAnalysisObjects.obj = repmat({[]}, size(allPlotParams, 1), 1);
 end
-f = figure(1); clf;
+f = figure(10); clf;
 f.Color = [1 1 1];
 if ~isempty(figDims)
-   f.Position(3:4) = figDims; 
+    f.Position(3:4) = figDims;
 end
 allRs = [];
-for iExp = 1:numel(expNums)    
+for iExp = 1:numel(expNums)
     
     % Get current expID and params
     currExpID = allPlotParams.expID{expNums(iExp)};
     disp(currExpID);
-    currPlotParams = allPlotParams.params{expNums(iExp)};
+    if useSavedPlotParams
+        currPlotParams = allPlotParams.params{expNums(iExp)};
+    else
+        currPlotParams = a.params;
+    end
     
-    currPlotParams.locomotion = [];
+    currPlotParams.skipTrials = [];
+%     if iExp > 1 && iExp < 5
+%         currPlotParams.skipTrials(end + 1) = 6;
+%     end
+    
+    currPlotParams.max_moveSpeed = 30;
+    currPlotParams.smWinVols = 3;
+    currPlotParams.smWinFrames = 5;
+    currPlotParams.convertSpeedUnits = 0;
+    currPlotParams.locomotion = [1];
     currPlotParams.isolatedmovement = [];
     currPlotParams.grooming = [];
-    currPlotParams.odor = [];
+    currPlotParams.odor = 3;
     currPlotParams.quiescence = [];
     currPlotParams.roiName = roiName;
     currPlotParams.ballstop = 0;
-    currPlotParams.nHistBins = 25;
+    currPlotParams.nHistBins = 50;
+    currPlotParams.nAnalysisBins = 25;
     currPlotParams.flType = flType;
     a.params = currPlotParams;
     
@@ -97,6 +123,11 @@ for iExp = 1:numel(expNums)
         
         % Run analysis
         a = a.analyze();
+        
+%         a.plot_speedMat();
+%         colormap(viridis)
+%         a.plot_flMat();
+%         colormap(viridis);
         
         savedAnalysisObjects.obj{expNums(iExp)} = a;
     else
@@ -170,9 +201,8 @@ end
 
 %% Save current figure
 
-saveDir = ['C:\Users\Wilson Lab\Dropbox (Personal)\Marquis ms (LH-DANs)\', ...
-        'Manuscript_figure_drafts\Basic_move_speed_analysis'];
-fileName = ['Binned_moveSpeed_vs_expDff_plots_', neuronType, '_matchedAxLims'];
+saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Figs'];
+fileName = ['Binned_moveSpeed_vs_slidingBaselineDff_plots_', neuronType, '_matchedAxLims'];
 f.UserData.plotParams = currPlotParams;
 f.UserData.speedType = speedType;
 save_figure(f, saveDir, fileName)

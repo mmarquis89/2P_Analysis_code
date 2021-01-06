@@ -55,7 +55,7 @@ catch ME; rethrow(ME); end
 
 %% Run PCA restricted to specific ROIs within each plane
 
-trialNums = [1 2 6];
+trialNums = [1 2 6 7];
 
 imgDataFiles = dir(fullfile(parentDir, 'imagingData_reg_trial_*.mat'));
 
@@ -125,12 +125,12 @@ catch ME; rethrow(ME); end
 
 % currTrials = [1 2 3 11 12 13]
 
-trialNum = 1; 
+trialNum = 6; 
 % trialNum = currTrials(6)
 
 nPCs = 9;
 offset = 0;
-targetPCs = [1 3];
+targetPCs = [3 7];
 useTargetPCs = 0;
 sigma = 0.4;
 maxIntensity = 400;
@@ -217,12 +217,12 @@ catch ME; rethrow(ME); end
 
 %% Compare two PCs by overlaying thresholded versions
 
-planeNum = 6;
+planeNum = 5;
 
 maxIntensity = 300;
-compPCs = [3 3];
-directions = [1  -1  1]; 
-thresholds = [12 20 12];
+compPCs = [3 7];
+directions = [1  -1]; 
+thresholds = [30 30 12];
 colors = {'magenta', 'lime', 'yellow'};
 
 pc_1 = 10000 * squeeze(pcaData(:, :, planeNum, compPCs(1))) .* directions(1);

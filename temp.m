@@ -1,278 +1,141 @@
 
-startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+%% Load data
 
-expDir = uigetdir(startDir, 'Select an experiment directory');
-outputDir = fullfile(expDir, 'ProcessedData');
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
 
-if ~isfolder(outputDir)
-    mkdir(outputDir)
+expList = {'20201222-1', '20201222-2'};
+
+% Load metadata 
+[expMd, trialMd] = load_metadata(expList, parentDir);
+
+% Load imaging data
+roiData = load_roi_data(expList, parentDir);
+
+% Load FicTrac data
+ftData = load_ft_data(expList, parentDir);
+
+% Generate consolidated source data table
+tbl = inner_join(roiData, expMd, trialMd);
+tbl = outerjoin(tbl, ftData, 'type', 'left', 'mergekeys', 1);
+
+%% Group data from several compatible trials into a single block
+
+expID = '20201222-1';
+
+trialNums = [];
+
+% Extract data from current experiment
+currExpData = tbl(strcmp(tbl.expID, expID), :);
+if ~isempty(trialNums)
+   currExpData = currExpData(ismember(currExpData.trialNum, trialNums), :); 
 end
+nTrials = size(unique(currExpData.trialNum), 1);
+roiNames = unique(currExpData.roiName);
+nRois = numel(roiNames);
 
-expID = regexp(expDir, '(?<=\\)........-.(?=_)', 'match');
+% Put all fl data in a single matrix for each fl type
+rawFlMat = zeros(currExpData.nVolumes(1), nTrials, nRois);
+trialDffMat = rawFlMat;
+expDffMat = rawFlMat;
+for iRoi = 1:nRois
+    currRoiData = currExpData(strcmp(currExpData.roiName, roiNames{iRoi}), :); 
+    for iTrial = 1:nTrials
+        rawFlMat(:, iTrial, iRoi) = currRoiData.rawFl{iTrial}; % [volume, trial, ROI]
+        trialDffMat(:, iTrial, iRoi) = (currRoiData.rawFl{iTrial} - ...
+                currRoiData.trialBaseline(iTrial)) ./ currRoiData.trialBaseline(iTrial); % [volume, trial, ROI]
+        expDffMat(:, iTrial, iRoi) = (currRoiData.rawFl{iTrial} - currRoiData.expBaseline(1)) ./ ...
+                currRoiData.expBaseline(1); % [volume, trial, ROI]
+    end
+end
+volTimes = (1:size(rawFlMat, 1)) ./ currExpData.volumeRate(1);
+nVolumes = numel(volTimes);
 
 %%
 
-flyFlowThresh = 0.05;
-ballFlowThresh = 0.03;
+%% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
+
+saveFig = 0;
 
 smWin = 5;
-smReps = 6;
+flType = 'expDff';
+roiName = 'ANT';
 
-minIsoMoveDur = 0.25;
-minLocEpochDur = 0.25;
-minQuiescenceDur = 0.25;
+figPos = [1800 950];
 
-try 
-    
-% Load data
-ftData = load_ft_data(expID, outputDir);
-[expMd, trialMd] = load_metadata(expID, outputDir);
-
-% Get flow data
-vidFrameTimes = ftData.vidFrameTimes;
-flyFlow = ftData.meanFlow;
-ballFlow = ftData.meanFlowBall;
-nTrials = numel(vidFrameTimes);
-
-% Preprocess data and generate state maps
+% Adjust plot spacing and margins
+SV = 0.002;
+SH = 0.02;
+ML = 0.04;
+MR = 0.02;
+MT = 0.05;
+MB = 0.065;
 
 
-globalMins = [inf, inf];
-globalMaxes = [-inf, -inf];
-for iTrial = 1:nTrials
-    smFlyFlow = repeat_smooth(flyFlow{iTrial}, smReps, 'smWin', smWin);
-    smBallFlow = repeat_smooth(ballFlow{iTrial}, smReps, 'smWin', smWin);
-    globalMins(1) = min([globalMins(1), min(smFlyFlow)]);
-    globalMins(2) = min([globalMins(2), min(smBallFlow)]);
-    globalMaxes(1) = max([globalMaxes(1), max(smFlyFlow)]);
-    globalMaxes(2) = max([globalMaxes(2), max(smBallFlow)]);
+
+% Get correct source data
+targetRoiInd = find(contains(roiNames, roiName));
+if strcmp(flType, 'rawFl')
+    flData = rawFlMat(:, :, targetRoiInd);
+elseif strcmp(flType, 'trialDff')
+    flData = trialDffMat(:, :, targetRoiInd);
+elseif strcmp(flType, 'expDff')
+    flData = expDffMat(:, :, targetRoiInd);
 end
+plotFl = smoothdata(flData, 1, 'gaussian', smWin, 'omitnan'); % --> [volume, trial]
 
-flyFlowNorm = {};
-ballFlowNorm = {};
-combThreshData = {};
-for iTrial = 1:nTrials
-    
-    % Smooth data
-    smFlyFlow = repeat_smooth(flyFlow{iTrial}, smReps, 'smWin', smWin);
-    smBallFlow = repeat_smooth(ballFlow{iTrial}, smReps, 'smWin', smWin);
-    
-    % Scale from 0-1
-    quick_norm = @(x, minVal, maxVal) (x - minVal)  ./  (maxVal - minVal);    
-    flyFlowNorm{iTrial} = quick_norm(smFlyFlow, globalMins(1), globalMaxes(1));
-    ballFlowNorm{iTrial} = quick_norm(smBallFlow, globalMins(2), globalMaxes(2));
-    
-    % Calculate thresholded state maps
-    thresholdedFlyFlow = flyFlowNorm{iTrial} > flyFlowThresh;
-    thresholdedBallFlow = ballFlowNorm{iTrial} > ballFlowThresh;
-    combThreshData{iTrial} = thresholdedFlyFlow + (2 * thresholdedBallFlow);
-    
-    % Set the first and last frames to quiescence for all trials
-    combThreshData{iTrial}(1) = 0;
-    combThreshData{iTrial}(end) = 0;
-    
+% To give all figures the same color scale
+plotFl(1, 1, :) = min(plotFl(:), [], 'omitnan');
+plotFl(end, end, :) = max(plotFl(:), [], 'omitnan');
+
+f = figure(3);clf;
+f.Color = [1 1 1];
+if ~isempty(figPos)
+    f.Position(3:4) = figPos;
+    if sum(f.Position([2, 4])) > 1080
+        f.Position(2) = 50;
+    end
 end
-
-
-% --------- CLEANUP --------------------------------------------------------------------------------
-
-newCombThresh = combThreshData;
-
-for iTrial = 1:nTrials
+colormap(magma);
+for iTrial = 1:nTrials 
     
-    currCombThresh = newCombThresh{iTrial};
-    nFrames = numel(currCombThresh);
-    currFrameTimes = vidFrameTimes{iTrial};
+    % Plot Fl Data
+    subaxis(nTrials, 8, [1:7] + (8 * (iTrial - 1)), 'mt', MT, 'mb', MB, 'sv', SV, 'mr', MR, ...
+            'ml', ML, 'sh', SH);
+    imagesc([0, currRoiData.trialDuration(1)], [1, 2], plotFl(:, iTrial)');
+    hold on
     
-    % Convert Loc+, Move- epochs to quiescence
-    currCombThresh(currCombThresh == 2) = 0;
+    % Label each plot with trial number
+    ax = gca();
+    ax.YTickLabel = [];
+    t = ylabel(['Trial #', num2str(currRoiData.trialNum(iTrial))], 'rotation', 0, 'FontSize', 12);
+    t.HorizontalAlignment = 'right';
+    t.VerticalAlignment = 'middle';
+    t.Position(1) = t.Position(1) * 2;
     
-    % Eliminate any too-short locomotion bouts
-    currInd = 1;
-    currVal = currCombThresh(currInd);
-    while currInd < nFrames
-        
-        % Move until currVal is Loc+
-        while currVal ~= 3 && currInd < nFrames
-            lastVal = currVal;
-            locStartInd = currInd;
-            currInd = currInd + 1;
-            currVal = currCombThresh(currInd);
-        end
-        
-        % Move to end of epoch and count length
-        while currVal == 3 && currInd < nFrames
-            currInd = currInd + 1;
-            currVal = currCombThresh(currInd);
-        end
-        
-        % If epoch is too short convert it to preceding action
-        if (currFrameTimes(currInd) - currFrameTimes(locStartInd)) < minLocEpochDur
-            currCombThresh(locStartInd:currInd) = lastVal;
-        end
+    % Label X axis on final trial
+    if iTrial < nTrials
+        ax.XTickLabel = [];
+    else
+        str = ax.YLabel.String;
+        pos = ax.YLabel.Position;
+        ax.FontSize = 12;
+        xlabel('Time (sec)', 'FontSize', 14);
+        ylabel(str, 'rotation', 0, 'FontSize', 12);      
     end
     
-    % Trim Move+, Loc- epochs from the start and end of locomotion bouts
-    currInd = 1;
-    postLoc = 0;
-    currVal = currCombThresh(currInd);
-    while currInd < nFrames
-        
-        % Move until currVal is Move+
-        while currVal ~= 1 && currInd < nFrames
-            if currVal == 3
-                postLoc = 1;
-            else
-                postLoc = 0;
-            end
-            currInd = currInd + 1;
-            currVal = currCombThresh(currInd);
-        end
-        
-        if currInd < nFrames
-            
-            % Mark isoMove start frame
-            isoMoveStartInd = currInd;
-            
-            % Move to end of isoMove epoch
-            while currVal == 1 && currInd < nFrames
-                currInd = currInd + 1;
-                currVal = currCombThresh(currInd);
-            end
-            epochDur = currFrameTimes(currInd - 1) - currFrameTimes(isoMoveStartInd);
-            
-            % Remove Loc-, Move+ epoch if necessary
-            if epochDur < minIsoMoveDur
-                if postLoc
-                    if currVal == 0
-                        % Remove trailing Loc-, Move+ epoch
-                        currCombThresh(isoMoveStartInd:currInd) = 0;
-                        postLoc = 0;
-                    elseif currVal == 3
-                        % Convert sandwich Loc-, Move+ epoch to Loc+, Move+
-                        currCombThresh(isoMoveStartInd:currInd) = 3;
-                    end
-                else
-                    if currVal == 3
-                        % Remove preceding Loc-, Move+ epoch
-                        currCombThresh(isoMoveStartInd:currInd) = 0;
-                    end
-                end
-            end
-            
-        end%if
-    end%while
-    
-    
-    % Eliminate any too-short quiescence sandwiches
-    currInd = 1;
-    currVal = currCombThresh(currInd);
-    while currInd < nFrames
-        
-        % Move until currVal is Loc-, Move-
-        while currVal ~= 0 && currInd < nFrames
-            lastVal = currVal;
-            locStartInd = currInd;
-            currInd = currInd + 1;
-            currVal = currCombThresh(currInd);
-        end
-        
-        % Move to end of epoch and count length
-        while currVal == 0 && currInd < nFrames
-            currInd = currInd + 1;
-            currVal = currCombThresh(currInd);
-        end
-        
-        % If epoch is too short convert it to preceding action
-        if (currFrameTimes(currInd) - currFrameTimes(locStartInd)) < minQuiescenceDur
-            currCombThresh(locStartInd:currInd) = lastVal;
-        end
-    end
-    
-    newCombThresh{iTrial} = currCombThresh;
-
 end%iTrial
 
-catch ME; rethrow(ME); end
-
-% --------- VISUALIZE PRE- AND POST- CLEANUP -------------------------------------------------------
-
-trialNum = 5;
-
-% Imagesc before and after comparison
-f = figure(1); clf;
-f.Color = [1 1 1];
-clear ax;
-ax(1) = subaxis(4, 1, 1, 'ml', 0.02, 'mr', 0.02, 'sv', 0.05, 'mb', 0.08);
-imagesc([vidFrameTimes{trialNum}(1), vidFrameTimes{trialNum}(end)], [0, 1], [combThreshData{trialNum}']);
-colormap(gca, [rgb('Indigo'); rgb('Orange'); rgb('Yellow'); rgb('Cyan')]);
-title('Thresholded')
-ax(1).YTickLabel = [];
-ax(1).XTickLabel = [];
-ax(1).FontSize = 14;
-
-ax(2) = subaxis(4, 1, 2); hold on;
-imagesc([vidFrameTimes{trialNum}(1), vidFrameTimes{trialNum}(end)], [0, 1], [newCombThresh{trialNum}']);
-colormap(gca, [rgb('Indigo'); rgb('Orange'); rgb('Yellow'); rgb('Cyan')]);
-title('Final')
-ax(2).YTickLabel = [];
-ax(2).FontSize = 14;
-linkaxes(ax(1:2), 'x');
-xlim([vidFrameTimes{trialNum}(1), vidFrameTimes{trialNum}(end)])
-
-% Overlay before and after comparison
-ax(3) = subaxis(4, 1, [3 4]); hold on;
-xx = [vidFrameTimes{trialNum}'];
-plot(xx, [flyFlowNorm{trialNum}'], 'linewidth', 1);
-plot(xx, [ballFlowNorm{trialNum}'], 'linewidth', 1);
-plot(xx, [newCombThresh{trialNum}'] ./ 3, 'linewidth', 2);
-plot([xx(1), xx(end)], [1, 1] * flyFlowThresh, 'color', 'r', 'linewidth', 2);
-plot([xx(1), xx(end)], [1, 1] * ballFlowThresh, '--', 'color', 'g', 'linewidth', 2);
-legend('Fly flow', 'Ball flow', 'FinalAnnot', 'Fly flow thresh', 'Ball flow thresh', ...
-        'autoupdate', 'off');
-ylim([0 1]);
-xlim([xx(1), xx(end)]);
-ax(3).FontSize = 14;
 
 
-%% Create and save behavior event objects for locomotion and isolated movement
 
-isoMoveEvents = behaviorEvent('IsolatedMovement');
-locEvents = behaviorEvent('Locomotion');
-for iTrial = 1:nTrials
-    currAnnotData = newCombThresh{iTrial};
-    currFrameTimes = vidFrameTimes{iTrial};
-    
-    % Separate according to behavior type
-    iFrames = currAnnotData == 1;
-    lFrames = currAnnotData == 3;
-    
-    if sum(iFrames) > 0
-        isoMoveEvents = isoMoveEvents.append_annotation_data(expID{:}, trialMd.trialNum(iTrial), ...
-                iFrames, currFrameTimes);
-    end
-    if sum(lFrames) > 0
-        locEvents = locEvents.append_annotation_data(expID{:}, trialMd.trialNum(iTrial), ...
-                lFrames, currFrameTimes);
-    end
-end
 
-if ~isempty(isoMoveEvents.eventData)
-    isoMoveEvents.export_csv(outputDir, 'fileNamePrefix', expID{:});
-end
-if ~isempty(locEvents.eventData)
-    locEvents.export_csv(outputDir, 'fileNamePrefix', expID{:});
-end
 
-p = [];
-p.flyFlowThresh = flyFlowThresh;
-p.ballFlowThresh = ballFlowThresh;
-p.smWin = smWin;
-p.smReps = smReps;
-p.minIsoMoveDur = minIsoMoveDur;
-p.minLocEpochDur = minLocEpochDur;
-p.minQuiescenceDur = minQuiescenceDur;
 
-save(fullfile(outputDir, 'behaviorAnnotationParams.mat'), 'p')
+
+
+
+
+
+
 
 

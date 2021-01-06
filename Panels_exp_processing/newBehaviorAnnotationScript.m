@@ -35,8 +35,6 @@ ballFlow = ftData.meanFlowBall;
 nTrials = numel(vidFrameTimes);
 
 % Preprocess data and generate state maps
-
-
 globalMins = [inf, inf];
 globalMaxes = [-inf, -inf];
 for iTrial = 1:nTrials
@@ -197,7 +195,7 @@ catch ME; rethrow(ME); end
 
 % --------- VISUALIZE PRE- AND POST- CLEANUP -------------------------------------------------------
 
-trialNum = 5;
+trialNum = 1;
 
 % Imagesc before and after comparison
 f = figure(1); clf;
@@ -248,11 +246,11 @@ for iTrial = 1:nTrials
     lFrames = currAnnotData == 3;
     
     if sum(iFrames) > 0
-        isoMoveEvents = isoMoveEvents.append_annotation_data(expID{:}, trialMd.trialNum(iTrial), ...
+        isoMoveEvents = isoMoveEvents.append_annotation_data(expID{:}, ftData.trialNum(iTrial), ...
                 iFrames, currFrameTimes);
     end
     if sum(lFrames) > 0
-        locEvents = locEvents.append_annotation_data(expID{:}, trialMd.trialNum(iTrial), ...
+        locEvents = locEvents.append_annotation_data(expID{:}, ftData.trialNum(iTrial), ...
                 lFrames, currFrameTimes);
     end
 end
@@ -275,4 +273,4 @@ p.minQuiescenceDur = minQuiescenceDur;
 
 save(fullfile(outputDir, 'behaviorAnnotationParams.mat'), 'p')
 
-
+disp('Behavior annotations saved');

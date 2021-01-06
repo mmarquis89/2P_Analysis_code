@@ -414,7 +414,7 @@ classdef EventAlignedData
         function outputDataTable = output_analysis_DataTable(obj, analysisWin)
             
             % Generate table
-            outputDataTable = generate_DataTable(obj);
+            outputDataTable = generate_DataTable(obj, 0);
             
             % Save a the analysisWin and alignEventName to the DataTable's custom properties
             outputDataTable.customProps.analysisWin = analysisWin;
