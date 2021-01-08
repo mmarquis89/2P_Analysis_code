@@ -31,15 +31,15 @@ useSavedObj = 0;
 useSavedPlotParams = 0;
 
 speedType = 'move';
-roiName = 'TypeD';
+roiName = 'TypeB';
 flType = 'slidingbaseline'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
 figDims = [1520 840];
 
 xLim = [0 25];
-yLim = [0 0.37];
+yLim = [0 0.5];
 fontSize = 12;
 
-neuronType = 'PPL203';
+neuronType = 'PPL201';
 
 % Adjust plot spacing and margins
 SV = 0.08;
@@ -101,6 +101,7 @@ for iExp = 1:numel(expNums)
     currPlotParams.nHistBins = 50;
     currPlotParams.nAnalysisBins = 25;
     currPlotParams.flType = flType;
+    currPlotParams.plotting_minSpeed = 0;
     a.params = currPlotParams;
     
     % Create axes for current plot
@@ -202,7 +203,7 @@ end
 %% Save current figure
 
 saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Figs'];
-fileName = ['Binned_moveSpeed_vs_slidingBaselineDff_plots_', neuronType, '_matchedAxLims'];
+fileName = [neuronType, '_binned_moveSpeed_vs_slidingBaselineDff_matchedX_matchedY'];
 f.UserData.plotParams = currPlotParams;
 f.UserData.speedType = speedType;
 save_figure(f, saveDir, fileName)

@@ -291,7 +291,7 @@ methods
             case 'yaw'
                 speedData = aData.yawSpeedData;
             case 'calculatedMove'
-                speedData = aData.calculatedMoveSpeedData;
+                speedData = aData.calculatedMoveSpeedData;                
         end
         if nargin == 4 && speedNorm == 1
             speedData = mov_norm(speedData, slidingWinSize)';  
@@ -305,6 +305,9 @@ methods
         
         [speedBinMidpoints, flBinMeans, SEM] = obj.bin_data(speedData, flData, ...
                 obj.params.nAnalysisBins, obj.params.plotting_minSpeed);
+%         [speedBinMidpoints, flBinMeans, SEM] = obj.bin_data([0; diff(smoothdata(speedData, 'gaussian', ...
+%                 obj.params.smWinFrames))], flData, ...
+%                 obj.params.nAnalysisBins, obj.params.plotting_minSpeed);
 
         obj.analysisOutput.binnedData.speedBinMidpoints = speedBinMidpoints;
         obj.analysisOutput.binnedData.flBinMeans = flBinMeans;
@@ -658,6 +661,9 @@ switch speedType
         outputMat = cell2padded_mat(currSubset.sideSpeed);
 end
 outputMat = repeat_smooth(outputMat, p.nSmoothRepsFrames, 'dim', 1, 'smWin', p.smWinFrames);
+if contains(speedType, 'Accel')
+    outputMat = [zeros(1, size(outputMat, 2)); diff(outputMat, 1, 1)];
+end
 switch speedType
     case {'forward', 'move', 'side'}
         if p.convertSpeedUnits

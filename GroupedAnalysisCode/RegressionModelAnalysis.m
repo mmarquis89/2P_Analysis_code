@@ -50,19 +50,19 @@ methods
         obj.modelData = [];
         
         % -------  Load source data for all experiments -------
-        if ~isfield(p.parentDir) || isempty(p.parentDir)
+        if ~isfield(p, 'parentDir') || isempty(p.parentDir)
             p.parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
         end
-        if ~isfield(p.dataDir) || isempty(p.dataDir)
+        if ~isfield(p, 'dataDir') || isempty(p.dataDir)
             p.dataDir = fullfile(p.parentDir, 'all_experiments');
         end
                 
         % Load AlignEvent object
         disp('Loading new AlignEvent object...');
-        if ~isfield(p.eventDataParentDir) || isempty(p.eventDataParentDir)
+        if ~isfield(p, 'eventDataParentDir') || isempty(p.eventDataParentDir)
             p.eventDataParentDir = p.parentDir;
         end
-        if ~isfield(p.alignEventDateStr) || isempty(p.alignEventDateStr)
+        if ~isfield(p, 'alignEventDateStr') || isempty(p.alignEventDateStr)
             p.alignEventDateStr = '20200609';
         end
         load(fullfile(p.eventDataParentDir, 'Saved_AlignEvent_objects', [p.alignEventDateStr, ...
@@ -162,10 +162,10 @@ methods
             
             % Calculate the odor response filter from trial-averaged data
             disp('Generating odor response vector...');
-            if ~isfield(p.loadOneNoteData) || isempty(p.loadOneNoteData)
+            if ~isfield(p, 'loadOneNoteData') || isempty(p.loadOneNoteData)
                 p.loadOneNoteData = 0;
             end
-            if ~isfield(p.alignObjFilterDefs) || isempty(p.alignObjFilterDefs)
+            if ~isfield(p, 'alignObjFilterDefs') || isempty(p.alignObjFilterDefs)
                 filterDefs = alignObj.create_filterDefs('loadOneNoteData', p.loadOneNoteData);
                 filterDefs.expID = currExpID;
                 filterDefs.roiName = roiNames{1};
@@ -173,6 +173,10 @@ methods
                 filterDefs.locomotion = [];
                 filterDefs.trialNum = trialNums;
                 p.alignObjFilterDefs = filterDefs;
+            else
+                p.alignObjFilterDefs.expID = currExpID;
+                p.alignObjFilterDefs.trialNum = trialNums;
+                p.alignObjFilterDefs.roiName = roiNames{1};
             end
             dt = dt.initialize_filters(p.alignObjFilterDefs);
 
@@ -235,10 +239,19 @@ methods
     % Initialize model data
     function obj = initialize_models(obj, modelParams)
         
-        % modelParams = struct with fields: trainTestSplit, kFold, criterion, upper, pEnter, 
-        %                                   pRemove, verbose, useYaw, useDriftCorrection, 
-        %                                   odorIntegrationWin, speedPadDist, 
-        %                                   speedIntegrationWin, standardizeInputs, 
+        % modelParams = struct with fields: trainTestSplit, 
+        %                                   kFold
+        %                                   criterion
+        %                                   upper
+        %                                   pEnter 
+        %                                   pRemove
+        %                                   verbose
+        %                                   useYaw
+        %                                   useDriftCorrection 
+        %                                   odorIntegrationWin
+        %                                   speedPadDist
+        %                                   speedIntegrationWin
+        %                                   standardizeInputs
         %                                   normalizeInputs
         % Can be either a scalar structure or have one set of params for each experiment in rm.
 

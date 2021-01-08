@@ -1,6 +1,6 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-% dataDir = fullfile(parentDir, 'all_experiments');
-dataDir = fullfile(parentDir, 'new_PPL201_experiments')
+dataDir = fullfile(parentDir, 'all_experiments');
+% dataDir = fullfile(parentDir, 'new_PPL201_experiments');
 figDir = ...
         'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs\linear_regression_analysis';
 
@@ -17,20 +17,21 @@ end
 
 % Set source data parameters;
 p = [];
-p.roiName = 'TypeB';
-p.maxSpeed = 35;
+p.roiName = 'TypeD';
+p.maxSpeed = 100;
 p.smWinVols = 5;
-p.smWinFrames = 3;
-p.smReps = 10;
+p.smWinFrames = 5;
+p.smReps = 15;
 p.ftLagVols = 3;
 p.speedType = 'moveSpeed';
-p.odorRespFilterDur = [6 7];
+p.odorRespFilterDur = [7 5];
 
-p.parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-p.dataDir = fullfile(parentDir, 'new_PPL201_experiments');
-p.eventDataParentDir = p.dataDir;
-p.alignEventDateStr = '20201231';
-p.convertFtUnits = 0;
+p.parentDir = parentDir;
+p.dataDir = dataDir;
+% p.eventDataParentDir = p.dataDir;
+% p.alignEventDateStr = '20201231';
+p.eventDataParentDir = p.parentDir;
+p.convertFtUnits = 1;
 p.loadOneNoteData = 0;
 p.alignObjFilterDefs = [];
 
@@ -40,7 +41,7 @@ mp.trainTestSplit = 0.8;
 mp.kFold = 100;
 mp.criterion = 'rsquared'; % 'sse, 'aic', 'bic', 'rsquared', or 'adjrsquared'
 mp.upper = [];
-mp.pEnter = [0.03];
+mp.pEnter = [0];
 mp.pRemove = [0];
 mp.verbose = 0;
 mp.useYaw = 1;
@@ -49,41 +50,67 @@ mp.odorIntegrationWin = [30:20:200];
 % mp.odorIntegrationWin = [];
 mp.speedPadDist = 5;
 mp.speedIntegrationWin = [];
+mp.standardizeInputs = 1;
+mp.normalizeInputs = 0;
 
 
-% expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
-%                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
-% 
-% % Type F
+% PPL203
+expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
+               '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
+skipTrials = {[], [], [], [], [], [], [], [], []};
+skipVols = {[], [1:1500], [], [], [], [], [], [], [1:2200]};
+
+            
+% PPM1201
 % expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
 %         '20181020-1', '20190226-3'};
+% skipTrials = repmat({[]}, 1, 8);
+% skipVols = skipTrials;
 
-% PPL201
-expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
-        '20210102-2', '20210102-3', '20210102-4'};
+% % PPL201
+% expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+%         '20210102-2', '20210102-3', '20210102-4'};
+% skipTrials = {[6], [6], [6], [6], ...
+%               [4:6], [6], [6], [6 7], [6 7]};
+% skipVols = repmat({[]}, 1, numel(skipTrials));
 
-skipTrials = {[6], [6], [6], [6], ...
-              [4:6], [6], [6], [6 7], [6 7]};
-          
-% skipVols = {[], [], [], [], [], [], []};
 
-skipVols = repmat({[]}, 1, numel(skipTrials));
+
+
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
         'skipVols'});
 
-% Create analysis object
-rm = RegressionModelAnalysis_PPL201(expInfoTbl, p);
+% Create analysis objects
+baseRm = RegressionModelAnalysis(expInfoTbl, p);
+criterionList = {'rsquared', 'adjrsquared', 'AIC', 'BIC', 'SSE'};
+pEnterList = [0.05 0.01 0 0 0.03];
+pRemoveList = [0.02 0 0.01 0.01 0.05];
+allRm = [];
+for i = 1:numel(criterionList)
+    disp(['Fitting models using ', criterionList{i}, ' criterion']);
+    mp.criterion = criterionList{i};
+    mp.pEnter = pEnterList(i);
+    mp.pRemove = pRemoveList(i);
+    allRm{i} = baseRm.initialize_models(mp);
+    allRm{i} = allRm{i}.optimize_odor_integration_windows();
+end
 
-% Initialize models
-rm = rm.initialize_models(mp);
-
-% Find optimal odor integration windows for each experiment
-rm = rm.optimize_odor_integration_windows();
+% % Create analysis object
+% rm = RegressionModelAnalysis_PPL201(expInfoTbl, p);
+% 
+% % Initialize models
+% rm = rm.initialize_models(mp);
+% 
+% % Find optimal odor integration windows for each experiment
+% rm = rm.optimize_odor_integration_windows();
 
 % Find optimal fw speed integration window sizes
 % rm = rm.optimize_mean_speed_windows();
+
+allRm_normalized = allRm;
+save(fullfile(parentDir, 'model_testing_normalized.mat'), 'baseRm', 'allRm_normalized');
 
 catch ME; rethrow(ME); end
 %% =================================================================================================
@@ -729,9 +756,10 @@ for iExp = 1:size(rm.modelData, 1)
     allDcCoeffNames = [allDcCoeffNames, rm.modelData.driftCorrectedMdls{iExp}.CoefficientNames];    
 end
 uniqueCoeffs = unique(regexprep(allDcCoeffNames, 'odorHistory_.*', 'odorHistory'));
-uniqueCoeffs = uniqueCoeffs(2:end); % Drop intercept term
+
+uniqueCoeffs = uniqueCoeffs(2:end) % Drop intercept term
 % uniqueCoeffs = uniqueCoeffs([1 4 3 2 5]);
-uniqueCoeffs = uniqueCoeffs([1 4 3 2]);
+uniqueCoeffs = uniqueCoeffs([1 3 2]);
 coeffArrDc = zeros(numel(uniqueCoeffs), size(rm.modelData, 1));
 for iExp = 1:size(rm.modelData, 1) 
     for iCoeff = 1:numel(uniqueCoeffs)
@@ -805,7 +833,7 @@ catch ME; rethrow(ME); end
 
 %% Plot predicted vs. measured fluorescence
 
-saveFigs = 1;
+saveFigs = 0;
 fileNameStr = 'fullExp_';
 
 
