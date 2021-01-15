@@ -354,10 +354,46 @@ methods
             
             % Add to model data table for future use in plotting model predictions
             newRow.fullDataTbl = {tbl};
-            shuffleInds = randperm(size(tbl, 1));
-            splitInd = floor(numel(shuffleInds) * mp.trainTestSplit);
-            newRow.fitRowInds = {shuffleInds(1:splitInd)};
-            newRow.testRowInds = {shuffleInds((splitInd + 1):end)};
+
+% >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+            % Divide data into chunks of ~1 sec
+            chunkSize = round(currExpData.volumeRate);
+            chunkStartInds = 1:chunkSize:size(tbl, 1);
+            chunkEndInds = [chunkStartInds(2:end) - 1, size(tbl, 1)];
+            
+            % Drop every other chunk so none are adjacent
+            shuffleChunkInds = [chunkStartInds', chunkEndInds'];
+            dropoutChunkInds = shuffleChunkInds(1:2:end, :);
+            dropoutChunkInds = dropoutChunkInds(randperm(size(dropoutChunkInds, 1)), :);
+            
+            % Split chunks into fit and test data indices
+            splitChunk = floor(size(dropoutChunkInds, 1) * mp.trainTestSplit);
+            fitChunks = dropoutChunkInds(1:splitChunk, :);
+            testChunks = dropoutChunkInds((splitChunk + 1:end), :);
+            fitInds = [];
+            for iChunk = 1:size(fitChunks, 1)
+                fitInds = [fitInds, fitChunks(iChunk, 1):fitChunks(iChunk, 2)];
+            end
+            testInds = [];
+            for iChunk = 1:size(testChunks, 1)
+                testInds = [testInds, testChunks(iChunk, 1):testChunks(iChunk, 2)];
+            end
+            
+            % Add fit and test indices to new row
+            newRow.shuffleChunkInds = {shuffleChunkInds};
+            newRow.dropoutChunkInds = {dropoutChunkInds};
+            newRow.fitRowInds = {fitInds};
+            newRow.testRowInds = {testInds};
+%
+% >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+% 
+%             shuffleInds = randperm(size(tbl, 1));
+%             splitInd = floor(numel(shuffleInds) * mp.trainTestSplit);
+%             newRow.fitRowInds = {shuffleInds(1:splitInd)};
+%             newRow.testRowInds = {shuffleInds((splitInd + 1):end)};
+            
+            % Append new row to modelData
             obj.modelData = [obj.modelData; newRow];
             
         end% iExp

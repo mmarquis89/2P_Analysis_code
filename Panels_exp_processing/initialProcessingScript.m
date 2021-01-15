@@ -6,42 +6,6 @@ outputDir = fullfile(expDir, 'ProcessedData');
 if ~isfolder(outputDir)
     mkdir(outputDir)
 end
-%%
-
-clearvars
-startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
-expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-1_TH-C_cyRFP_7f';
-outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-1_TH-C_cyRFP_7f\ProcessedData';
-if ~isfolder(outputDir)
-    mkdir(outputDir)
-end
-%%
-
-clearvars
-startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
-expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-2_TH-C_cyRFP_7f';
-outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-2_TH-C_cyRFP_7f\ProcessedData';
-if ~isfolder(outputDir)
-    mkdir(outputDir)
-end
-
-%%
-clearvars
-startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
-expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-3_TH-C_cyRFP_7f';
-outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-3_TH-C_cyRFP_7f\ProcessedData';
-if ~isfolder(outputDir)
-    mkdir(outputDir)
-end
-
-%%
-clearvars
-startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
-expDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-4_TH-C_cyRFP_7f';
-outputDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\20210102-4_TH-C_cyRFP_7f\ProcessedData';
-if ~isfolder(outputDir)
-    mkdir(outputDir)
-end
 
 %% Make anatomy stack
 try
@@ -593,7 +557,7 @@ catch ME; rethrow(ME); end
 
 %% Choose threshold for defining movement epochs
 
-moveThresh = 0.07;
+moveThresh = 0.06;
 flowYLim = [0 0.8];
 
 try
@@ -823,11 +787,14 @@ catch ME; rethrow(ME); end
 %% Copy files over to a grouped analysis data directory
 
 groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
+groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
-        '20210102-2', '20210102-3', '20210102-4'};
+% expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+%         '20210102-2', '20210102-3', '20210102-4'};
+expList = {'20201210-2'}
+
 
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};

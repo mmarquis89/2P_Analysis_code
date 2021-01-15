@@ -3,7 +3,8 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 figDir = fullfile(parentDir, 'Figs');
 
-expList = [];% [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', '20201201-3'}];%%
+expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
+        '20201201-3', '20201203-1', '20201203-2', '20201210-1'}];%%
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -13,14 +14,14 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 
 %% Group data from several compatible trials into a single block
 
-expID = '20201210-2';
-% expID = expMd.expID{17};
+% expID = '20201210-1';
+expID = expMd.expID{9};
 
 trialNums = [];
 
 sourceData = wedgeData; %glomData;%
 
-showBehaviorPlots = 1;
+showBehaviorPlots = 0;
 
 washoutTime = 0;
 
@@ -205,6 +206,7 @@ cycleVectorPhase = [];
 cycleFlData = [];
 cycleDffData = {};
 allCycleStartVols = {};
+cycleVolTimes = [];
 for iTrial = 1:nTrials
     
     panelsFrameTimes = double(1:currExpData.nPanelsFrames(iTrial)) ./ ...
@@ -234,14 +236,16 @@ for iTrial = 1:nTrials
         panelsPhase = 2 * pi * (panelsPosVols ./ max(panelsPosVols));
         
         % Calculate vector strength and phase
+        trialCycleVolTimes = [];
         for iRoi = 1:nRois
             for iCycle = 1:nCycles
                 startInd = cycleStartVols(iCycle);
                 endInd = cycleEndVols(iCycle);
                 currFlData = smoothdata(currExpDff(startInd:endInd, iRoi), 1, 'gaussian', flSmWin);
+                currVolTimes = volTimes(cycleStartVols(iCycle):cycleEndVols(iCycle))';
                 currPanelsPhase = panelsPhase(startInd:endInd);
                 cycleFlData{iTrial, iRoi, iCycle} = currFlData;
-                
+                trialCycleVolTimes{iCycle} = currVolTimes;
                 oppositeVector = sum(currFlData' .* sin(currPanelsPhase));
                 adjacentVector = sum(currFlData' .* cos(currPanelsPhase));
                 oppositeMeanVector =  oppositeVector / numel(currPanelsPhase);
@@ -249,7 +253,7 @@ for iTrial = 1:nTrials
                 
                 cycleVectorStrength(iTrial, iRoi, iCycle) = sqrt(oppositeVector^2 ...
                         + adjacentVector^2) / numel(currPanelsPhase);
-                cycleVectorPhase(iTrial, iRoi, iCycle) = wrapTo2Pi(atan(oppositeMeanVector / ...
+                cycleVectorPhase(iTrial, iRoi, iCycle) = wrapTo2Pi(atan2(oppositeMeanVector, ...
                         adjacentMeanVector));
             end
         end
@@ -258,14 +262,21 @@ for iTrial = 1:nTrials
         currTrialCycleFl = squeeze(cycleFlData(iTrial, :, :));
         maxVolCount = max(cellfun(@numel, currTrialCycleFl(1, :)));
         currCycleDffArr = [];
+        currCycleVolTimesArr = [];
         for iCycle = 1:nCycles
             currCycleFl = cell2mat(currTrialCycleFl(:, iCycle)');
+            currCycleVolTimes = trialCycleVolTimes{iCycle};
             if size(currCycleFl, 1) < maxVolCount
                 currCycleFl(size(currCycleFl, 1) + 1:maxVolCount, :) = nan;
             end
+            if numel(currCycleVolTimes) < maxVolCount
+                currCycleVolTimes(numel(currCycleVolTimes) + 1:maxVolCount) = nan;
+            end
             currCycleDffArr = cat(3, currCycleDffArr, currCycleFl); % [vol, glom, cycle]
+            currCycleVolTimesArr = cat(2, currCycleVolTimesArr, currCycleVolTimes);
         end
         cycleDffData{iTrial} = currCycleDffArr;
+        cycleVolTimes{iTrial} = currCycleVolTimesArr;
     end
 end
 catch ME; rethrow(ME); end
@@ -376,7 +387,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT SINGLE-TRIAL HEATMAPS FOR ENTIRE BLOCK
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 flType = 'expDff';
@@ -512,7 +523,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT TUNING HEATMAPS FOR EACH WEDGE ACROSS TRIALS
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -623,7 +634,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT AS LINES INSTEAD OF USING IMAGESC
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -751,7 +762,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT MIN AND MAX VALUES FROM THE TUNING CURVES
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -930,7 +941,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT ALL TUNING CURVES ON OVERLAID POLAR PLOTS
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -1025,8 +1036,6 @@ if saveFig
 end
 
 catch ME; rethrow(ME); end
-
-%% PLOT VECTOR STRENGTH FOR EACH INDIVIDUAL BAR SWING
 
 
 

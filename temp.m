@@ -1,10 +1,14 @@
 
 %% Load data
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
+% parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\all_experiments';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments';
 
-expList = {'20201222-1', '20201222-2'};
+expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+        '20210102-2', '20210102-3', '20210102-4'};
 
+% expList = PPL201_expList(7:end);
+    
 % Load metadata 
 [expMd, trialMd] = load_metadata(expList, parentDir);
 
@@ -14,9 +18,64 @@ roiData = load_roi_data(expList, parentDir);
 % Load FicTrac data
 ftData = load_ft_data(expList, parentDir);
 
+% Load event data
+eventData = load_event_data(expList, parentDir);
+locEventData = eventData.locomotion;
+% locEventData = eventData.flailing;
+odorEventData = eventData.odor;
+
 % Generate consolidated source data table
 tbl = inner_join(roiData, expMd, trialMd);
 tbl = outerjoin(tbl, ftData, 'type', 'left', 'mergekeys', 1);
+
+sourceTbl = tbl;
+%% 
+
+roiName = 'TypeB';
+
+trialNum = 2;
+
+smWin = 5;
+
+tbl = sourceTbl(contains(sourceTbl.roiName, roiName), :);
+tbl = tbl(tbl.trialNum == trialNum, :);
+
+tblExps = unique(tbl.expID);
+
+for iExp = 1:numel(tblExps)
+    
+    currTbl = tbl(strcmp(tbl.expID, tblExps{iExp}), :);
+    currTbl = currTbl(1, :);
+    
+    volTimes = (1:currTbl.nVolumes) ./ currTbl.volumeRate;
+    currOdorEvents = odorEventData.eventData(strcmp(odorEventData.eventData.expID, tblExps{iExp}) & ...
+            odorEventData.eventData.trialNum == trialNum, :);
+    odorStimTimes = [currOdorEvents.onsetTime, currOdorEvents.offsetTime];
+%     odorOnsetTimes = currTbl.optoStimTiming{:}(1):sum(currTbl.optoStimTiming{:}(2:3)):volTimes(end);
+%     odorOffsetTimes = odorOnsetTimes + currTbl.optoStimTiming{:}(2);
+%     odorStimTimes = [odorOnsetTimes; odorOffsetTimes]';
+    
+%     currTrialList = locEventData.trialList(strcmp(locEventData.trialList.expID, currTbl.expID), :);
+    locVols = locEventData.create_logical_array(currTbl.nVolumes, volTimes, currTbl(:, {'expID', ...
+            'trialNum'}));
+    
+    figure(iExp); clf; 
+    
+    ax = subaxis(2, 1, 1, 'ml', 0.05, 'mr', 0.05); hold on;
+    yy = smoothdata(currTbl.rawFl{:}, 1, 'gaussian', smWin);
+    yy(logical(locVols)) = nan;
+    plot(volTimes, yy);
+    plot_stim_shading(odorStimTimes);
+    ax.XLim = [0 volTimes(end)];
+    title(currTbl.expID{:})
+    
+    ax = subaxis(2, 1, 2); hold on;
+    plot(currTbl.frameTimes{:}, repeat_smooth(currTbl.moveSpeed{:}, 10, 'smWin', smWin))
+    plot_stim_shading(odorStimTimes);
+    plot(volTimes, 10 * locVols, 'color', 'r')
+    ax.XLim = [0 currTbl.frameTimes{:}(end)];
+end
+
 
 %% Group data from several compatible trials into a single block
 
