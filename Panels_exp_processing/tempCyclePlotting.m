@@ -1,7 +1,7 @@
 
 % Plot all data for each wedge stacked according to bar cycle
 
-currTrial = 8;
+currTrial = 1;
 prevTrialCycles = 5;
 smWin = 5;
 
@@ -53,6 +53,10 @@ for iTrial = 1:nTrials
     if ~isempty(currCycleDff)
         allCycleDff = cat(3, allCycleDff, currCycleDff);
         trialStartCycles = [trialStartCycles, trialStartCycles(end) + size(currCycleDff, 3)];
+    else
+        allCycleDff = cat(3, allCycleDff, nan(size(cycleDffData{iTrial - 1})));
+        trialStartCycles = [trialStartCycles, trialStartCycles(end) + ...
+                size(cycleDffData{iTrial - 1}, 3)];
     end
 end
 
@@ -88,45 +92,30 @@ f = figure(9); clf
 hold on;
 f.Color = [1 1 1];
 
-test = permute(cycleVectorStrength, [2 3 1]);
-test = test(:, 1:end-1, :);
-test2 = smoothdata(reshape(test, 8, []), 2, 'gaussian', smWin);
-trialBounds = 1:size(test, 2):size(test2, 2);
+cvs = permute(cycleVectorStrength, [2 3 1]); % --> [wedge, cycle, trial] 
+cvs = cvs(:, 1:end-1, :);
+cvsRs = smoothdata(reshape(cvs, 8, []), 2, 'gaussian', smWin); % --> [wedge, expCycle]
+trialBounds = 1:size(cvs, 2):size(cvsRs, 2);
+cycleTimes = [];
+for iTrial = 1:nTrials
+    if currExpData.usingPanels(iTrial)
+        cycleStartVolTimes = cycleVolTimes{iTrial}(1, 1:end-1);
+    else
+        cycleStartVolTimes = nan(1, size(cvs, 2));
+    end
+    if iTrial > 1
+        cycleStartVolTimes = cycleStartVolTimes + sum(currExpData.trialDuration(1:iTrial-1));
+    end
+    cycleTimes = [cycleTimes, cycleStartVolTimes];
+end
 for iRoi = plotRois%1:size(test, 1)
-    plot(cycleTimes, test2(iRoi, :), '-o', 'color', cm(iRoi, :), 'linewidth', 1)
+    plot(repmat(cycleTimes, 8, 1), cvsRs(iRoi, :), '*', 'color', cm(iRoi, :), 'linewidth', 1)
 end
 if numel(plotRois) > 1
-    plot(cycleTimes, mean(test2, 1), 'color', 'k', 'linewidth', 5)
+    plot(repmat(cycleTimes, 8, 1), mean(cvsRs, 1), 'color', 'k', 'linewidth', 3)
 end
-% for iTrial = 1:numel(trialBounds)
-%     yL = ylim();
-%     if strcmp(currExpData.visualStim{iTrial}, 'yes')
-%         lineColor = 'g';
-%     else
-%         lineColor = rgb('yellow');
-%     end
-%     if ismember(iTrial, drugTrials)
-%         plot([1, 1] * trialBounds(iTrial), yL, 'color', lineColor, 'linewidth', 3)
-%     else
-%         plot([1, 1] * trialBounds(iTrial), yL, 'k', 'linewidth', 3)
-%     end
-%     ylim(yL);
-% end
-
-f = figure(10); clf
-hold on;
-f.Color = [1 1 1];
-
-test = permute(cycleVectorPhase, [2 3 1]);
-test = test(:, 1:end-1, :);
-test2 = smoothdata(reshape(test, 8, []), 2, 'gaussian', smWin);
-trialBounds = 1:size(test, 2):size(test2, 2);
-for iRoi = plotRois%1:size(test, 1)
-    plotData = test2(iRoi, :);
-    plotData(plotData > pi) = plotData(plotData > pi) - pi;
-    plot((2 * plotData), '-o', 'color', cm(iRoi, :), 'linewidth', 1)
-end
-% plot(mean(test2, 1), 'color', 'k', 'linewidth', 5)
+ax = gca;
+ax.XLim = [0, cycleTimes(end)];
 for iTrial = 1:numel(trialBounds)
     yL = ylim();
     if strcmp(currExpData.visualStim{iTrial}, 'yes')
@@ -134,12 +123,49 @@ for iTrial = 1:numel(trialBounds)
     else
         lineColor = rgb('yellow');
     end
+    if isnan(cycleTimes(trialBounds(iTrial)))
+        cycleTimes(trialBounds(iTrial)) = cycleTimes(trialBounds(iTrial) - 1);
+    end
     if ismember(iTrial, drugTrials)
-        plot([1, 1] * trialBounds(iTrial), yL, 'color', lineColor, 'linewidth', 3)
+        plot([1, 1] * cycleTimes(trialBounds(iTrial)), yL, 'color', lineColor, 'linewidth', 3)
     else
-        plot([1, 1] * trialBounds(iTrial), yL, 'k', 'linewidth', 3)
+        plot([1, 1] * cycleTimes(trialBounds(iTrial)), yL, 'k', 'linewidth', 3)
     end
     ylim(yL);
 end
+ax = gca;
+ax.XLim = [0, cycleTimes(end)];
 
 
+f = figure(10); clf
+hold on;
+f.Color = [1 1 1];
+cvp = permute(cycleVectorPhase, [2 3 1]);
+cvp = cvp(:, 1:end-1, :);
+cvpRs = reshape(cvp, 8, []);
+% cvpRs = circ_smooth(reshape(cvp, 8, []), 'dim', 2, 'method', 'gaussian', 'smWin', smWin);
+trialBounds = 1:size(cvp, 2):size(cvpRs, 2);
+for iRoi = plotRois%1:size(test, 1)
+    plotData = cvpRs(iRoi, :);
+    plot(repmat(cycleTimes, 8, 1), plotData, '*', 'color', cm(iRoi, :), 'linewidth', 1)
+end
+ax = gca;
+ax.XLim = [0, cycleTimes(end)];
+ax.YLim = pi * [0, 2];
+for iTrial = 1:numel(trialBounds)
+    yL = ylim();
+    if strcmp(currExpData.visualStim{iTrial}, 'yes')
+        lineColor = 'g';
+    else
+        lineColor = rgb('yellow');
+    end
+    if isnan(cycleTimes(trialBounds(iTrial)))
+        cycleTimes(trialBounds(iTrial)) = cycleTimes(trialBounds(iTrial) - 1);
+    end
+    if ismember(iTrial, drugTrials)
+        plot([1, 1] * cycleTimes(trialBounds(iTrial)), yL, 'color', lineColor, 'linewidth', 3)
+    else
+        plot([1, 1] * cycleTimes(trialBounds(iTrial)), yL, 'k', 'linewidth', 3)
+    end
+    ylim(yL);
+end

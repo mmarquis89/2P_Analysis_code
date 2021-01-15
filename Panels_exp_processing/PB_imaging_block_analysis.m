@@ -278,7 +278,12 @@ for iTrial = 1:nTrials
         cycleDffData{iTrial} = currCycleDffArr;
         cycleVolTimes{iTrial} = currCycleVolTimesArr;
     end
-end
+end%iTrial
+
+% Set darkness trials values to nan instead of zero
+cycleVectorStrength(~currExpData.usingPanels, :, :) = nan;
+cycleVectorPhase(~currExpData.usingPanels, :, :) = nan;
+
 catch ME; rethrow(ME); end
 
 disp('Block data ready')
@@ -1040,99 +1045,6 @@ catch ME; rethrow(ME); end
 
 
 %% PLOT WHOLE-TRIAL VECTOR STRENGTH FOR EACH EB WEDGE
-
-smWin = 5;
-
-flType = 'expDff';
-
-figPos = [550 950];
-
-% Adjust plot spacing and margins
-SV = 0.03;
-SH = 0.03;
-ML = 0.08;
-MR = 0.02;
-MT = 0.05;
-MB = 0.07;
-
-% Create figure;
-f = figure(9); clf;
-f.Color = [1 1 1];
-if ~isempty(figPos)
-    f.Position(3:4) = figPos;
-    if sum(f.Position([2, 4])) > 1080
-        f.Position(2) = 50;
-    end
-end
-
-nPlots = size(fullTrialVectorStrength, 2);
-for iPlot = 1:nPlots
-    ax = subaxis(nPlots, 1, iPlot, 'mt', MT, 'mb', MB, 'sv', SV, 'mr', MR, ...
-        'ml', ML, 'sh', SH);
-    hold on;
-    
-    plot(1:size(fullTrialVectorStrength, 1), fullTrialVectorStrength(:, iPlot), 'o', 'color', 'k', ...
-            'markerfacecolor', 'k')
-    ylim([0, 1.2 * max(fullTrialVectorStrength(:))]);
-    
-    % Indicate transitions to drug application trials
-    if ~isempty(drugTrials)
-        for iTrial = 1:numel(drugTrials)
-            yL = ylim();
-           plot([-0.5, -0.5] + drugTrials(iTrial), yL, 'color', 'g', 'linewidth', 3)
-        end
-    end
-    
-    % Adjust axes
-    if iPlot == nPlots
-        xlabel('Trial number', 'fontsize', 13)
-    else
-        ax.XTick = [];
-        ax.XTickLabel = [];
-    end
-    ax.FontSize = 12;
-    xL = xlim;
-    xlim([0.5, size(fullTrialVectorStrength, 1) + 0.5])
-%     box off;
-end
-
-
-% f = figure(8); clf;
-% f.Color = [1 1 1];
-% 
-% % Adjust plot spacing and margins
-% SV = 0.06;
-% SH = 0.04;
-% ML = 0.04;
-% MR = 0.04;
-% MT = 0.05;
-% MB = 0.07;
-% count = 1;
-% for iTrial = 1:nTrials
-%     for iRoi = 1:nRois
-%         clear pax;
-%         ax = subaxis(nTrials, nRois, count, 'mt', MT, 'mb', MB, 'sv', SV, 'mr', MR, ...
-%                 'ml', ML, 'sh', SH);
-%         count = count + 1;
-%         pax = polaraxes();
-%         pax.Position = ax.Position;
-% %         pax.Position = pax.Position - [0.04 0.025 0 0];
-% %         pax.Position = pax.Position .* [1 1 1.2 1.2];
-%         ax.Visible = 'off';
-%         
-%         polarplot([1, 1] .* (fullTrialVectorPhase(iTrial, iRoi)), [0, ...
-%                 fullTrialVectorStrength(iTrial, iRoi)], 'color', 'k', 'linewidth', 4)
-%         pax.ThetaZeroLocation = 'top';
-% % %         pax.ThetaDir = 'clockwise';
-%         pax.ThetaTick = [0:45:179, 225:45:359];
-% %         pax.ThetaTickLabel = {'0' '+45', '+90' '+135' '-135', '-90', '-45'};
-%         pax.RTick = [];
-%     end
-% end
-
-
-
-
 
 
 
