@@ -49,9 +49,9 @@ mp.pEnter = [0];
 mp.pRemove = [0];
 mp.verbose = 0;
 mp.useYaw = 1;
-mp.useDriftCorrection = 1;
+mp.useDriftCorrection = 0;
 % mp.odorIntegrationWin = [30:20:200];
-mp.odorIntegrationWin = [30:60:600];
+mp.odorIntegrationWin = [60:60:300];
 mp.speedPadDist = 5;
 mp.speedIntegrationWin = [];
 mp.standardizeInputs = 1;
@@ -660,8 +660,8 @@ catch ME; rethrow(ME); end
 
 %% Plot predicted vs. measured fluorescence
 
-saveFigs = 0;
-fileNameStr = 'fullExp_';
+saveFigs = 1;
+fileNameStr = 'trial2_';
 
 
 predictorVars = {'odorHistory', 'odorResp', 'moveSpeed'}; % odorHistory, odorResp, fwSpeed, yawSpeed
@@ -746,23 +746,27 @@ for iExp = 1:size(rm.modelData, 1)
     ax.YAxis.Visible = 'off';
     ax.YLim = [min(measuredFl) max(measuredFl)];
     
-    % Integrated odor history
+    % Predictor variables
     ax = subaxis(24, 1, 1:3); hold on
     legendStr = {};
     if any(strcmpi('odorResp', predictorVars))
         odorResp = fullDataTbl.odorResp(~logical(sum(isnan(table2array(fullDataTbl)), 2)));
-        plot(xx, odorResp ./ max(abs([min(odorResp), max(odorResp)])), 'color', rgb('red'), ...
+        odorResp = odorResp - min(odorResp);
+        plot(xx, odorResp ./ max(odorResp), 'color', rgb('red'), ...
             'linewidth', 1);
         legendStr{end + 1} = 'Odor response';
     end
     if any(strcmpi('fwSpeed', predictorVars))
-        plot(xx, fullDataTbl.fwSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
+        fwSpeed = fullDataTbl.fwSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2)));
+        plot(xx, fwSpeed ./ max(abs([min(fwSpeed), max(fwSpeed)])), ...
                 'color', rgb('blue'), 'linewidth', 1);
         legendStr{end + 1} = 'abs(fwSpeed)';
     end
     if any(strcmpi('moveSpeed', predictorVars))
-        plot(xx, fullDataTbl.moveSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
-                'color', rgb('blue'), 'linewidth', 1);
+        moveSpeed = fullDataTbl.moveSpeed(~logical(sum(isnan(table2array(fullDataTbl)), 2)));
+        moveSpeed = moveSpeed - min(moveSpeed);
+        moveSpeed = moveSpeed ./ max(moveSpeed);
+        plot(xx, moveSpeed, 'color', rgb('blue'), 'linewidth', 1);
         legendStr{end + 1} = 'abs(fwSpeed)';
     end
     if any(strcmpi('yawSpeed', predictorVars))
@@ -772,8 +776,10 @@ for iExp = 1:size(rm.modelData, 1)
     end
     if any(strcmpi('odorHistory', predictorVars))
         varName = ['odorHistory_', num2str(bestWinSize)];
-        plot(xx, fullDataTbl.(varName)(~logical(sum(isnan(table2array(fullDataTbl)), 2))), '-', ...
-                'color', rgb('black'), 'linewidth', 3);
+        odorHistory = fullDataTbl.(varName)(~logical(sum(isnan(table2array(fullDataTbl)), 2)));
+        odorHistory = odorHistory - min(odorHistory);
+        odorHistory = odorHistory ./ max(odorHistory);
+        plot(xx, odorHistory, '-', 'color', rgb('black'), 'linewidth', 3);
         legendStr{end + 1} = regexprep(varName, '_', '\\_');
     end
     ax.FontSize = 14;
