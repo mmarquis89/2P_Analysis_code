@@ -100,6 +100,7 @@ methods
                 trialNums(ismember(trialNums, expInfoTbl.skipTrials{iExp})) = [];
             end
             allSpeed = []; allYawSpeed = []; allOdorVols = []; allFl = []; allVolTimes = [];
+            trial2Inds = [];
             for iTrial = 1:numel(trialNums)
                 currTrialNum = trialNums(iTrial);
                 md = innerjoin(expMd, trialMd(currTrialNum, :));
@@ -157,6 +158,11 @@ methods
                     allVolTimes = volTimes;
                 else
                     allVolTimes = [allVolTimes, volTimes + allVolTimes(end)];
+                end
+                if iTrial == 2
+                    trial2Inds = [trial2Inds; ones(size(currFl))];
+                else
+                    trial2Inds = [trial2Inds; zeros(size(currFl))];
                 end
             end%iTrial
             
@@ -225,6 +231,7 @@ methods
                     dt.subset.onsetTime(1);
             newRow.odorRespVector = {odorRespVector'};
             newRow.volTimes = {allVolTimes};
+            newRow.trial2Inds = {trial2Inds};
             
             % Append to source data table
             obj.sourceData = [obj.sourceData; newRow];
@@ -388,6 +395,13 @@ methods
 %
 % >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 % 
+%             trial2Inds = find(currExpData.trial2Inds{:});
+%             shuffleInds = randperm(numel(trial2Inds));
+%             shuffleTrial2Inds = trial2Inds(shuffleInds);
+%             splitInd = floor(numel(shuffleTrial2Inds) * mp.trainTestSplit);
+%             newRow.fitRowInds = {shuffleTrial2Inds(1:splitInd)};
+%             newRow.testRowInds = {shuffleTrial2Inds((splitInd +1):end)};
+%             
             shuffleInds = randperm(size(tbl, 1));
             splitInd = floor(numel(shuffleInds) * mp.trainTestSplit);
             newRow.fitRowInds = {shuffleInds(1:splitInd)};

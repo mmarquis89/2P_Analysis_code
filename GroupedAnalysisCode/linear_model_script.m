@@ -42,7 +42,7 @@ p.alignObjFilterDefs = [];
 % Set model parameters
 mp = [];
 mp.trainTestSplit = 0.8;
-mp.kFold = 100;
+mp.kFold = 2;
 mp.criterion = 'rsquared'; % 'sse, 'aic', 'bic', 'rsquared', or 'adjrsquared'
 mp.upper = [];
 mp.pEnter = [0];
@@ -51,7 +51,7 @@ mp.verbose = 0;
 mp.useYaw = 1;
 mp.useDriftCorrection = 0;
 % mp.odorIntegrationWin = [30:20:200];
-mp.odorIntegrationWin = [60:60:300];
+mp.odorIntegrationWin = [60:60:600];
 mp.speedPadDist = 5;
 mp.speedIntegrationWin = [];
 mp.standardizeInputs = 1;
@@ -80,16 +80,13 @@ skipTrials = {[6], [6], [6], [6], ...
 %               [1 3:6], [1 3:6], [1 3:6], [1 3:6 7], [1 3:6 7]};
 skipVols = repmat({[]}, 1, numel(skipTrials));
 
-
-
-
                      
 try          
 expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
         'skipVols'});
 
 % Create analysis objects
-baseRm = RegressionModelAnalysis(expInfoTbl, p);
+% baseRm = RegressionModelAnalysis(expInfoTbl, p);
 criterionList = {'adjrsquared'};
 pEnterList = [0.01];
 pRemoveList = [0];
@@ -102,7 +99,7 @@ for i = 1:numel(criterionList)
     allRm{i} = baseRm.initialize_models(mp);
     allRm{i} = allRm{i}.optimize_odor_integration_windows();
 end
-
+rm = allRm{:};
 % % Create analysis object
 % rm = RegressionModelAnalysis_PPL201(expInfoTbl, p);
 % 
@@ -128,6 +125,9 @@ try
 fullMdls = {};
 fullMdlPredFl = {};
 fullMdlAdjR2 = [];
+fullExpPredFl = {};
+fullExpAdjR2 = [];
+allTblPred = {};
 disp('Training final models...')
 for iExp = 1:size(rm.sourceData, 1)
     if numel(rm.modelParams) > 1
@@ -147,28 +147,91 @@ for iExp = 1:size(rm.sourceData, 1)
             logical(~odorHistVarInds + bestHistVarInd));
     tblTest = currModelData.fullDataTbl{:}(currModelData.testRowInds{:}, logical(~odorHistVarInds ...
             + bestHistVarInd));
+    fitRows = zeros(size(currModelData.fullDataTbl{:}, 1), 1);
+    fitRows(currModelData.fitRowInds{:}) = 1;
+    tblFullExpTest = currModelData.fullDataTbl{:}(~logical(fitRows), logical(~odorHistVarInds ...
+            + bestHistVarInd));
+    
     tblPred = currModelData.fullDataTbl{:}(:, logical(~odorHistVarInds + bestHistVarInd));
-
+    tblPred_t2 = currModelData.fullDataTbl{:}(logical(rm.sourceData.trial2Inds{iExp}), ...
+            logical(~odorHistVarInds + bestHistVarInd));
+    
     % Use all training data to create and evaluate a final stepwise model
     kvArgs = {'criterion', mp.criterion, 'pEnter', mp.pEnter, 'pRemove', ...
             mp.pRemove, 'verbose', mp.verbose, 'upper', mp.upper};
     emptyArgs = cellfun(@isempty, kvArgs);
     kvArgs(logical(emptyArgs + [emptyArgs(2:end), 0])) = [];
-    fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
+        
+%     fullMdls{iExp} = stepwiselm(tblFit, kvArgs{:});
+    fullMdls{iExp} = fitlm(tblFit, ['fl ~ 1 + moveSpeed:odorHistory_150 +' ...
+        ' odorResp:odorHistory_150']);
+
     [predFl, ~] = predict(fullMdls{iExp}, tblTest(~logical(sum(isnan(table2array(tblTest)), 2)), ...
             1:end-1));
     [~, fullMdlAdjR2(iExp)] = r_squared(tblTest.fl(~logical(sum(isnan(table2array(tblTest)), 2))), ...
             predFl, fullMdls{iExp}.NumCoefficients);
     [fullMdlPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
+            tblPred_t2(~logical(sum(isnan(table2array(tblPred_t2)), 2)), 1:end-1));
+        
+    [predFl, ~] = predict(fullMdls{iExp}, ...
+            tblFullExpTest(~logical(sum(isnan(table2array(tblFullExpTest)), 2)), 1:end-1));       
+    [~, fullExpAdjR2(iExp)] = ...
+            r_squared(tblFullExpTest.fl(~logical(sum(isnan(table2array(tblFullExpTest)), 2))), ...
+            predFl, fullMdls{iExp}.NumCoefficients);
+    [fullExpPredFl{iExp}, ~] = predict(fullMdls{iExp}, ...
             tblPred(~logical(sum(isnan(table2array(tblPred)), 2)), 1:end-1));
+    
+    allTblPred{iExp} = tblPred;
 end
 disp('Final models created');
 rm.modelData.fullMdls = fullMdls';
 rm.modelData.fullMdlPredFl = fullMdlPredFl';
 rm.modelData.fullMdlAdjR2 = fullMdlAdjR2';
+rm.modelData.fullExpPredFl = fullExpPredFl';
+rm.modelData.fullExpAdjR2 = fullExpAdjR2';
+rm.modelData.tblPred = allTblPred';
 disp(rm.modelData)
 
 catch ME; rethrow(ME); end
+
+%%
+
+currExpNum = 8;
+
+f = figure(currExpNum); clf;
+f.Color = [1 1 1];
+f.Position = [-1919, 316, 1920, 650];
+volTimes = rm.sourceData.volTimes{currExpNum};
+ax(1) = subaxis(2, 1, 1, 'ml', 0.05, 'mr', 0.05, 'mb', 0.08, 'sv', 0.08); hold on;
+plot(volTimes, rm.modelData.tblPred{currExpNum}.fl);
+plot(volTimes, rm.modelData.fullExpPredFl{currExpNum});
+title([rm.modelData.expID{currExpNum}, '  —   full exp adjR2 = ', ...
+        num2str(rm.modelData.fullExpAdjR2(currExpNum), 2), ...
+        '  —  Trial 2 adjR2 = ', num2str(rm.modelData.fullMdlAdjR2(currExpNum), 2)])
+xlim([0 volTimes(end)])
+legend({'Measured Fl', 'Predicted Fl'}, 'location', 'sw')
+ax(1).FontSize = 12;
+ax(2) = subaxis(2, 1, 2); hold on;
+% plot(volTimes, rm.modelData);
+% plot(volTimes, currFullExpModelData.fullMdlPredFl{:});
+% title(['Original model  -  adjR2 = ', num2str(currFullExpModelData.fullMdlAdjR2, 2)])
+
+tbl = rm.modelData.fullDataTbl{currExpNum};
+odorResp = tbl.odorResp(~logical(sum(isnan(table2array(tbl)), 2)));
+odorResp = odorResp - min(odorResp);
+plot(volTimes, odorResp ./ max(odorResp), 'color', rgb('red'), 'linewidth', 1);
+moveSpeed = tbl.moveSpeed(~logical(sum(isnan(table2array(tbl)), 2)));
+moveSpeed = moveSpeed - min(moveSpeed);
+moveSpeed = moveSpeed ./ max(moveSpeed);
+plot(volTimes, moveSpeed, 'color', rgb('blue'), 'linewidth', 1);
+varName = ['odorHistory_', num2str(rm.modelData.bestWinSizes(currExpNum))];
+odorHistory = tbl.(varName)(~logical(sum(isnan(table2array(tbl)), 2)));
+odorHistory = odorHistory - min(odorHistory);
+odorHistory = odorHistory ./ max(odorHistory);
+plot(volTimes, odorHistory, '-', 'color', rgb('black'), 'linewidth', 3);
+xlim([0 volTimes(end)])
+legend({'Odor response', 'Move speed', regexprep(varName, '\_', '\\_')}, 'location', 'nw');
+ax(2).FontSize = 12;
 
                     %% Use best speed history window sizes instead of odor integration windows
 try

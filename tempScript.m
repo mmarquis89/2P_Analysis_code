@@ -1,9 +1,22 @@
+% ATP wash-in
 expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
         '20201201-3', '20201203-1', '20201203-2', '20201210-1'}];%%
 
-expList = [{'20201123-1', '20201123-2', '20201124-1', '20201124-2', '202011124-3'}];%%   
+% EB-DAN P2X2 response imaging
+expList = [{'20201123-1', '20201123-2', '20201124-1', '20201124-2', '20201124-3'}];%%   
     
- startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+% DA wash-in
+expList = [{'20201104-1', '20201104-2', '20201106-1', '20201106-2', '20201106-3', '20201106-4', ...
+        '20201111-1', '20201111-2', '20201120-1', '20201120-3'}];
+
+% 75B10 EB-DAN imaging
+expList = [{'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...
+        '20201027-1', '20201029-1', '20201029-2', '20201029-3', '20201029-4', '20201030-1', ...
+        '20201030-2'}];
+    
+    
+    
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
  
 for iExp = 1:numel(expList)
      
@@ -256,3 +269,132 @@ for iExp = 1:numel(expList)
     catch ME; rethrow(ME); end
 
 end
+
+%%
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+
+
+groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
+analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
+
+% EPG imaging
+expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
+        '20201201-3', '20201203-1', '20201203-2', '20201210-1', '20201104-1', '20201104-2', '20201106-1', '20201106-2', '20201106-3', '20201106-4', ...
+        '20201111-1', '20201111-2', '20201120-1', '20201120-3'}];
+
+for iExp = 1:numel(expList)
+    currExpID = expList{iExp};
+    disp(currExpID)
+    currExpDir = dir(fullfile(parentDir, [currExpID, '*']));
+    dataFiles = dir(fullfile(parentDir, currExpDir.name, 'ProcessedData', [currExpID, '*']));
+    for iFile = 1:numel(dataFiles)
+        copyfile(fullfile(dataFiles(iFile).folder, dataFiles(iFile).name), ...
+                fullfile(analysisDir, dataFiles(iFile).name));
+    end
+end
+
+groupedAnalysisDirName = 'EB-DAN_GroupedAnalysisData';
+analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
+% EB-DAN P2X2 response imaging
+expList = [{'20201123-1', '20201123-2', '20201124-1', '20201124-2', '20201124-3', '20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...
+        '20201027-1', '20201029-1', '20201029-2', '20201029-3', '20201029-4', '20201030-1', ...
+        '20201030-2'}];
+for iExp = 1:numel(expList)
+    currExpID = expList{iExp};
+    disp(currExpID)
+    currExpDir = dir(fullfile(parentDir, [currExpID, '*']));
+    dataFiles = dir(fullfile(parentDir, currExpDir.name, 'ProcessedData', [currExpID, '*']));
+    for iFile = 1:numel(dataFiles)
+        copyfile(fullfile(dataFiles(iFile).folder, dataFiles(iFile).name), ...
+                fullfile(analysisDir, dataFiles(iFile).name));
+    end
+end
+
+%% Choose threshold for defining movement epochs
+
+startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
+        '20201201-3', '20201203-1', '20201203-2', '20201210-1', '20201104-1', '20201104-2', ...
+        '20201106-1', '20201106-2', '20201106-3', '20201106-4', '20201111-1', '20201111-2', ...
+        '20201120-1', '20201120-3', '20201123-1', '20201123-2', '20201124-1', '20201124-2', ...
+        '20201124-3'}];
+
+expNum = 25;
+
+currExpID = expList{expNum};
+disp(currExpID)
+expDir = dir(fullfile(startDir, [currExpID, '*']));
+expDir = fullfile(expDir.folder, expDir.name);
+outputDir = fullfile(expDir, 'ProcessedData');
+
+moveThresh = 0.06;
+flowYLim = [0 0.8];
+
+try
+    
+% Scan file names in experiment directory to get the expID
+imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
+expID = imgDataFiles(1).name(1:10);
+
+% Load trial and experiment metadata
+expMd = readtable(fullfile(outputDir, [expID, '_expMetadata.csv']));
+load(fullfile(outputDir, [expID, '_trialMetadata.mat']), 'trialMetadata');
+
+% Load optic flow data
+load(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
+meanFlow = ftData.meanFlow;
+
+figure(1);clf;
+set(gcf, 'color', [1 1 1])
+nTrials = size(ftData, 1);
+for iTrial = 1:nTrials
+    
+    subaxis(nTrials, 1, iTrial, 'S', 0.02, 'mt', 0.02, 'mb', 0.02);
+
+    % Optic flow data to identify flailing
+    currFlow = meanFlow{iTrial};
+    currFlow(end) = 0;
+    flowFrameTimes = ftData.vidFrameTimes{iTrial};
+    plotData = repeat_smooth(currFlow, 20, 'dim', 1, 'smwin', 6);
+    plotData = plotData - min(plotData);
+    plot(flowFrameTimes, plotData, 'color', 'k');
+    hold on;
+    plot([ftData.frameTimes{iTrial}(1), ftData.frameTimes{iTrial}(end)], [moveThresh, moveThresh],...
+            'linewidth', 0.5, 'color', 'r');
+    ylim(flowYLim)
+    xlim([0 max(trialMetadata.trialDuration)])
+    ylabel('Optic flow (flailing)')
+    
+end
+
+catch ME; rethrow(ME); end
+
+%% Identify flailing events (must run previous section first)
+try
+    
+ftFrameTimes = ftData.frameTimes;
+flowFrameTimes = {};
+currTrialData = innerjoin(ftData, trialMetadata);
+for iTrial = 1:numel(meanFlow)
+    
+    flowFrameTimes{iTrial} = ftData.vidFrameTimes{iTrial};
+    % Warn user if there's a discrepency in the flow frame times based on total trial duration
+    discrepVal = abs(flowFrameTimes{iTrial}(end) - currTrialData.trialDuration(iTrial));
+    if discrepVal > 0.5
+        warning([num2str(discrepVal, 4), ' sec discrepancy in estimated trial duration from flow', ...
+            ' frame times for trial #', num2str(iTrial)]);
+    end
+end
+
+flailingEvents = behaviorEvent('flailing');
+flailingEvents = flailingEvents.append_flow_data(expMd.expID{1}, currTrialData.trialNum, ...
+        meanFlow, flowFrameTimes, moveThresh);
+
+flailingEvents.export_csv(outputDir, 'fileNamePrefix', expMd.expID{1});
+
+catch ME; rethrow(ME); end
+
+
+
+
+

@@ -384,6 +384,9 @@ save(fullfile(expDir, 'rawFicTracData.mat'), 'ftData');
 
 catch ME; rethrow(ME); end
 
+%% Define optic flow ROI around the fly and/or ball
+select_video_ROIs(outputDir);
+
 %% Calculate optic flow in FLY ROI in FicTrac videos
 try 
     
