@@ -1,6 +1,6 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-% dataDir = fullfile(parentDir, 'all_experiments');
-dataDir = fullfile(parentDir, 'new_PPL201_experiments');
+dataDir = fullfile(parentDir, 'all_experiments');
+% dataDir = fullfile(parentDir, 'new_PPL201_experiments');
 figDir = ...
         'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs\linear_regression_analysis';
 
@@ -17,23 +17,23 @@ end
 
 % Set source data parameters;
 p = [];
-p.roiName = 'TypeB';
+p.roiName = 'TypeD';
 p.maxSpeed = 100;
 p.smWinVols = 5;
 p.smWinFrames = 5;
 p.smReps = 15;
 p.ftLagVols = 3;
 p.speedType = 'moveSpeed';
-p.odorRespFilterDur = [6 7];
+p.odorRespFilterDur = [7 5];
 
 p.parentDir = parentDir;
 p.dataDir = dataDir;
 
-p.eventDataParentDir = p.dataDir;
-p.alignEventDateStr = '20210104';
+% p.eventDataParentDir = p.dataDir;
+% p.alignEventDateStr = '20210104';
 
-% p.eventDataParentDir = p.parentDir;
-% p.alignEventDateStr = '20200609';
+p.eventDataParentDir = p.parentDir;
+p.alignEventDateStr = '20200609';
 
 p.convertFtUnits = 0;
 p.loadOneNoteData = 0;
@@ -51,18 +51,18 @@ mp.verbose = 0;
 mp.useYaw = 1;
 mp.useDriftCorrection = 0;
 % mp.odorIntegrationWin = [30:20:200];
-mp.odorIntegrationWin = [60:60:600];
+mp.odorIntegrationWin = [60:30:240];
 mp.speedPadDist = 5;
 mp.speedIntegrationWin = [];
 mp.standardizeInputs = 1;
 mp.normalizeInputs = 0;
 
 
-% % PPL203
-% expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
-%                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
-% skipTrials = {[], [], [], [], [], [], [], [], []};
-% skipVols = {[], [1:1500], [], [], [], [], [], [], [1:2200]};
+% PPL203
+expIDList = {'20190304-1', '20190315-1', '20190315-2', '20190315-3', '20190401-1', ... 
+               '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
+skipTrials = {[], [], [], [], [], [], [], [], []};
+skipVols = {[], [1:1500], [], [], [], [], [], [], [1:2200]};
 
             
 % % PPM1201
@@ -71,14 +71,14 @@ mp.normalizeInputs = 0;
 % skipTrials = repmat({[]}, 1, 8);
 % skipVols = skipTrials;
 
-% PPL201
-expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
-        '20210102-2', '20210102-3', '20210102-4'};
-skipTrials = {[6], [6], [6], [6], ...
-              [4:6], [6], [6], [6 7], [6 7]};      
-% skipTrials = {[1 3:6], [1 3:6], [1 3:6], [1 3:6], ...
-%               [1 3:6], [1 3:6], [1 3:6], [1 3:6 7], [1 3:6 7]};
-skipVols = repmat({[]}, 1, numel(skipTrials));
+% % PPL201
+% expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
+%         '20210102-2', '20210102-3', '20210102-4'};
+% skipTrials = {[6], [6], [6], [6], ...
+%               [4:6], [6], [6], [6 7], [6 7]};      
+% % skipTrials = {[1 3:6], [1 3:6], [1 3:6], [1 3:6], ...
+% %               [1 3:6], [1 3:6], [1 3:6], [1 3:6 7], [1 3:6 7]};
+% skipVols = repmat({[]}, 1, numel(skipTrials));
 
                      
 try          
@@ -86,7 +86,7 @@ expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID'
         'skipVols'});
 
 % Create analysis objects
-% baseRm = RegressionModelAnalysis(expInfoTbl, p);
+baseRm = RegressionModelAnalysis(expInfoTbl, p);
 criterionList = {'adjrsquared'};
 pEnterList = [0.01];
 pRemoveList = [0];
@@ -97,7 +97,7 @@ for i = 1:numel(criterionList)
     mp.pEnter = pEnterList(i);
     mp.pRemove = pRemoveList(i);
     allRm{i} = baseRm.initialize_models(mp);
-    allRm{i} = allRm{i}.optimize_odor_integration_windows();
+%     allRm{i} = allRm{i}.optimize_odor_integration_windows();
 end
 rm = allRm{:};
 % % Create analysis object

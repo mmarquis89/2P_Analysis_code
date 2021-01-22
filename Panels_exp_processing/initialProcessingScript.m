@@ -788,15 +788,15 @@ end
 catch ME; rethrow(ME); end
 
 %% Copy files over to a grouped analysis data directory
-
-groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
+% 
+% groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
 groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
 % expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
 %         '20210102-2', '20210102-3', '20210102-4'};
-expList = {'20201210-2'}
+expList = {'20210118-1'}
 
 
 for iExp = 1:numel(expList)

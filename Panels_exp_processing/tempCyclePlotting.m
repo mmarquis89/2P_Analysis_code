@@ -1,7 +1,7 @@
 
 % Plot all data for each wedge stacked according to bar cycle
 
-currTrial = 1;
+currTrial = 7;
 prevTrialCycles = 5;
 smWin = 5;
 
@@ -85,8 +85,8 @@ end
 
 %% Plot vector strength for each bar cycle
 
-smWin = 1;
-plotRois = 1:8;
+smWin = 3;
+plotRois = 8;
 
 f = figure(9); clf
 hold on;

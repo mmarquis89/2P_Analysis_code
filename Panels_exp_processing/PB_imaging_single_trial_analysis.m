@@ -1,7 +1,7 @@
 
 %% Load data
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
-expList = {'20201210-1', '20201210-2'};
+expList = {'20210118-1'};
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -77,9 +77,9 @@ catch ME; rethrow(ME); end
    
 %% 
 
-expID = '20201210-2';
+expID = '20210118-1';
 
-trialNum = 6;
+trialNum = 8;
 
 sourceData = glomData;
 sourceData = wedgeData;

@@ -3,9 +3,9 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 figDir = fullfile(parentDir, 'Figs');
 
-expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
-        '20201201-3', '20201203-1', '20201203-2', '20201210-1'}];%%
-
+% expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
+%         '20201201-3', '20201203-1', '20201203-2', '20201210-1'}];%%
+expList = {'20210118-1'}
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
 
@@ -15,7 +15,7 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 %% Group data from several compatible trials into a single block
 
 % expID = '20201210-1';
-expID = expMd.expID{9};
+expID = expMd.expID{1};
 
 trialNums = [];
 
@@ -28,8 +28,8 @@ washoutTime = 0;
 flSmWin = 5;
 
 flowSmWin = 6;
-moveThresh = 0.08;%unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
-        %expID)));
+moveThresh = unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
+        expID)));
 
 try 
     
@@ -952,7 +952,7 @@ smWin = 5;
 
 flType = 'expDff';
 
-matchRLims = 1;
+matchRLims = 0;
 figPos = [];
 % figPos = [1850 320];
 
