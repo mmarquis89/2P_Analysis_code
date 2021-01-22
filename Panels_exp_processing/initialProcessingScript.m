@@ -1,3 +1,37 @@
+% ==================================================================================================
+% 
+% This script is for processing imaging data from experiments conducted since the overhaul of my 
+% data storage formatting in summer 2020. Each section will run one step of the process, and for the 
+% most part they should be run in the order that they occur in the script.
+% 
+% The key output files that will be used for analysis after all the processing is done are all 
+% either .csv files that can be loaded as tables, or .mat files containing tables, than can be 
+% easily joined together using unique identifier columns. They are named as follows, replacing 
+% <expID> with the unique experiment identifier (e.g. 20210118-1):
+% 
+%       <expID>_expMetadata.csv         (Unique ID column: [expID])
+%       <expID>_trialMetadata.mat       (Unique ID columns: [expID][trialNum])
+%       <expID>_panelsMetadata.mat      (Unique ID columns: [expID][trialNum])
+%       <expID>_ficTracData.mat         (Unique ID columns: [expID][trialNum])
+%       <expID>_roiData.mat             (Unique ID columns: [expID][trialNum][roiName])
+%       
+% And sometimes one or more event (e.g. flailing) data files named as follows:
+%       <expID>_event_data_<event type> (Unique ID columns: [expID][trialNum][onsetTime])
+%       
+% Note: all the try...catch blocks exist to allow the sections to be folded up when you've disabled
+% for/if block and section header code folding in Matlab's settings to avoid the annoying automatic 
+% unfolding of your code that they often cause. Any errors that occur during execution of the script 
+% will be rethrown.
+% 
+% Updated by MM 1.18.2021
+% ==================================================================================================
+
+%% (1) CHOOSE AN EXPERIMENT DIRECTORY
+%---------------------------------------------------------------------------------------------------
+% Select the directory that all the experimental data is in (the name should contain the Exp ID and 
+% name of the experiment). Inside should be all the raw imaging data and Wombat metadata, as well 
+% as a subdirectory called "FicTracData".
+% --------------------------------------------------------------------------------------------------
 startDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 
 expDir = uigetdir(startDir, 'Select an experiment directory');
@@ -7,7 +41,10 @@ if ~isfolder(outputDir)
     mkdir(outputDir)
 end
 
-%% Make anatomy stack
+%% (optional) MAKE ANATOMY STACK
+% Skip this step unless you acquired some high-res anatomy stacks at the end of the experiment. If 
+% you do have them, the filenames should start with "Stack_" (although you can change this below).
+%---------------------------------------------------------------------------------------------------
 try
 create_anatomy_stack(expDir, 'FileString', 'Stack_*.tif', 'OutputFilePrefix', 'AnatomyStack', ...
         'OutputDir', outputDir);
@@ -15,7 +52,10 @@ catch
    disp('Error: anatomy stack creation failed'); 
 end
 
-%% Process raw imaging data
+%% (2) PROCESS RAW IMAGING DATA
+% Loads raw ScanImage .tif files, extracts the imaging data, discards the flyback frames and 
+% re-saves them as .mat files (along with some volume-averaged reference images).
+%---------------------------------------------------------------------------------------------------
 try
     
 % Identify imaging data files
@@ -71,7 +111,13 @@ save(fullfile(outputDir, 'volCounts.mat'), 'volCounts');
 
 catch ME; rethrow(ME); end
 
-%% Plane-wise NoRMCorre motion correction
+%% (3) PLANE-WISE NoRMCorre MOTION CORRECTION
+% Loads the raw imaging data .mat created previously and runs NoRMCorre motion correction on them, 
+% one imaging plane at a time (this works better than trying to use 3D correction). To improve the 
+% performance, it first clips the highest 0.1% of all fluorescence values from each 
+% plane and then smooths each frame with a 2D gaussian filter. Afterwards, it saves the data for 
+% each trial in a new .mat file and makes more volume-averaged reference images.
+%---------------------------------------------------------------------------------------------------
 try
     
 % Identify raw imaging data files
@@ -151,7 +197,14 @@ save(fullfile(outputDir, [expID, '_refImages.mat']), 'refImages');
 
 catch ME; rethrow(ME); end
 
-%% Create metadata tables
+%% (4) CREATE METADATA TABLES
+% Re-organizes all the assorted metadata and settings info into three tables: 
+%       expMetadata (unique identifier column: [expID])
+%       trialMetadata (unique identifier columns: [expID][trialNum])
+%       panelsMetadata (unique identifier fields: [expID][trialNum])
+% The expMetadata table is saved as a .csv file, and the other two are .mat files because they have 
+% some columns that contain vectors or structs.
+%---------------------------------------------------------------------------------------------------
 try
 
 % Identify imaging data files
@@ -263,7 +316,14 @@ save(fullfile(outputDir, [expMd.expID{:}, '_panelsMetadata.mat']), 'panelsMetada
 
 catch ME; rethrow(ME); end
 
-%% Process FicTrac data 
+%% (5) PROCESS FicTrac DATA
+% Extracts the median luminance from each frame of the raw FicTrac videos and uses it to identify 
+% the start and end of the trial in both the videos and the FicTrac output data itself (which have 
+% slightly different frame rates). Also determines the times in seconds relative to the start of the 
+% video of both the FicTrac data "frames" and the video frames. Then, saves the cropped videos to 
+% the processed data directory and the raw FicTrac data + frame times in the root experiment 
+% directory (to await further processing)
+%---------------------------------------------------------------------------------------------------
 try
 
 ftDir = fullfile(expDir, 'FicTracData');
@@ -384,13 +444,26 @@ save(fullfile(expDir, 'rawFicTracData.mat'), 'ftData');
 
 catch ME; rethrow(ME); end
 
-%% Define optic flow ROI around the fly and/or ball
-
+%% (6) DEFINE OPTIC FLOW ROI(s)
+% Selects ROIs for optic flow extraction around the fly (to detect flailing or general movement) or 
+% the ball (to detect locomotion specifically).
+% 
+% The workflow is currently set up assuming you will do this using the cropped FicTrac videos that 
+% were created in the previous section, but if you want to run the whole script start-to-finish 
+% without any user input you could technically move this section to be just above "PROCESS RAW 
+% IMAGING DATA" and use the raw FicTrac videos for this at the very beginning of the whole process 
+% (you'll just have to make sure you save them in the processed data directory). 
+% 
 % For a fly ROI, just use the default save name of 'Behavior_Vid_ROI_Data.mat'
 % For a ball ROI, save it as 'Behavior_Vid_ROI_Data_Ball.mat' 
+%---------------------------------------------------------------------------------------------------
 select_video_ROIs(outputDir);
 
-%% Calculate optic flow in FLY ROI in FicTrac videos
+%% (7) CALCULATE OPTIC FLOW IN THE *FLY* ROI 
+% Extracts the mean optic flow from the cropped FicTrac videos in the ROI you previously defined 
+% around the fly and saves those values in the processed data directory as "flowMags.mat".
+% Looks for an ROI file called "Behavior_Vid_ROI_Data.mat" in that output directory.
+%---------------------------------------------------------------------------------------------------
 try 
     
 % Load or define an ROI around the fly
@@ -439,7 +512,11 @@ save(fullfile(outputDir, 'flowMags.mat'), 'meanFlowMags')
 
 catch ME; rethrow(ME); end
 
-%% Calculate optic flow in BALL ROI in FicTrac videos
+%% (optional) CALCULATE OPTIC FLOW IN THE *BALL* ROI
+% Only applicable if the fly was mounted on the ball during this experiment. Does the same thing 
+% as the previous section, but instead it looks for an ROI file called 
+% "Behavior_Vid_ROI_Data_Ball.mat" and saves the results as "flowMags_ballROI.mat" 
+%---------------------------------------------------------------------------------------------------
 try 
     
 % Load or define an ROI around the ball
@@ -488,7 +565,13 @@ save(fullfile(outputDir, 'flowMags_ballROI.mat'), 'meanFlowMags')
 
 catch ME; rethrow(ME); end
 
-%% Additional FicTrac processing
+%% (8) ADDITIONAL FicTrac PROCESSING
+% Finish processing the FicTrac data by cropping it down to the imaging acquisition period, adding 
+% the fly and/or ball optic flow data, and converting units as needed. Compiles the data into a 
+% table:
+%       ftData (unique identifier columns: [expID][trialNum]) 
+% and then saves it in the output directory.
+%---------------------------------------------------------------------------------------------------
 try
 
 % Scan file names in experiment directory to get the expID
@@ -561,79 +644,19 @@ save(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
 
 catch ME; rethrow(ME); end
 
-%% Choose threshold for defining movement epochs
+%% (9) EXTRACT ROI DATA
+% Only run this section after creating ROIs with "panels_ROI_GUI". Extracts imaging data for each 
+% ROI and compiles the average fluorescence and baseline values for each ROI into a table:
+%       roiData (unique identifier columns: [expID][trialNum][roiName])
+% and then saves it as "roiData.mat".
+%
+% NOTE: for PB or EB-DAN imaging experiments, you should run one of the next two sections *before* 
+% this one to create compound ROIs.
 
-moveThresh = 0.06;
-flowYLim = [0 0.8];
+imgDataType = 'reg'; % 'raw' or 'reg' to specify whether to use motion corrected data.
+roiDefsFilePrefix = 'roiDefs'; % will look for files with this string followed by "_trial_XXX.mat" 
 
-try
-    
-% Scan file names in experiment directory to get the expID
-imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
-expID = imgDataFiles(1).name(1:10);
-
-% Load trial and experiment metadata
-expMd = readtable(fullfile(outputDir, [expID, '_expMetadata.csv']));
-load(fullfile(outputDir, [expID, '_trialMetadata.mat']), 'trialMetadata');
-
-% Load optic flow data
-load(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
-meanFlow = ftData.meanFlow;
-
-figure(1);clf;
-set(gcf, 'color', [1 1 1])
-nTrials = size(ftData, 1);
-for iTrial = 1:nTrials
-    
-    subaxis(nTrials, 1, iTrial, 'S', 0.02, 'mt', 0.02, 'mb', 0.02);
-
-    % Optic flow data to identify flailing
-    currFlow = meanFlow{iTrial};
-    currFlow(end) = 0;
-    flowFrameTimes = ftData.vidFrameTimes{iTrial};
-    plotData = repeat_smooth(currFlow, 20, 'dim', 1, 'smwin', 6);
-    plotData = plotData - min(plotData);
-    plot(flowFrameTimes, plotData, 'color', 'k');
-    hold on;
-    plot([ftData.frameTimes{iTrial}(1), ftData.frameTimes{iTrial}(end)], [moveThresh, moveThresh],...
-            'linewidth', 0.5, 'color', 'r');
-    ylim(flowYLim)
-    xlim([0 max(trialMetadata.trialDuration)])
-    ylabel('Optic flow (flailing)')
-    
-end
-
-catch ME; rethrow(ME); end
-
-%% Identify flailing events (must run previous section first)
-try
-    
-ftFrameTimes = ftData.frameTimes;
-flowFrameTimes = {};
-currTrialData = innerjoin(ftData, trialMetadata);
-for iTrial = 1:numel(meanFlow)
-    
-    flowFrameTimes{iTrial} = ftData.vidFrameTimes{iTrial};
-    % Warn user if there's a discrepency in the flow frame times based on total trial duration
-    discrepVal = abs(flowFrameTimes{iTrial}(end) - currTrialData.trialDuration(iTrial));
-    if discrepVal > 0.5
-        warning([num2str(discrepVal, 4), ' sec discrepancy in estimated trial duration from flow', ...
-            ' frame times for trial #', num2str(iTrial)]);
-    end
-end
-
-flailingEvents = behaviorEvent('flailing');
-flailingEvents = flailingEvents.append_flow_data(expMd.expID{1}, currTrialData.trialNum, ...
-        meanFlow, flowFrameTimes, moveThresh);
-
-flailingEvents.export_csv(outputDir, 'fileNamePrefix', expMd.expID{1});
-
-catch ME; rethrow(ME); end
-
-%% Extract ROI data (after creating ROIs with panels_ROI_GUI)
-
-imgDataType = 'reg'; % 'raw' or 'reg'
-
+%---------------------------------------------------------------------------------------------------
 try
     
 % Scan file names in experiment directory to get the expID
@@ -641,7 +664,7 @@ imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
 expID = imgDataFiles(1).name(1:10);
 
 % Find ROI def files
-roiDefFiles = dir(fullfile(outputDir, ['roiDefs_trial*.mat']));
+roiDefFiles = dir(fullfile(outputDir, [roiDefsFilePrefix, '_trial*.mat']));
 roiData = [];
 for iFile = 1:numel(roiDefFiles)
     
@@ -725,16 +748,22 @@ save(fullfile(outputDir, [expID, '_roiData.mat']), 'roiData');
 
 catch ME; rethrow(ME); end
 
-
-%% Combine two or more ROIs into a new ROI and add it to the ROI def file
+%% (optional) COMBINE TWO OR MORE ROIs
+% Combines two or more existing ROIs into a new ROI and appends that to the roiDefs files 
+% for each trial in the experiment (see next section for PB-specific ROI combination).
 
 combROIs = {'EB', 'BU-L', 'BU-R'};
 newROI = 'EB-DAN';
 
+%---------------------------------------------------------------------------------------------------
 combine_roiDefs(outputDir, combROIs, newROI);
 
-%% Combine PB glomerulus ROIs into EB wedge ROIs
-       
+%% (optional) COMBINE PB GLOMERULUS ROIs INTO EB WEDGES
+% Only applicable for PB imaging experiments. 
+% Combines ROIs for matching left and right PB glomeruli into ROIs representing EB wedges and 
+% appends them to the roiDefs files for each trial in the experiment
+%---------------------------------------------------------------------------------------------------       
+try
 glomPairNames = table((1:8)', {'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8'}', ...
     {'R1', 'R8', 'R7', 'R6', 'R5', 'R4', 'R3', 'R2'}', 'variablenames', ...
     {'wedge', 'leftGlom', 'rightGlom'});
@@ -745,14 +774,96 @@ for iWedge = 1:8
             ['EB-', num2str(iWedge)]);
 end
 disp('Complete')
+catch ME; rethrow(ME); end
 
-%% Process odor event data
+%% (optional) CHOOSE THRESHOLD FOR DEFINING FLAILING EPOCHS
+% Only necessary if the fly was *not* mounted on the ball. Loads and plots all the optic 
+% flow data for the experiment so you can set a threshold for defining flailing epochs in the next 
+% section.
+
+moveThresh = 0.06;
+flowYLim = [0 0.8];
+ 
+%---------------------------------------------------------------------------------------------------
+try
+    
+% Scan file names in experiment directory to get the expID
+imgDataFiles = dir(fullfile(expDir, ['*trial*.tif']));
+expID = imgDataFiles(1).name(1:10);
+
+% Load trial and experiment metadata
+expMd = readtable(fullfile(outputDir, [expID, '_expMetadata.csv']));
+load(fullfile(outputDir, [expID, '_trialMetadata.mat']), 'trialMetadata');
+
+% Load optic flow data
+load(fullfile(outputDir, [expID, '_ficTracData.mat']), 'ftData');
+meanFlow = ftData.meanFlow;
+
+figure(1);clf;
+set(gcf, 'color', [1 1 1])
+nTrials = size(ftData, 1);
+for iTrial = 1:nTrials
+    
+    subaxis(nTrials, 1, iTrial, 'S', 0.02, 'mt', 0.02, 'mb', 0.02);
+
+    % Optic flow data to identify flailing
+    currFlow = meanFlow{iTrial};
+    currFlow(end) = 0;
+    flowFrameTimes = ftData.vidFrameTimes{iTrial};
+    plotData = repeat_smooth(currFlow, 20, 'dim', 1, 'smwin', 6);
+    plotData = plotData - min(plotData);
+    plot(flowFrameTimes, plotData, 'color', 'k');
+    hold on;
+    plot([ftData.frameTimes{iTrial}(1), ftData.frameTimes{iTrial}(end)], [moveThresh, moveThresh],...
+            'linewidth', 0.5, 'color', 'r');
+    ylim(flowYLim)
+    xlim([0 max(trialMetadata.trialDuration)])
+    ylabel('Optic flow (flailing)')
+    
+end
+
+catch ME; rethrow(ME); end
+
+%% (optional) IDENTIFY FLAILING EVENTS
+% Optional: only necessary if the fly was *not* mounted on the ball. Uses the "moveThresh" threshold
+% from the previous section to detect and save all flailing events throughout the experiment as a 
+% "behaviorEvent" object.
+%---------------------------------------------------------------------------------------------------
+try
+    
+ftFrameTimes = ftData.frameTimes;
+flowFrameTimes = {};
+currTrialData = innerjoin(ftData, trialMetadata);
+for iTrial = 1:numel(meanFlow)
+    
+    flowFrameTimes{iTrial} = ftData.vidFrameTimes{iTrial};
+    % Warn user if there's a discrepency in the flow frame times based on total trial duration
+    discrepVal = abs(flowFrameTimes{iTrial}(end) - currTrialData.trialDuration(iTrial));
+    if discrepVal > 0.5
+        warning([num2str(discrepVal, 4), ' sec discrepancy in estimated trial duration from flow', ...
+            ' frame times for trial #', num2str(iTrial)]);
+    end
+end
+
+flailingEvents = behaviorEvent('flailing');
+flailingEvents = flailingEvents.append_flow_data(expMd.expID{1}, currTrialData.trialNum, ...
+        meanFlow, flowFrameTimes, moveThresh);
+
+flailingEvents.export_csv(outputDir, 'fileNamePrefix', expMd.expID{1});
+
+catch ME; rethrow(ME); end
+
+%% (optional) PROCESS ODOR EVENT DATA
+% Only applicable for experiments using an odor stim.
+% Uses the following information about odor stim identity and delivery to create and save odor event 
+% data for the experiment.
 
 odorNames = {'EtOH', 'ACV', 'IBA'};
 concentrations = {'neat', 'neat', 'neat'};
 flowRates = {12, 12, 12};
 trialNums = {[1:5], 6, 7};
 
+%---------------------------------------------------------------------------------------------------
 try 
     
 % Load metadata 
@@ -790,18 +901,21 @@ if any(trialMd.usingOptoStim)
 end
 catch ME; rethrow(ME); end
 
-%% Copy files over to a grouped analysis data directory
-% 
+%% (optional) COPY FINAL OUTPUT FILES TO AN ANALYSIS DIRECTORY
+% Copies all the final processed data files for one or more experiments over to a specified analysis 
+% data directory. Adjust the paths and list of expIDs as necessary before running.
+
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
+
 % groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
 groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
-% expList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3', '20210102-1', ...
-%         '20210102-2', '20210102-3', '20210102-4'};
+
 expList = {'20210118-1'};
 
-
+%---------------------------------------------------------------------------------------------------
+try
 for iExp = 1:numel(expList)
     currExpID = expList{iExp};
     disp(currExpID)
@@ -812,3 +926,4 @@ for iExp = 1:numel(expList)
                 fullfile(analysisDir, dataFiles(iFile).name));
     end
 end
+catch ME; rethrow(ME); end
