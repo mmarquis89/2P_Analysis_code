@@ -51,8 +51,6 @@ else
     end
 end
 
-
-
 % % 
 % % calcuateR2 Cacluate R-squared
 % % R2 = calcuateR2(z,z_est) takes two inputs - The observed data x and its
