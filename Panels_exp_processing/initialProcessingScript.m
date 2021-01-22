@@ -5,11 +5,11 @@
 % most part they should be run in the order that they occur in the script.
 % 
 % The key output files that will be used for analysis after all the processing is done are all 
-% either .csv files that can be loaded as tables, or .mat files containing tables, than can be 
+% either .csv files that can be loaded as tables, or .mat files containing tables, that can be 
 % easily joined together using unique identifier columns. They are named as follows, replacing 
 % <expID> with the unique experiment identifier (e.g. 20210118-1):
 % 
-%       <expID>_expMetadata.csv         (Unique ID column: [expID])
+%       <expID>_expMetadata.csv         (Unique ID column:  [expID])
 %       <expID>_trialMetadata.mat       (Unique ID columns: [expID][trialNum])
 %       <expID>_panelsMetadata.mat      (Unique ID columns: [expID][trialNum])
 %       <expID>_ficTracData.mat         (Unique ID columns: [expID][trialNum])
