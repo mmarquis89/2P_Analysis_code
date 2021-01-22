@@ -3,13 +3,14 @@ function ffmpeg_compress(varargin)
 % USES FFMPEG TO COMPRESS A VIDEO FILE
 % Compresses a target video using a command line call to ffmpeg. Currently only supports H.264 
 % encoding (with variable compression quality), but could easily be modified to use other formats
-% in the future if necessary.
+% if necessary.
 %
 % OPTIONAL NAME-VALUE PAIR ARGUMENTS:
 %
 %       'SourceVid'  = (default: ask user) the path to the video file to be compressed
 %
-%       'OutputFileName' = a string to append to the file name of the video. The default value is the name of the input video with '_compressed' appended to it
+%       'OutputFileName' = a string to append to the file name of the video. The default value is 
+%                          the name of the input video with '_compressed' appended to it
 %
 %       'CRF' = (default: 23) a number specifying the "constant rate factor" for the compression, to
 %               determine the video quality. Smaller numbers are less compression, and values from

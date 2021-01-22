@@ -256,7 +256,7 @@ expMd = struct2table(expMd, 'AsArray', 1);
 trialMetadata = struct2table(trialMd);
 panelsMetadata = panelsMd;
 
-% % Save metadata files
+% Save metadata files
 writetable(expMd, fullfile(outputDir, [expMd.expID{:}, '_expMetadata.csv']));
 save(fullfile(outputDir, [expMd.expID{:}, '_trialMetadata.mat']), 'trialMetadata');
 save(fullfile(outputDir, [expMd.expID{:}, '_panelsMetadata.mat']), 'panelsMetadata');
@@ -385,12 +385,15 @@ save(fullfile(expDir, 'rawFicTracData.mat'), 'ftData');
 catch ME; rethrow(ME); end
 
 %% Define optic flow ROI around the fly and/or ball
+
+% For a fly ROI, just use the default save name of 'Behavior_Vid_ROI_Data.mat'
+% For a ball ROI, save it as 'Behavior_Vid_ROI_Data_Ball.mat' 
 select_video_ROIs(outputDir);
 
 %% Calculate optic flow in FLY ROI in FicTrac videos
 try 
     
-% Define an ROI around the fly
+% Load or define an ROI around the fly
 roiDataFile = fullfile(outputDir, 'Behavior_Vid_ROI_Data.mat');
 if exist(roiDataFile, 'file')
     load(roiDataFile, 'roiData');
@@ -439,7 +442,7 @@ catch ME; rethrow(ME); end
 %% Calculate optic flow in BALL ROI in FicTrac videos
 try 
     
-% Define an ROI around the ball
+% Load or define an ROI around the ball
 roiDataFile = fullfile(outputDir, 'Behavior_Vid_ROI_Data_Ball.mat');
 if exist(roiDataFile, 'file')
     load(roiDataFile, 'roiData');

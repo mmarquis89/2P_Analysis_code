@@ -17,6 +17,7 @@ function scanImageInfo = parse_scanimage_metadata(tifMetadata)
 
 mD = tifMetadata; % for conciseness
 
+% To handle files created by both old and new versions of ScanImage
 scanImageInfo.fileInfo = rmfield(mD, 'tifinfo'); 
 try
     scanImageInfo.fileInfo = setstructfields(scanImageInfo.fileInfo, ...
