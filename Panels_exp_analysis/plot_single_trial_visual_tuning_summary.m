@@ -1,6 +1,49 @@
 function [f, allAx] = plot_single_trial_visual_tuning_summary(trialData, plotParams)
 %===================================================================================================
-
+% Plots a large summary figure of the visual tuning of EB wedges or PB glomeruli throughout a trial 
+% of open loop bar swinging. Includes an averaged tuning heatmap, overlaid tuning curves both 
+% cartesian and polar plots, and the raw imagesc plot of imaging data with aligned plots of bar 
+% location and fly movement variables (for figure sizing consistency, the bottom subplot will be 
+% left blank for experiments in which the fly was not mounted on the ball). 
+% 
+% INPUTS:
+% 
+%       trialData = a table consisting of the joined tables of exp/trial metadata, panels metadata, 
+%                   FicTrac data, and either wedge or glomerulus imaging data as created by 
+%                   the load_PB_data() function. The specific fields of the table that will be used 
+%                   by this function are as follows:
+%                           rawFl, trialDff, or expDff (depending on p.flType)
+%                           pvaRad       (if p.plotPVA)
+%                           pvaWedge     (if p.plotPVA)
+%                           nVolumes 
+%                           volumeRate
+%                           trialDuration
+%                           panelsDisplayRate
+%                           nPanelsFrames
+%                           usingPanels
+%                           panelsPosX   (if usingPanels)
+%                           intHD        (if ~p.useFlow)
+%                           moveSpeed
+%                           yawSpeed
+%                           frameTimes
+%                           vidFrameTimes(if p.useFlow)
+%                           meanFlow     (if p.useFlow)
+%       
+%       plotParams = a struct containing the following fields of plotting parameters:
+%                           flType      ('rawFl', 'trialDff', or 'expDff')
+%                           plotPVA     (boolean, overlay PVA on main imagesc plot?)
+%                           plotMeanPVA (boolean)
+%                           useFlow     (boolean)
+%                           flMax       (value to cap fl at for imagesc plots, or [] to skip)
+%                           smWin       (width of gaussian smoothing window)
+%                           figNum      (number of figure to create, or [] to default to 1)
+% 
+% OUTPUTS:
+% 
+%       f       = handle of the figure that was created               
+% 
+%       allAx   = vector of handles the subplot axes handles
+% 
 %===================================================================================================
 
 td = trialData;
@@ -11,6 +54,11 @@ if isempty(p.figNum)
    p.figNum = 1; 
 end
 
+% Create figure
+f = figure(p.figNum); clf
+f.Color = [1 1 1];
+subaxis(5, 3, 1, 'mb', 0.06, 'mt', 0.03, 'ml', 0.05, 'mr', 0.03);
+    
 % Get mean panels pos data
 panelsFrameTimes = double(1:td.nPanelsFrames) ./ td.panelsDisplayRate;
 volTimes = (1:td.nVolumes) ./ td.volumeRate;
@@ -29,58 +77,52 @@ if td.usingPanels
     meanFlShift = cat(1, meanFlData(92:96, :), meanFlData(1:91, :));     
     cm = hsv(size(meanFlShift, 2)) .* 0.9;
     
-    f = figure(p.figNum); clf
-    f.Color = [1 1 1];
-    subaxis(5, 3, 1, 'mb', 0.05, 'mt', 0.03, 'ml', 0.05, 'mr', 0.03);
-    
     %  ------------- Heatmap of mean visual tuning -------------------------------------------------
     allAx(1) = gca();
     plotX = -180:3.75:(180 - 3.75);
-    if td.usingPanels
-        smFl = smoothdata(meanFlShift, 1, 'gaussian', p.smWin);
-        imagesc(plotX, [1 size(meanFlShift, 2)], smFl');
-        hold on; plot([0 0], [0 size(meanFlShift, 2) + 1], 'color', 'k', 'linewidth', 1)
-        allAx(1).XTick = -180:45:180;
-        ylim([0.5 size(meanFlShift, 2) + 0.5])
-        % xlabel('Bar position (deg)', 'fontsize', 10)
-        ylabel('Visual tuning')
-        
-        % Overlay colored bars at edges to identify EB wedges across plots
-        for iWedge = 1:size(cm, 1)
-            plot(plotX(1:6), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 4)
-            plot(plotX(end - 5:end), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 4)
-        end
-        
-        % Overlay PVA for tuning
-        if p.plotMeanPVA && size(flMat, 2) == 8
-            angleMat = repmat((-7 * pi/8):pi/4:(7 * pi/8), size(smFl, 1), 1);
-            [x, y] = pol2cart(angleMat, smFl); % Convert to cartesian coordinates to add vectors
-            [theta, ~] = cart2pol(sum(x, 2), sum(y, 2));
-            theta = -theta; % Inverting sign so it matches other data in plots
-            theta = theta / pi * 4 + 4.5;
-            plot(plotX, 9 - theta, 'color', 'g', 'linewidth', 2)
-        end
-        
+    smFl = smoothdata(meanFlShift, 1, 'gaussian', p.smWin);
+    imagesc(plotX, [1 size(meanFlShift, 2)], smFl');
+    hold on; plot([0 0], [0 size(meanFlShift, 2) + 1], 'color', 'k', 'linewidth', 1)
+    allAx(1).XTick = -180:45:180;
+    ylim([0.5 size(meanFlShift, 2) + 0.5])
+    % xlabel('Bar position (deg)', 'fontsize', 10)
+    ylabel('Visual tuning')
+    allAx(1).FontSize = 12;
+
+    % Overlay colored bars at edges to identify EB wedges across plots
+    for iWedge = 1:size(cm, 1)
+        plot(plotX(1:6), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 4)
+        plot(plotX(end - 5:end), ones(1, 6) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 4)
+    end
+
+    % Overlay PVA for tuning
+    if p.plotMeanPVA && size(flMat, 2) == 8
+        angleMat = repmat((-7 * pi/8):pi/4:(7 * pi/8), size(smFl, 1), 1);
+        [x, y] = pol2cart(angleMat, smFl); % Convert to cartesian coordinates to add vectors
+        [theta, ~] = cart2pol(sum(x, 2), sum(y, 2));
+        theta = -theta; % Inverting sign so it matches other data in plots
+        theta = theta / pi * 4 + 4.5;
+        plot(plotX, 9 - theta, 'color', 'g', 'linewidth', 2)
     end
     
     %  ------------- Plot of mean visual tuning ----------------------------------------------------
     allAx(2) = subaxis(5, 3, 2);
     hold on;
-    if td.usingPanels
-        plotData = smoothdata(meanFlShift, 1, 'gaussian', p.smWin, 'omitnan');
-        for iWedge = 1:size(meanFlShift, 2)
-            plotX = -180:3.75:(180 - 3.75);
-            plotX(isnan(meanFlShift(:, iWedge))) = nan;
-            plot(plotX, plotData(:, iWedge), 'color', cm(iWedge, :), 'linewidth', 1);
-        end
-        allAx(2).XTick = -180:45:180;
-        yL = [min(plotData(:)), max(plotData(:))] .* [0.9, 1.05];
-        plot([0 0], yL, 'color', 'k', 'linewidth', 2)
-        ylim(yL);
-        xlim([-180, 180]);
+    plotData = smoothdata(meanFlShift, 1, 'gaussian', p.smWin, 'omitnan');
+    for iWedge = 1:size(meanFlShift, 2)
+        plotX = -180:3.75:(180 - 3.75);
+        plotX(isnan(meanFlShift(:, iWedge))) = nan;
+        plot(plotX, plotData(:, iWedge), 'color', cm(iWedge, :), 'linewidth', 1);
     end
+    allAx(2).XTick = -180:45:180;
+    allAx(2).YTick = [];
+    yL = [min(plotData(:)), max(plotData(:))] .* [0.9, 1.05];
+    plot([0 0], yL, 'color', 'k', 'linewidth', 2)
+    ylim(yL);
+    xlim([-180, 180]);
+    allAx(2).FontSize = 12;
     
-end
+end%if
 
 % ------------- Mean visual tuning in polar coordinates --------------------------------------------
 allAx(3) = subaxis(5, 3, 3);
@@ -114,17 +156,30 @@ if ~isempty(p.flMax)
 end
 imagesc([0, td.trialDuration], [1, size(flMat, 2)], smMat')
 hold on; 
+
+% Overlay colored bars at edges to identify EB wedges across plots
+barLen = round(td.nVolumes ./ 70);
+for iWedge = 1:size(cm, 1)
+    plot(volTimes(1:barLen), ones(1, barLen) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 4)
+    plot(volTimes(end - (barLen-1):end), ones(1, barLen) .* iWedge, 'color', cm(iWedge, :), ...
+            'linewidth', 4)
+end
+
 % Overlay the dF/F population vector average
 volTimes = (1:td.nVolumes) ./ td.volumeRate;
 if size(flMat, 2) == 8
     if p.plotPVA
-        plot(volTimes, 9 - smoothdata(td.pvaWedge{:}, 1, 'gaussian', p.smWin), 'color', 'g', ...
-                'linewidth', 1.25)
+        % Don't plot the beginning or end of the PVA so as to not overlap with the colored bars at 
+        % the edges of the plot
+        plot(volTimes((barLen+1):end-barLen), 9 - smoothdata(td.pvaWedge{:}((barLen+1):end-barLen), ...
+                1, 'gaussian', p.smWin), 'color', 'g', 'linewidth', 1.25)
     end
 else
     plot([0, volTimes(end)], [8.5 8.5], 'color', 'g', 'linewidth', 3)
 end
+    
 ylabel('dF/F and PVA');
+allAx(4).FontSize = 12;
 colorbar; 
 colormap(magma)
 
@@ -141,6 +196,7 @@ if td.usingPanels
 end
 ylabel('Bar position')
 allAx(end).YTickLabel = [];
+allAx(5).FontSize = 12;
 cb = colorbar; 
 cb.Visible = 'off';
 
@@ -167,9 +223,11 @@ else
     ylim([0 2*pi])
     ylabel('Fly heading (rad)')
     yyaxis('right')
-    uwVectAvgRad = smoothdata(unwrap(td.pvaRad{:} + pi), 1, 'gaussian',p.smWin);
-    uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
-    plot(volTimes, mod(uwVectAvgRad, 2*pi), 'color', rgb('darkorange'));
+    if p.plotPVA
+        uwVectAvgRad = smoothdata(unwrap(td.pvaRad{:} + pi), 1, 'gaussian',p.smWin);
+        uwVectAvgRad = uwVectAvgRad - uwVectAvgRad(1) + 2*pi;
+        plot(volTimes, mod(uwVectAvgRad, 2*pi), 'color', rgb('darkorange'));
+    end
     % ylabel('PVA')
     ylim([0 2*pi])
     xlim([0 volTimes(end)])
@@ -177,24 +235,32 @@ else
     cb.Visible = 'off';
     legend({'Heading', 'PVA'}, 'location', 'nw')
 end
+allAx(6).FontSize = 12;
 
 % ------------- FicTrac movement speed -------------------------------------------------------------
-allAx(7) = subaxis(5, 3, 13:15);
-plot(td.frameTimes{:}, repeat_smooth(td.moveSpeed{:}, 15, 'smWin', p.smWin), 'color', 'k');
-ylabel('Move speed (mm/sec)')
-ylim([0 20])
-yyaxis('right')
-plot(td.frameTimes{:}, abs(repeat_smooth(td.yawSpeed{:}, 15, 'smWin', p.smWin)), ...
-        'color', rgb('orange'));
-allAx(end).YTick = [];
-% ylabel('Yaw speed (rad/sec)');
-cb = colorbar; 
-cb.Visible = 'off';
-xlabel('Time (s)');
-legend({'Move speed', 'Yaw speed'}, 'location', 'nw')
-
-% Link the X-axis limits across time series plots
-linkaxes(allAx([4:7]), 'x');
-xlim([0 td.trialDuration])
-
+if ~p.useFlow
+    allAx(7) = subaxis(5, 3, 13:15);
+    plot(td.frameTimes{:}, repeat_smooth(td.moveSpeed{:}, 15, 'smWin', p.smWin), 'color', 'k');
+    ylabel('Move speed (mm/sec)')
+    ylim([0 20])
+    yyaxis('right')
+    plot(td.frameTimes{:}, abs(repeat_smooth(td.yawSpeed{:}, 15, 'smWin', p.smWin)), ...
+            'color', rgb('orange'));
+    allAx(end).YTick = [];
+    % ylabel('Yaw speed (rad/sec)');
+    cb = colorbar;
+    cb.Visible = 'off';
+    xlabel('Time (s)');
+    legend({'Move speed', 'Yaw speed'}, 'location', 'nw')
+    
+    % Link the X-axis limits across time series plots
+    linkaxes(allAx([4:7]), 'x');
+    xlim([0 td.trialDuration])
+    allAx(7).FontSize = 12;
+else
+    % Link the X-axis limits across time series plots
+    linkaxes(allAx([4:6]), 'x');
+    xlim([0 td.trialDuration])
 end
+xlabel('Time (sec)');
+end%function

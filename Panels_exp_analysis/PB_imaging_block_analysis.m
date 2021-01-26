@@ -46,7 +46,7 @@ end
 nTrials = size(currExpData, 1);
 nRois = size(currExpData.rawFl{1}, 2);
 
-% Put all optic flow data in a single matrix, padding with nan at ends of trials if necessary
+% Put all fly optic flow data in a single matrix, padding with nan at ends of trials if necessary
 try
 flowMat = zeros(max(cellfun(@numel, currExpData.meanFlow)), nTrials);
 for iTrial = 1:nTrials 

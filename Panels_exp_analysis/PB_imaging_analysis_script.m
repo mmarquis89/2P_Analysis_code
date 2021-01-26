@@ -26,7 +26,6 @@ end
 
 %% PLOT OVERVIEW OF VISUAL TUNING AND MOVEMENT FOR A SINGLE TRIAL
 
-
 expID = '20210118-1';
 trialNum = 8;
 sourceData = wedgeData; % glomData or wedgeData
@@ -40,13 +39,12 @@ p.smWin = 5;
 p.figNum = [];
 
 %---------------------------------------------------------------------------------------------------
-
 currData = inner_join(sourceData, expMd, trialMd, panelsMetadata);
 currData = outerjoin(currData, ftData, 'type', 'left', 'mergekeys', 1);
-trialData = currData(strcmp(currData.expID, expID) & currExpData.trialNum == trialNum, :);
+trialData = currData(strcmp(currData.expID, expID) & currData.trialNum == trialNum, :);
 plot_single_trial_visual_tuning_summary(trialData, p);
 
-
+%% GROUP DATA FROM SEVERAL TRIALS INTO A SINGLE BLOCK
 
 
 

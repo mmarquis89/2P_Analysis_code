@@ -5,7 +5,7 @@
 % most part they should be run in the order that they occur in the script.
 % 
 % The key output files that will be used for analysis after all the processing is done are all 
-% either .csv files that can be loaded as tables, or .mat files containing tables, that can be 
+% either .csv files that can be loaded as tables, or .mat files containing tables, and can be 
 % easily joined together using unique identifier columns. They are named as follows, replacing 
 % <expID> with the unique experiment identifier (e.g. 20210118-1):
 % 
@@ -15,13 +15,13 @@
 %       <expID>_ficTracData.mat         (Unique ID columns: [expID][trialNum])
 %       <expID>_roiData.mat             (Unique ID columns: [expID][trialNum][roiName])
 %       
-% And sometimes one or more event (e.g. flailing) data files named as follows:
+% And sometimes one or more event (e.g. "flailing", "odor", etc.) data files named as follows:
 %       <expID>_event_data_<event type> (Unique ID columns: [expID][trialNum][onsetTime])
 %       
-% Note: all the try...catch blocks exist to allow the sections to be folded up when you've disabled
-% for/if block and section header code folding in Matlab's settings to avoid the annoying automatic 
-% unfolding of your code that they often cause. Any errors that occur during execution of the script 
-% will be rethrown.
+% Note: all the try...catch blocks in this script exist to allow the sections to be folded up when 
+% you've disabled for/if block and section header code folding in Matlab's settings to avoid the 
+% annoying automatic unfolding of your code that they often cause. Any errors that occur during 
+% execution of the script will be rethrown.
 % 
 % Updated by MM 1.18.2021
 % ==================================================================================================
@@ -112,9 +112,9 @@ save(fullfile(outputDir, 'volCounts.mat'), 'volCounts');
 catch ME; rethrow(ME); end
 
 %% (3) PLANE-WISE NoRMCorre MOTION CORRECTION
-% Loads the raw imaging data .mat created previously and runs NoRMCorre motion correction on them, 
-% one imaging plane at a time (this works better than trying to use 3D correction). To improve the 
-% performance, it first clips the highest 0.1% of all fluorescence values from each 
+% Loads the raw imaging data .mat files created previously and runs NoRMCorre motion correction on 
+% them, % one imaging plane at a time (this works better than trying to use 3D correction). To 
+% improve the performance, it first clips the highest 0.1% of all fluorescence values from each 
 % plane and then smooths each frame with a 2D gaussian filter. Afterwards, it saves the data for 
 % each trial in a new .mat file and makes more volume-averaged reference images.
 %---------------------------------------------------------------------------------------------------
@@ -446,13 +446,13 @@ catch ME; rethrow(ME); end
 
 %% (6) DEFINE OPTIC FLOW ROI(s)
 % Selects ROIs for optic flow extraction around the fly (to detect flailing or general movement) or 
-% the ball (to detect locomotion specifically).
+% the ball (to detect locomotion specifically) in the behavior videos.
 % 
 % The workflow is currently set up assuming you will do this using the cropped FicTrac videos that 
 % were created in the previous section, but if you want to run the whole script start-to-finish 
 % without any user input you could technically move this section to be just above "PROCESS RAW 
 % IMAGING DATA" and use the raw FicTrac videos for this at the very beginning of the whole process 
-% (you'll just have to make sure you save them in the processed data directory). 
+% (you'll just have to make sure you save the ROI files in the processed data directory). 
 % 
 % For a fly ROI, just use the default save name of 'Behavior_Vid_ROI_Data.mat'
 % For a ball ROI, save it as 'Behavior_Vid_ROI_Data_Ball.mat' 
@@ -761,7 +761,9 @@ combine_roiDefs(outputDir, combROIs, newROI);
 %% (optional) COMBINE PB GLOMERULUS ROIs INTO EB WEDGES
 % Only applicable for PB imaging experiments. 
 % Combines ROIs for matching left and right PB glomeruli into ROIs representing EB wedges and 
-% appends them to the roiDefs files for each trial in the experiment
+% appends them to the roiDefs files for each trial in the experiment.
+% 
+% It will look specifically for ROIs named "L1", "L2", etc., including the capitalization.
 %---------------------------------------------------------------------------------------------------       
 try
 glomPairNames = table((1:8)', {'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8'}', ...
