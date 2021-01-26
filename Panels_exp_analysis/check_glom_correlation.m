@@ -9,7 +9,7 @@ glomPairNames = table((1:8)', {'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8'}',
     {'R1', 'R8', 'R7', 'R6', 'R5', 'R4', 'R3', 'R2'}', 'variablenames', ...
     {'wedge', 'leftGlom', 'rightGlom'});
 
-% Find index of currend expID (for choosing fig number)
+% Find index of current expID (for choosing fig number)
 fullExpList = unique(expMd.expID);
 currExpInd = find(strcmp(fullExpList, expID), 1);
 

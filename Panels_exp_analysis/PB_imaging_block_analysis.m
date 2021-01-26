@@ -1,11 +1,13 @@
 
-%% Load data for all experiments
+%% LOAD DATA
+% Load data for a specified set of experiments in a group analysis directory.
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 figDir = fullfile(parentDir, 'Figs');
 
 % expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
 %         '20201201-3', '20201203-1', '20201203-2', '20201210-1'}];%%
-expList = {'20210118-1'}
+expList = {'20201117-1'}
+
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
 
@@ -17,7 +19,7 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 % expID = '20201210-1';
 expID = expMd.expID{1};
 
-trialNums = [];
+trialNums = [4 5];
 
 sourceData = wedgeData; %glomData;%
 
@@ -946,7 +948,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT ALL TUNING CURVES ON OVERLAID POLAR PLOTS
 
-saveFig = 0;
+saveFig = 1;
 
 smWin = 5;
 
@@ -1032,11 +1034,11 @@ else
     titleStr = [titleStr, '  (axis limits set independently across plots)'];
 end
 h = suptitle(titleStr);
-h.FontSize = 16;
+h.FontSize = 12;
 
 % Save figure
 if saveFig
-    figTitle = [expID, '_visual_tuning_polarPlots'];
+    figTitle = [expID, '_visual_tuning_polarPlots_temp'];
     save_figure(f, figDir, figTitle);
 end
 

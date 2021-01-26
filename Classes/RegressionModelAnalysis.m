@@ -126,6 +126,7 @@ methods
                 if p.convertFtUnits
                     currSpeed = currSpeed .* 4.5 .* 25; % Convert units if necessary
                 end
+                disp(max(currSpeed));
                 currSpeed(currSpeed > p.maxSpeed) = p.maxSpeed;
                 currYawSpeed = abs(repeat_smooth(currFt.yawSpeed{:}, p.smReps, 'smWin', ...
                         p.smWinFrames));

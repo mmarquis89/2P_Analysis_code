@@ -1,7 +1,11 @@
 
-%% Load data
+%% LOAD DATA
+% Load all analysis data for one or more experiments, and generate arrays of fluorescence data for 
+% ordered EB wedges and individual PB glomeruli. 
+
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
-expList = {'20210118-1'};
+expList = {'20210118-1', '20210118-2'};
+figDir = fullfile(parentDir, 'Figs');
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
@@ -9,15 +13,19 @@ expList = {'20210118-1'};
 % Load file with info about the details of the bath applications
 drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter', ',');
 
+% --------------------------------------------------------------------------------------------------
+
 %% CHECK CORRELATION BETWEEN GLOMERULI
 % Make sure the glomeruli were identified correctly by looking at the correlation between the
 % left and right matching glomeruli.
-
+% --------------------------------------------------------------------------------------------------
 expList = unique(expMd.expID);%{'20201210-1'}%
 
-check_glom_correlation(expID, expMD, roiData);
+for iExp = 1:numel(expList)
+    check_glom_correlation(expList{iExp}, expMd, roiData);
+end 
    
-%% 
+%% Plot a general overview of visual tuning and movement data for a single trial
 
 expID = '20210118-1';
 
@@ -70,10 +78,9 @@ if td.usingPanels
         panelsPosVols(iVol) = td.panelsPosX{:}(currVol);
     end
     meanFlData = [];
-    flDataTemp = flMat;
     for iPos = 1:numel(unique(td.panelsPosX{:}))
         meanFlData(iPos, :) = ...
-            mean(flDataTemp(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]
+            mean(flMat(panelsPosVols == (iPos - 1), :), 1, 'omitnan'); % --> [barPos, wedge]
     end
     meanFlShift = cat(1, meanFlData(92:96, :), meanFlData(1:91, :));
     cm = hsv(size(meanFlShift, 2)) .* 0.9;
