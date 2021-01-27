@@ -80,7 +80,7 @@ if td.usingPanels
     % Shift Fl data so that the center index is directly in front of the fly
     meanFlShift = cat(1, meanFlData(92:96, :), meanFlData(1:91, :));     
     cm = hsv(size(meanFlShift, 2)) .* 0.9;
-    
+
     %  ------------- Heatmap of mean visual tuning -------------------------------------------------
     allAx(1) = gca();
     plotX = -180:3.75:(180 - 3.75);

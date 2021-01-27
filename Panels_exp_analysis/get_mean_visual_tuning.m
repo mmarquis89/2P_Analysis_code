@@ -3,6 +3,10 @@ function outputTbl = get_mean_visual_tuning(tbl, timeWindows)
 % Accepts a table (timeWindows) specifying one or more time windows in which to extract mean visual 
 % tuning data from a source data table with one row for each trial, and returns the results in an 
 % output table with one row for each time window that was requested.
+%
+% The visual tuning data is rotated so that the center position is directly in front of the fly (the
+% "barAngles" field gives the exact angles relative to the fly for each of the 96 positions).
+%
 % 
 % INPUTS:
 % 
@@ -27,9 +31,9 @@ function outputTbl = get_mean_visual_tuning(tbl, timeWindows)
 % OUTPUTS:
 % 
 %       outputTbl       = a copy of the timeWindows input table, but with extra columns containing 
-%                         the list of bar positions (in panels xPos indices) and the mean fl data 
+%                         the list of bar angles relative to the fly (in deg) and the mean fl data 
 %                         for each position. Output column names are: 
-%                               [barPositions][rawFlTuning][trialDffTuning][expDffTuning]
+%                               [barAngles][rawFlTuning][trialDffTuning][expDffTuning]
 %                           
 %
 %===================================================================================================
@@ -61,7 +65,7 @@ for iWin = 1:size(timeWindows, 1)
     expDff = currTbl.expDff{:}(currWinVols, :);
     
     % Get mean fluorescence at each bar location
-    barPositions = unique(currWinPanelsPos)';
+    barPositions = (0:95)';
     rawFlTuning = []; trialDffTuning = []; expDffTuning = [];
     for iPos = 1:numel(barPositions)
         currPos = barPositions(iPos);
@@ -70,9 +74,15 @@ for iWin = 1:size(timeWindows, 1)
         expDffTuning(iPos, :) = mean(expDff(currWinPanelsPos == currPos, :), 1, 'omitnan');
     end
     
+    % Shift data so the center is directly in front of the fly
+    rawFlTuning = rawFlTuning([93:96, 1:92], :);
+    trialDffTuning = trialDffTuning([93:96, 1:92], :);
+    expDffTuning = expDffTuning([93:96, 1:92], :);
+    barAngles = (-180 + 3.75):3.75:180;
+    
     % Append tuning data to output table
     newRow = timeWindows(iWin, :);
-    newRow.barPositions = {barPositions};
+    newRow.barAngles = {barAngles};
     newRow.rawFlTuning = {rawFlTuning};
     newRow.trialDffTuning = {trialDffTuning};
     newRow.expDffTuning = {expDffTuning};
