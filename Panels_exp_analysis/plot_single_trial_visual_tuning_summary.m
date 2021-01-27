@@ -30,13 +30,14 @@ function [f, allAx] = plot_single_trial_visual_tuning_summary(trialData, plotPar
 %                           meanFlow     (if p.useFlow)
 %       
 %       plotParams = a struct containing the following fields of plotting parameters:
-%                           flType      ('rawFl', 'trialDff', or 'expDff')
-%                           plotPVA     (boolean, overlay PVA on main imagesc plot?)
-%                           plotMeanPVA (boolean)
-%                           useFlow     (boolean)
-%                           flMax       (value to cap fl at for imagesc plots, or [] to skip)
-%                           smWin       (width of gaussian smoothing window)
-%                           figNum      (number of figure to create, or [] to default to 1)
+%                           flType        ('rawFl', 'trialDff', or 'expDff')
+%                           plotPVA       (boolean, overlay PVA on main imagesc plot?)
+%                           plotMeanPVA   (boolean)
+%                           useFlow       (boolean)
+%                           plotBarCycles (boolean)
+%                           flMax         (value to cap fl at for imagesc plots, or [] to skip)
+%                           smWin         (width of gaussian smoothing window)
+%                           figNum        (number of figure to create, or [] to default to 1)
 % 
 % OUTPUTS:
 % 
@@ -102,7 +103,7 @@ if td.usingPanels
         [theta, ~] = cart2pol(sum(x, 2), sum(y, 2));
         theta = -theta; % Inverting sign so it matches other data in plots
         theta = theta / pi * 4 + 4.5;
-        plot(plotX, 9 - theta, 'color', 'g', 'linewidth', 2)
+        plot(plotX, 9 - theta, 'color', 'c', 'linewidth', 2)
     end
     
     %  ------------- Plot of mean visual tuning ----------------------------------------------------
@@ -172,10 +173,35 @@ if size(flMat, 2) == 8
         % Don't plot the beginning or end of the PVA so as to not overlap with the colored bars at 
         % the edges of the plot
         plot(volTimes((barLen+1):end-barLen), 9 - smoothdata(td.pvaWedge{:}((barLen+1):end-barLen), ...
-                1, 'gaussian', p.smWin), 'color', 'g', 'linewidth', 1.25)
+                1, 'gaussian', p.smWin), 'color', 'c', 'linewidth', 1.25)
     end
 else
     plot([0, volTimes(end)], [8.5 8.5], 'color', 'g', 'linewidth', 3)
+end
+
+% Overlay bar cycle boundaries if necessary
+if p.plotBarCycles && ~isempty(td.cycStartVols{:})
+    yL = ylim();
+    for iCycle = 1:numel(td.cycStartVols{:})
+        xx = [1, 1] .* td.volTimes{:}(td.cycStartVols{:}(iCycle));
+        plot(xx, yL, 'color', 'r', 'linewidth', 1)
+    end
+    ylim(yL);
+end
+
+% Plot any drug applications in the current trial
+if ~isnan(td.startTime)
+    if strcmp(td.visualStim{:}, 'yes')
+        lineColor = 'g'; % Use green for trials with visual stim, yellow for darkness trials
+    else
+        lineColor = rgb('yellow');
+    end
+    yL = ylim();
+    xx_1 = [1, 1] .* td.startTime;
+    xx_2 = [1, 1] .* td.startTime + td.duration;
+    plot(xx_1, yL, 'color', lineColor, 'linewidth', 5);
+    plot(xx_2, yL, 'color', lineColor, 'linewidth', 5);
+    ylim(yL)
 end
     
 ylabel('dF/F and PVA');
