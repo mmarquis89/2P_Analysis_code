@@ -28,6 +28,9 @@ function [f, allAx] = plot_single_trial_visual_tuning_summary(trialData, plotPar
 %                           frameTimes
 %                           vidFrameTimes(if p.useFlow)
 %                           meanFlow     (if p.useFlow)
+%                           startTime    (this and subsequent fields are from drug timing metadata)
+%                           duration
+%                           visualStim   
 %       
 %       plotParams = a struct containing the following fields of plotting parameters:
 %                           flType        ('rawFl', 'trialDff', or 'expDff')
