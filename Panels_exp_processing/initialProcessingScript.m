@@ -914,7 +914,7 @@ groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
 
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
 
-expList = {'20210118-2'};
+expList = {'20201117-3', '20201117-4', '20201120-2'};
 
 %---------------------------------------------------------------------------------------------------
 try

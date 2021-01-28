@@ -4,7 +4,10 @@ function cycleData = get_bar_cycle_data(trialData, flSmWin)
 % For a trial with an open loop swinging bar (or other shape) visual stimulus, generates a table 
 % containing timing, visual stim position, and fluorescence data for each individual cycle of the 
 % visual stim. Also calculates the cycle's vector strength and phase for each wedge or glomerulus 
-% ROI.
+% ROI. 
+% 
+% Note: incomplete cycles that were cut off at the end of a trial are included, but they are marked 
+% as incomplete in the "fullCycles" column and their vector strength/phase are filled with NaNs.
 %
 % INPUTS:
 %
@@ -31,6 +34,7 @@ function cycleData = get_bar_cycle_data(trialData, flSmWin)
 %                          cycleNum            (cycle number relative to the start of the trial)
 %                          cycStartVol         (trial volume when the current cycle starts)
 %                          cycEndVol           (trial volume when the current cycle ends)
+%                          fullCycle           (whether cycle was full or cut off at end of trial)
 %                          cycBarPos           (index of the bar position during each volume)
 %                          cycBarPhase         (same as above, but scaled from 0-2*pi)
 %                          cycVolTimes         (the times of each volume in the cycle)
@@ -64,9 +68,11 @@ cycStartVols = [1, regexp(panelsPosStr, '(?<=0)1')];
 cycEndVols = [cycStartVols(2:end) - 1, td.nVolumes];
 
 % Drop last cycle of the trial if it is incomplete
+fullCycles = ones(size(cycStartVols))';
 if panelsPosVols(cycEndVols(end)) ~= panelsPosVols(cycEndVols(1))
-    cycStartVols = cycStartVols(1:end-1);
-    cycEndVols = cycEndVols(1:end-1);
+    fullCycles(end) = 0;
+%     cycStartVols = cycStartVols(1:end-1);
+%     cycEndVols = cycEndVols(1:end-1);
 end
 nCycles = numel(cycStartVols);
 
@@ -85,6 +91,7 @@ for iCycle = 1:nCycles
     % Add bar position and timing info
     newRow.cycStartVol = sVol;
     newRow.cycEndVol = eVol;
+    newRow.fullCycle = fullCycles(iCycle);
     newRow.cycBarPos = {panelsPosVols(sVol:eVol)'};
     newRow.cycBarPhase = {panelsBarPhase(sVol:eVol)'};
     newRow.cycVolTimes = {(1:numel(newRow.cycBarPos{:}))' ./ td.volumeRate};
@@ -103,8 +110,14 @@ for iCycle = 1:nCycles
         [vStrength(iRoi), vPhase(iRoi)] = calculate_vector_strength(newRow.cycBarPhase{:}, ...
                 smDff(:, iRoi));
     end
-    newRow.cycVectorStrength = {vStrength};
-    newRow.cycVectorPhase = {vPhase};
+    if fullCycles(iCycle)
+        newRow.cycVectorStrength = {vStrength};
+        newRow.cycVectorPhase = {vPhase};
+    else
+        newRow.cycVectorStrength = {nan(size(vStrength))};
+        newRow.cycVectorPhase = {nan(size(vPhase))};
+    end
+    
     
     cycleData = [cycleData; newRow];
 end%iCycle
