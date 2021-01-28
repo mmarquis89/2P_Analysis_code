@@ -1,5 +1,5 @@
-function [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
-    load_PB_data(parentDir, varargin)
+function [expMd, trialMd, roiData, ftData, flailingEvents, locEvents, panelsMetadata, wedgeData, ...
+        glomData] = load_PB_data(parentDir, varargin)
 % ==================================================================================================   
 %  Loads all PB imaging data from multiple experiments from a grouped analysis diectory (can 
 %  optionally pass a list of expIDs to use instead of loading the entire contents of the directory).
@@ -21,6 +21,8 @@ function [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedge
 %       ftData              = FicTrac data table
 % 
 %       flailingEvents      = flailing event object
+%
+%       locEvents           = locomotion event object
 % 
 %       panelsMetadata      = panels metadata table
 % 
@@ -55,6 +57,14 @@ try
     flailingEvents = eventData.flailing;
 catch
     flailingEvents = [];
+end
+
+% Load locomotion event data (if any exists)
+try
+    eventData = load_event_data(expList, parentDir);
+    locEvents = eventData.locomotion;
+catch
+    locEvents = [];
 end
 
 % Load panels metadata
