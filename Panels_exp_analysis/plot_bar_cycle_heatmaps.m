@@ -1,5 +1,35 @@
 function f = plot_bar_cycle_heatmaps(sourceTbl, cycleTbl, plotParams)
-
+%===================================================================================================
+% Plots a heatmap for each EB wedge or PB glomerulus of fluorescence data aligned such that each row 
+% is an individual bar cycle. Adds cyan lines to delineate trial boundaraies and green boxes around 
+% drug application epochs. If the input sourceTbl includes trials in which there was no visual 
+% stim, a number of black spacer rows equal to the number of cycles in the previous trial will be 
+% inserted as a placeholder.
+%
+% INPUTS:
+%
+%       sourceTbl   = source data table with one row for each trial to be plotted. Will use the 
+%                     following specific fields: 
+%                           trialNum
+%                           usingPanels
+%                           startTime  (from drug timing metadata)
+%                           visualStim (from drug timing metadata)
+% 
+%       cycleTbl    = 
+%
+%       plotParams  = struct containing the following fields of plotting parameters:
+%                           smWin         (width of gaussian smoothing window for imaging data)
+%                           flType        ('rawFl', 'trialDff', or 'expDff')
+%                           flMax         (value to cap fl at for imagesc plots, or [] to skip)
+%                           figPos        (width and height of the figure, or [] to skip)
+%                           figNum        (number of figure to create, or [] to default to 1)
+%                           SV, SH, ML, MR, MT, and MB (subaxis spacing arguments)
+% 
+% OUTPUTS:
+%
+%       f   = handle to the figure that was created
+% 
+%===================================================================================================
 
 src = sourceTbl;
 cyc = cycleTbl;
@@ -19,11 +49,15 @@ cycleCount = 0;
 for iTrial = 1:nTrials
     currSrc = src(src.trialNum == trialNums(iTrial), :);
     if currSrc.usingPanels
+        
+        % Get current cycle data and counts
         currCyc = cyc(cyc.trialNum == trialNums(iTrial), :);
         nCycles = size(currCyc, 1);
         if iTrial < nTrials
             trialStartCycles(end + 1) = trialStartCycles(end) + nCycles;
         end
+        
+        % Extract data for each cycle
         for iCycle = 1:nCycles
             cycleCount = cycleCount + 1;
             switch p.flType
@@ -58,12 +92,22 @@ for iTrial = 1:nTrials
             
         end%iCycle
     else
+        % Add a block of empty filler rows for a trial with no visual stim
         fillerData = nan(size(plotFl, 1), size(plotFl, 2), nCycles);
         plotFl = cat(3, plotFl, fillerData);
+        
+        % Mark the entire block to be circled if there was a drug application in darkness
+        if ismember(iTrial, drugTrials)
+            drugStartCycles(end + 1) = trialStartCycles(end);
+            drugEndCycles(end + 1) = cycleCount + nCycles;
+        end
+        
+        % Increment trial start cycles and increase cycle count to reflect filler rows
         if iTrial < nTrials
             trialStartCycles(end + 1) = trialStartCycles(end) + nCycles;
         end
         cycleCount = cycleCount + nCycles;
+        
     end%if
 end%iTrial
 
@@ -89,19 +133,22 @@ else
 end
 plotPos = [1 size(plotFl, 2)];
 
+% Plot data
 for iRoi = 1:size(plotFl, 2)
     
     ax = subaxis(plotPos(1), plotPos(2), iRoi, 'mt', p.MT, 'mb', p.MB, 'sv', p.SV, 'mr', p.MR, ...
             'ml', p.ML, 'sh', p.SH);
     currFl = smoothdata(squeeze(plotFl(:, iRoi, :)), 1, 'gaussian', p.smWin); % --> [vol, cycle]
     
+    % Cap current Fl data if necessary
     if ~isempty(p.flMax)
         currFl(currFl > p.flMax) = p.flMax;
     end
     currFl(currFl < 0) = 0;
     
+    % Plot heatmap
     barAngles = (-180 + 3.75):3.75:180;
-    barAngleLabels = barAngles([5:96, 1:4])
+%     barAngleLabels = barAngles([5:96, 1:4])
     xx = [barAngles(1), barAngles(end)];
     imagesc(xx, [1:size(currFl, 2)], currFl')
     hold on;
@@ -110,7 +157,7 @@ for iRoi = 1:size(plotFl, 2)
     % Plot trial bounds
     xL = xlim();
     for iTrial = 1:numel(trialStartCycles)
-        plot(xL, [1, 1] * trialStartCycles(iTrial), 'color', 'c', 'linewidth', 2)
+        plot(xL, [trialStartCycles(iTrial), trialStartCycles(iTrial)] - 0.5, 'color', 'c', 'linewidth', 2)
     end
     xlim(xL);
     
@@ -129,7 +176,7 @@ for iRoi = 1:size(plotFl, 2)
     
     ax.YTickLabel = [];
     if iRoi == 1
-        ylabel('Bar cycles', 'fontSize', 14)
+        ylabel('Bar cycles', 'fontSize', 18)
     end
     ax.XTickLabel = [];
     
