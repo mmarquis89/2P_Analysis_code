@@ -114,6 +114,7 @@ linkaxes(ax, 'x');
 tblPred_3 = tblPred_2(:, {'odorResp', 'fl'});
 tblPred_3.odorOnsets = odorOnsetVector';
 tblPred_3 = tblPred_3(:, [1 3 2]);
+tblPred_3.fl = tblPred_3.fl - predFl;
 opts = struct();
 opts.Display = 'iter';
 opts.MaxIter = 100;
@@ -186,7 +187,9 @@ ax(3) = subaxis(nPlots, 1, 3);
 hold on;
 plot(volTimes, measuredFl, 'linewidth', 1);
 plot(volTimes, measuredFl - (predict(mdl, tblPred_4(:, 1:end-1))), 'linewidth', 1, 'color', 'k');
+plot([volTimes(1), volTimes(end)], [0 0], '--', 'linewidth', 2, 'color', 'r')
 legend({'Measured Fl', 'Unexplained by model'}, 'location', 'nw', 'fontsize', 12)
+
 xlim([0 volTimes(end)])
 linkaxes(ax);
 
