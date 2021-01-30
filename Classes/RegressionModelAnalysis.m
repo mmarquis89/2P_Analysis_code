@@ -356,6 +356,7 @@ methods
                 elseif mp.normalizeInputs
                     
                     % Normalize inputs by re-scaling from 0-1
+                    tbl{:, iCol} = tbl{:, iCol} - min(abs(tbl{:, iCol}), [], 'omitnan');
                     tbl{:, iCol} = tbl{:, iCol} ./ max(abs(tbl{:, iCol}), [], 'omitnan');  
                 end
             end

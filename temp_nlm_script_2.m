@@ -1,6 +1,8 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Saved_linear_models\'; 
-load(fullfile(parentDir, 'nlm_testing_base_standardized_120-60-240.mat'), 'rm');
-% load(fullfile(parentDir, 'nlm_testing_PPL203_standardized_60-30-240.mat'), 'rm');
+% load(fullfile(parentDir, 'nlm_testing_base_PPL201_standardized_120-60-240.mat'), 'rm');
+% load(fullfile(parentDir, 'nlm_testing_base_PPL203_standardized_60-30-240.mat'), 'rm');
+load(fullfile(parentDir, 'nlm_testing_base_PPL201_normalized_60-60-180.mat'), 'rm');
+% load(fullfile(parentDir, 'nlm_testing_base_PPL203_normalized_60-30-150.mat'), 'rm');
 
 % Choose experiment and odor history window size
 expNum = 9;   % 1-9
@@ -94,15 +96,8 @@ measuredFl = tblPred_2.fl;
 % 5) The estimated odor response vector before and after running it through the adaptation model
 % 6) The remainting unexplained fluorescence after subtracting the final model prediction
 
-% trial_1_2_inds = 1:find(rm.sourceData.trial2Inds{expNum}, 1, 'last');
-% tblPred_2 = tblPred_2(trial_1_2_inds, :);
-% measuredFl = tblPred_2.fl;
-% volTimes = volTimes(trial_1_2_inds);
-% odorOnsetVector = odorOnsetVector(trial_1_2_inds);
-% odorRespVector = odorRespVector(trial_1_2_inds);
-
-% modelSpec = ['fl ~ moveSpeed + ', histTerm, ' + moveSpeed:volsFromExpStart']; % PPL201
-modelSpec = ['fl ~ moveSpeed * ', histTerm]; % PPL203
+% modelSpec = ['fl ~ moveSpeed + ', histTerm, ' + moveSpeed:volsFromExpStart'];
+modelSpec = ['fl ~ moveSpeed * ', histTerm]; 
 mdl = fitlm(tblPred_2, modelSpec)
 predFl = predict(mdl, tblPred_2(:, 1:end-1));
 
@@ -146,8 +141,11 @@ opts.Display = 'iter';
 opts.MaxIter = 100;
 opts.TolFun = 1e-6;
 opts.TolX = 1e-6;
-modelFun = @nlmFun_2;
+
+modelFun = @nlmFun_tau_fixed;
 beta0 = [0.8 0 0]; % Starting coeff values (fixed tau)
+
+% modelFun = @nlmFun_tau_fit;
 % beta0 = [0.8 5000 0 0]; % Starting coeff values (fit tau)
 
 mdl = fitnlm(tblPred_3(~isnan(tblPred_3.fl), :), modelFun, beta0, 'options', opts)
@@ -185,8 +183,8 @@ linkaxes(ax, 'x');
 
 tblPred_4 = tblPred_2;
 tblPred_4.odorResp = predict(mdl, tblPred_3(:, 1:end-1));
-% modelSpec = ['fl ~ moveSpeed + odorResp +', histTerm, '+ moveSpeed:volsFromExpStart']; % PPL201
-modelSpec = ['fl ~ moveSpeed + odorResp + ', histTerm, ' + moveSpeed:', histTerm]; % PPL203
+% modelSpec = ['fl ~ moveSpeed + odorResp +', histTerm, '+ moveSpeed:volsFromExpStart']; 
+modelSpec = ['fl ~ moveSpeed + odorResp + ', histTerm, ' + moveSpeed:', histTerm]; 
 mdl = fitlm(tblPred_4, modelSpec)
 
 % Plot final results
