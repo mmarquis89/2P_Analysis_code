@@ -163,7 +163,8 @@ hold on;
 
 % Overlay colored bars at edges to identify EB wedges across plots
 barLen = round(td.nVolumes ./ 70);
-for iWedge = 1:size(cm, 1)
+cm = hsv(size(smMat, 2)) * 0.9;
+for iWedge = 1:size(smMat, 2)
     plot(volTimes(1:barLen), ones(1, barLen) .* iWedge, 'color', cm(iWedge, :), 'linewidth', 4)
     plot(volTimes(end - (barLen-1):end), ones(1, barLen) .* iWedge, 'color', cm(iWedge, :), ...
             'linewidth', 4)

@@ -1,18 +1,18 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Saved_linear_models\'; 
 % load(fullfile(parentDir, 'nlm_testing_base_PPL201_standardized_120-60-240.mat'), 'rm');
 % load(fullfile(parentDir, 'nlm_testing_base_PPL203_standardized_60-30-240.mat'), 'rm');
-load(fullfile(parentDir, 'nlm_testing_base_PPL201_normalized_60-60-180.mat'), 'rm');
-% load(fullfile(parentDir, 'nlm_testing_base_PPL203_normalized_60-30-150.mat'), 'rm');
+% load(fullfile(parentDir, 'nlm_testing_base_PPL201_normalized_60-60-180.mat'), 'rm');
+load(fullfile(parentDir, 'nlm_testing_base_PPL203_normalized_60-30-150.mat'), 'rm');
 
 % Choose experiment and odor history window size
 expNum = 9;   % 1-9
-histWin = 120; % 120, 180, 240
+histWin = 60; % 120, 180, 240
 
 all_nOdorStims = [2 1 3 3 4 3 8 3 5]; % Manually selected best one for each experiment
 nOdorStims = all_nOdorStims(expNum);
-% nOdorStims = 100; % Calculates average of first n odor stims as the response kernal
+nOdorStims = 100; % Calculates average of first n odor stims as the response kernal
 
-odorKernelDur = 8;
+odorKernelDur = 18;
 
 %===================================================================================================
 % Set up model variables
@@ -20,6 +20,9 @@ odorKernelDur = 8;
 histTerm = ['odorHistory_', num2str(histWin)];
 tbl = rm.modelData.fullDataTbl{expNum};
 tblPred = tbl(:, {'moveSpeed', 'odorResp', histTerm, 'fl'}); 
+% if expNum == 8
+%     tblPred.fl(5245:end) = nan;
+% end
 
 % Find first n odor onset times
 volTimes = rm.sourceData.volTimes{expNum};
@@ -190,7 +193,7 @@ mdl = fitlm(tblPred_4, modelSpec)
 % Plot final results
 clear ax;
 nPlots = 3;
-f = figure(3);clf;
+f = figure(2);clf;
 f.Color = [1 1 1];
 ax(1) = subaxis(nPlots, 1, 1, 'ml', 0.04, 'mr', 0.04, 'mb', 0.04, 'mt', 0.06, 'sv', 0.03); 
 hold on
@@ -222,9 +225,10 @@ linkaxes(ax);
 % adjR2_fit(expNum) = mdl.Rsquared.Adjusted;
 % adjR2_fixed_3000(expNum) = mdl.Rsquared.adjusted;
 
-disp(['Tau = ' num2str(tau(expNum), 5)]);
-disp(num2str(tau, 5));
+% disp(['Tau = ' num2str(tau(expNum), 5)]);
+% disp(num2str(tau, 5));
 
-
+allMdls{expNum} = mdl;
+adjR2(expNum) = mdl.Rsquared.Adjusted;
 
 
