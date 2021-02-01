@@ -87,7 +87,7 @@ for iPlot = 1:nPlots
     
     % Indicate transitions to drug application trials
     if ~isempty(drugTrials) && ismember(iPlot, drugTrials)
-        pax.Title.String = [pax.Title.String, ' (post-', tbl.drugName{iPlot}, ')'];
+        pax.Title.String = [pax.Title.String, ' (+', tbl.drugName{iPlot}, ')'];
     end
     
 end%iPlot
