@@ -4,7 +4,7 @@
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 % parentDir = 'D:\Dropbox (HMS)\Shared_2p_Data_MY\20210122-1_38A11_P2X2_60D05_7f\ProcessedData';
-expList = {'20210118-2'};
+expList = {'20210119-1','20210122-1', '20210122-2'};
 figDir = fullfile(parentDir, 'Figs');
 
 [expMd, trialMd, roiData, ftData, flailingEvents, locEvents, panelsMetadata, wedgeData, glomData] = ...
@@ -70,40 +70,129 @@ volTimes = [];
 for iTrial = 1:size(tbl, 1)
     volTimes{iTrial} = (1:tbl.nVolumes(iTrial)) ./ tbl.volumeRate(iTrial);
 end
-tbl.volTimes = volTimes'; 
+tbl.volTimes = volTimes';
+
+% Calculate PVA-bar offset for each volume and add that to the main data table
+pvaOffset = {};
+panelsPosVols = {};
+bumpAmp = {};
+for iTrial = 1:size(tbl, 1)
+    currTbl = tbl(iTrial, :);
+    if currTbl.usingPanels
+        
+        % Get bar location for each imaging volume
+        panelsPosFrames = currTbl.panelsPosX{:};
+        volTimes = (1:numel(pva)) ./ currTbl.volumeRate;
+        panelsFrameTimes = (1:numel(panelsPosFrames)) ./ currTbl.panelsDisplayRate;
+        panelsPosVols{iTrial} = [];
+        for iVol = 1:numel(volTimes)
+            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+            panelsPosVols{iTrial}(iVol) = panelsPosFrames(currVol);
+        end
+        
+        % Get PVA-bar offset data
+        pva = currTbl.pvaRad{:} + pi; % Add pi so it ranges from 0-2*pi
+        panelsBarPhase = (2*pi * (panelsPosVols{iTrial} ./ max(panelsPosVols{iTrial})));
+        smPVA = mod(smoothdata(unwrap(pva), 'gaussian', flSmWin), 2*pi);
+        
+        % Calculate the bump offset for each volume
+        pvaOffset{iTrial} = abs(circ_dist(panelsBarPhase, smPVA'));
+        
+        % Calculate bump amplitude for each volume
+        expDff = currTbl.expDff{:};
+        bumpAmp{iTrial} = max(expDff, [], 2) - min(expDff, [], 2);
+        
+    else
+        pvaOffset{iTrial} = [];
+        panelsPosVols{iTrial} = [];
+        bumpAmp{iTrial} = [];
+    end
+end
+
+
+
+%% Add offset and amplitude information
+
+bumpAmp = {};
+for iTrial = 1:size(tbl, 1)
+    currTbl = tbl(iTrial, :);
+    if currTbl.usingPanels
+        
+        % Get PVA-bar offset data
+        pva = currTbl.pvaRad{:} + pi;
+        panelsPosFrames = currTbl.panelsPosX{:};
+        volTimes = (1:numel(pva)) ./ currTbl.volumeRate;
+        panelsFrameTimes = (1:numel(panelsPosFrames)) ./ currTbl.panelsDisplayRate;
+        panelsPosVols = [];
+        for iVol = 1:numel(volTimes)
+            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+            panelsPosVols(iVol) = panelsPosFrames(currVol);
+        end
+        panelsBarPhase = (2*pi * (panelsPosVols ./ max(panelsPosVols)));
+        cycStartVols = currTbl.cycStartVols{:};
+        smPVA = mod(smoothdata(unwrap(pva), 'gaussian', smWin), 2*pi);
+        
+        % Calculate the bump offset for each volume
+        offset = abs(circ_dist(panelsBarPhase, smPVA'));
+        
+        % Calculate bump amplitude for each volume
+        expDff = currTbl.expDff{:};
+        bumpAmp = max(expDff, [], 2) - min(expDff, [], 2);
+        
+        % Identify volumes when the bar was behind the fly and set them to nan
+        % barBehindFlyPanelsPositions = [1:8, 81:96] - 1; % Subtract 1 for zero-indexed panels positions
+        barBehindFlyPanelsPositions = [1:12, 77:96] - 1; % Subtract 1 for zero-indexed panels positions
+        barBehindFlyVols = ismember(panelsPosVols, barBehindFlyPanelsPositions);
+        smPVA(barBehindFlyVols) = nan;
+        offset(barBehindFlyVols) = nan;
+        bumpAmp(barBehindFlyVols) = nan;
+        
+        
+        
+        
+        
+        
+    else
+        
+    end
+end
+
+
 
 %% PLOT OVERVIEW OF VISUAL TUNING AND MOVEMENT FOR A SINGLE TRIAL
 
 expID = expList{1};
-trialNum = 2;
+trialNum = 6;
 
 p = [];
 p.flType = 'expDff';  % rawFl, trialDff, or expDff
 p.plotPVA = 1;
 p.plotMeanPVA = 1;
 p.plotBarCycles = 1;
-p.useFlow = 1;
+p.useFlow = 0;
 p.flMax = [];
 p.smWin = 5;
 p.figNum = [];
 
 %---------------------------------------------------------------------------------------------------
 
-plot_single_trial_visual_tuning_summary(tbl(strcmp(tbl.expID, expID) & ...
+f = plot_single_trial_visual_tuning_summary(tbl(strcmp(tbl.expID, expID) & ...
         tbl.trialNum == trialNum, :), p);
 
 
 %% PLOT SEVERAL STACKED SINGLE-TRIAL HEATMAPS
 
-currExpID = expList{1};
+currExpID = expList{3};
 trialNums = [];
+
+saveFig = 0;
 
 p = [];
 p.smWin = 5;
-p.flType = 'trialDff';
+p.flType = 'expDff';
 p.plotBarCycles = 1;
 p.flMax = [];
-p.figPos = [];
+p.figPos = [1800 950];
 p.figNum = 2;
 p.SV = 0.002;
 p.SH = 0.02;
@@ -120,22 +209,31 @@ currTbl = tbl(strcmp(tbl.expID, currExpID) & ismember(tbl.trialNum, trialNums), 
 
 [f, ax] = plot_single_trial_bump_heatmaps(currTbl, p);
 
+% Save figure
+if saveFig
+    f.UserData.plotParams = p;
+    figTitle = [currExpID, '_single_trial_heatmaps'];
+    save_figure(f, figDir, figTitle);
+end
 
 %% PLOT TUNING HEATMAPS FOR EACH WEDGE ACROSS TRIALS
 
-currExpID = expList{1};
-trialNums = [];
+% TODO: add spacer row for darkness trials
 
-drugTrialStartDelay = 200;
+currExpID = expList{2};
+trialNums = [1 2 4:9];
+
+saveFig = 0;
 
 startTimes = [];
 endTimes = [];
 
 p = [];
+p.drugTrialStartDelay = 200;
 p.smWin = 5;
-p.flType = 'trialDff';
+p.flType = 'expDff';
 p.flMax = [];
-p.figPos = [];
+p.figPos = [1600 950];
 p.figNum = 3;
 p.SV = 0.01;
 p.SH = 0.03;
@@ -157,9 +255,9 @@ end
 if isempty(endTimes)
     endTimes = currTbl.trialDuration; 
 end
-drugTrials = find(~isnan(tbl.startTime));
+drugTrials = find(~isnan(currTbl.startTime));
 for iTrial = 1:numel(drugTrials)
-    startTimes(drugTrials(iTrial)) = startTimes(drugTrials(iTrial)) + drugTrialStartDelay;
+    startTimes(drugTrials(iTrial)) = startTimes(drugTrials(iTrial)) + p.drugTrialStartDelay;
 end
 
 % Get visual tuning data
@@ -175,7 +273,7 @@ plotFl = reshape(cell2mat(tuningTbl.([p.flType, 'Tuning'])), size(tuningTbl.rawF
 f = plot_visual_tuning_heatmaps(currTbl, plotFl, p);
 
 % Add title to figure
-titleStr = [expID, '  —  EB wedge mean ', p.flType, ' visual tuning'];
+titleStr = [currExpID, '  —  EB wedge mean ', p.flType, ' visual tuning'];
 drugTrials = find(~isnan(currTbl.startTime));
 if ~isempty(drugTrials)
     titleStr = [titleStr, '  (green lines = ', currTbl.drugName{drugTrials(1)}, ' application)'];
@@ -183,17 +281,28 @@ end
 h = suptitle(titleStr);
 h.FontSize = 18;
 
+% Save figure
+if saveFig
+    f.UserData.plotParams = p;
+    figTitle = [currExpID, '_visual_tuning_heatmaps'];
+    save_figure(f, figDir, figTitle);
+end
+
 %% PLOT ALL TUNING CURVES ON POLAR PLOTS
 
-currExpID = expList{1};
+
+% TODO: add empty axes for visual stim trials
+
+currExpID = expList{2};
 trialNums = [];
 
-drugTrialStartDelay = 200;
+saveFig = 0;
 
 startTimes = [];
 endTimes = [];
 
 p = [];
+p.drugTrialStartDelay = 200;
 p.smWin = 5;
 p.flType = 'expDff';
 p.matchRLims = 0;
@@ -219,9 +328,9 @@ end
 if isempty(endTimes)
     endTimes = currTbl.trialDuration; 
 end
-drugTrials = find(~isnan(tbl.startTime));
+drugTrials = find(~isnan(currTbl.startTime));
 for iTrial = 1:numel(drugTrials)
-    startTimes(drugTrials(iTrial)) = startTimes(drugTrials(iTrial)) + drugTrialStartDelay;
+    startTimes(drugTrials(iTrial)) = startTimes(drugTrials(iTrial)) + p.drugTrialStartDelay;
 end
 
 % Get visual tuning data
@@ -237,7 +346,7 @@ plotFl = reshape(cell2mat(tuningTbl.([p.flType, 'Tuning'])), size(tuningTbl.rawF
 f = plot_visual_tuning_curves_polar(currTbl, plotFl, p);
 
 % Add title
-titleStr = [expID, '  —  EB wedge ', p.flType, ' tuning curves'];
+titleStr = [currExpID, '  —  EB wedge ', p.flType, ' tuning curves'];
 if p.matchRLims
     titleStr = [titleStr, '  (axis limits matched across plots)'];
 else
@@ -246,16 +355,25 @@ end
 h = suptitle(titleStr);
 h.FontSize = 12;
 
+% Save figure
+if saveFig
+    f.UserData.plotParams = p;
+    figTitle = [currExpID, '_visual_tuning_polarPlots'];
+    save_figure(f, figDir, figTitle);
+end
+
 %% PLOT HEATMAPS ALIGNED BY BAR CYCLE
 
-currExpID = expList{1};
+currExpID = expList{3};
 trialNums = [];
+
+saveFig = 1;
 
 p = [];
 p.smWin = 5;
 p.flType = 'expDff';
 p.flMax = [];
-p.figPos = [];
+p.figPos = [1600 950];
 p.figNum = 5;
 p.SV = 0.03;
 p.SH = 0.02;
@@ -274,13 +392,30 @@ currCycleData = cycleData(strcmp(cycleData.expID, currExpID) & ismember(cycleDat
 
 f = plot_bar_cycle_heatmaps(currTbl, currCycleData, p);
 
+% Add title to figure
+titleStr = [currExpID, '  —  EB wedge ', p.flType, ' aligned to bar position'];
+drugTrials = find(~isnan(currTbl.startTime));
+if ~isempty(drugTrials)
+    titleStr = [titleStr, '  (green boxes = ', currTbl.drugName{drugTrials(1)}, ' application, ', ...
+            'blue lines = trial bounds)'];
+end
+h = suptitle(titleStr);
+h.FontSize = 18;
+
+% Save figure
+if saveFig
+    f.UserData.plotParams = p;
+    figTitle = [currExpID, '_bar_cycle_aligned_heatmaps'];
+    save_figure(f, figDir, figTitle);
+end
+
 %% PLOT VECTOR STRENGTH OF EACH CYCLE THROUGHOUT THE EXPERIMENT
 
 currExpID = expList{1};
 trialNums = [];
 
 p = [];
-p.smWin = 3;
+p.smWin = 1;
 p.roiNums = [];
 p.figPos = [];
 p.figNum = 5;
@@ -381,7 +516,7 @@ plot_stim_shading([drugStartTimes, drugEndTimes])
 xlim([0 cycTimes(end)])
 
 % Plot max-min expDff for each bar cycle
-figure(5); clf
+figure(6); clf
 if isempty(p.roiNums)
    p.roiNums = 1:size(cycRanges, 2); 
 end

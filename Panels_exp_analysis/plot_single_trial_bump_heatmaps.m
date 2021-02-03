@@ -53,7 +53,7 @@ end
 f = figure(p.figNum); clf;
 f.Color = [1 1 1];
 if ~isempty(p.figPos)
-    f.Position(3:4) = figPos;
+    f.Position(3:4) = p.figPos;
     if sum(f.Position([2, 4])) > 1080
         f.Position(2) = 50;
     end

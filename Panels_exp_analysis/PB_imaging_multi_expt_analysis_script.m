@@ -8,10 +8,10 @@ darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
 % visExpList = {'20201117-1', '20201117-3', '20201120-2', '20210118-1', '20210119-1'};
 % visExpTrialNums = {1:4, 2:5, 2:5, 2:5, 2:6};
 
-% % 5-5-5 timing
-% visExpList = {'20201117-1', '20201117-3', '20201117-4', '20201120-2', '20201201-3', '20210118-1', ...
-%     '20210118-2', '20210119-1'};
-% visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 3:5, 2:4, 2:4, 2:4};
+% 5-5-5 timing
+visExpList = {'20201117-1', '20201117-3', '20201117-4', '20201120-2', '20201201-3', '20210118-1', ...
+    '20210118-2', '20210119-1'};
+visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 3:5, 2:4, 2:4, 2:4};
 
 % % 10-5-5 timing
 % visExpList = {'20201117-3', '20201117-4', '20201120-2', '20210118-1', ...
@@ -52,6 +52,7 @@ trialNums = visExpTrialNums;
 % currExpList = darkExpList;
 % trialNums = darkExpTrialNums;
 
+try
 allCycData = [];
 for iExp = 1:numel(currExpList)
     
@@ -129,14 +130,17 @@ for iExp = 1:numel(currExpList)
     allCycData = [allCycData; newRow];
 end
 
-%
+catch ME; rethrow(ME); end
+
+%%
 
 smWin = 3;
 singleRois = 0;
-singleExpts = 0;
+singleExpts = 1;
 shadeSEM = 1;
-shadeExpSEM = 1;
+shadeExpSEM = 0;
 
+try
 cyc = allCycData;
 
 cycTimes = cyc.cycTimes{1};
@@ -147,10 +151,12 @@ cycMax = cell2mat(cyc.cycMax');
 cycRanges = cell2mat(cyc.cycRange');
 
 % Vector strength
-figure(1); clf; hold on;
+f = figure(1); clf; hold on;
+f.Color = [1 1 1];
 cm = lines(numel(unique(cyc.expID)));
 allExpIDs = unique(cyc.expID);
 xx = cycTimes - cyc.drugStartTimes{1}(1);
+legendStr = {};
 for iExp = 1:numel(allExpIDs)
     currExpID = allExpIDs{iExp};
     currCyc = cyc(strcmp(cyc.expID, currExpID), :);
@@ -158,11 +164,15 @@ for iExp = 1:numel(allExpIDs)
         for iRoi = 1:size(currCyc, 1)
             plot(xx, smoothdata(currCyc.cycVs{iRoi}, 1, 'gaussian', smWin), 'color', ...
                     cm(iExp, :));
+%               jitRange = mean(diff(xx)) * 0.1;
+%                 test = (2*jitRange) rand(numel(currCyc.cycVp{iRoi}), 1)
+%               plot(xx, currCyc.cycVp{iRoi}, '*');
         end
     elseif singleExpts
         currData = smoothdata(cell2mat(currCyc.cycVs'), 1, 'gaussian', smWin);
         SE = std_err(currData, 2);
         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
+        legendStr{end + 1} = currCyc.expID{1};
         if shadeExpSEM
             upperY = (mean(currData, 2) + SE);
             lowerY = (mean(currData, 2) - SE);
@@ -170,6 +180,7 @@ for iExp = 1:numel(allExpIDs)
         end
     end
 end
+legend(legendStr, 'autoupdate', 'off');
 meanData = mean(smoothdata(Vs, 1, 'gaussian', smWin), 2);
 plot(xx, meanData, 'color', 'k', 'linewidth', 3);
 if shadeSEM
@@ -192,7 +203,8 @@ xlim([xx(1) xx(end)])
 title('Vector strength')
 
 % Min - max
-figure(2); clf; hold on;
+f = figure(2); clf; hold on;
+f.Color = [1 1 1];
 cm = lines(numel(unique(cyc.expID)));
 allExpIDs = unique(cyc.expID);
 xx = cycTimes - cyc.drugStartTimes{1}(1);
@@ -236,8 +248,67 @@ end
 title('Min - max dF/F')
 xlim([xx(1) xx(end)])
 
+catch ME; rethrow(ME); end
 
+%%
+cyc = allCycData;
 
+epochs = [-120, 0; ...
+          0, 60; ...
+          180, 240; ...
+          240, 300]
+
+% epochs = [-240, -180; ...
+%           -180, -120
+%           -120, -60
+%           -60,    0; ...
+%             0,   60; ...
+%            120,  180; ... 
+%            180, 240; ...
+%            240, 300;
+%            300, 360];
+       
+epochVsMeans = [];
+epochVsSEM = [];
+epochRangeMeans = [];
+epochVpMeans = [];
+for iRoi = 1:size(cyc, 1)
+    t = cyc.cycTimes{iRoi};
+    atpStart = cyc.drugStartTimes{iRoi}(1);
+    
+    
+    for iEpoch = 1:size(epochs, 1)
+        epochCycles = t > (epochs(iEpoch, 1) + atpStart) & t < (epochs(iEpoch, 2) + atpStart);
+        epochVsMeans(iRoi, iEpoch) = mean(cyc.cycVs{iRoi}(epochCycles));
+        epochVsSEM(iRoi, iEpoch) = std_err(cyc.cycVs{iRoi}(epochCycles));
+        epochRangeMeans(iRoi, iEpoch) = mean(cyc.cycRange{iRoi}(epochCycles));
+        epochVpMeans(iRoi, iEpoch) = circ_mean(cyc.cycVp{iRoi}(epochCycles));        
+    end
+end
+
+relPhaseMeans = epochVpMeans + pi;
+% relPhaseMeans = relPhaseMeans - repmat(relPhaseMeans(:, 1), 1, size(relPhaseMeans, 2));
+
+test = unwrap(relPhaseMeans, [], 2);
+yy = (test - repmat(test(:, 1), 1, size(test, 2)))';
+f = figure(4);clf; 
+violinplot(abs(diff(yy, 1, 1)'));
+
+f = figure(3); clf;
+f.Color = [1 1 1];
+hold on;
+SEM = std_err(epochVsMeans, 1);
+for iRoi = 1:size(epochVsMeans, 1)
+%     errorbar(1:size(epochVsMeans, 2), epochVsMeans(iRoi, :), epochVsSEM(iRoi, :), '-s');%, ...
+% %         'color', 'k', 'markerFaceColor', 'k', 'linewidth', 3, 'markerSize', 10);
+    plot(1:size(relPhaseMeans, 2), abs(relPhaseMeans(iRoi, :)), '-s');
+end
+% plot(1:size(epochRangeMeans, 2), mean(epochRangeMeans, 1)', '-s', 'linewidth', 3, 'color', 'k', ...
+%         'markerSize', 12, 'markerfacecolor', 'k')
+plot(1:size(relPhaseMeans, 2), mean(abs(relPhaseMeans), 1)', '-s', 'linewidth', 3, 'color', 'k', ...
+        'markerSize', 12, 'markerfacecolor', 'k')
+xlim([0.5 size(epochVsMeans, 2) + 0.5]);
+ylim([0, max(relPhaseMeans(:))]);
 
 
 

@@ -60,7 +60,7 @@ for iPlot = 1:nPlots
     
     currData = smoothdata(plotFl(:, :, iPlot), 1, 'gaussian', p.smWin);
     if ~isempty(p.flMax)
-        currData(currData > flMax) = flMax;
+        currData(currData > p.flMax) = p.flMax;
     end
     
     % Plot data
