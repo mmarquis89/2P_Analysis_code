@@ -43,17 +43,64 @@ tbl = inner_join(trialMd, expMd, sourceData, panelsMetadata);
 tbl = outerjoin(tbl, ftData, 'type', 'left', 'mergekeys', 1);
 tbl = outerjoin(tbl, drugTimingMd, 'type', 'left', 'mergekeys', 1);
 
+% Add a volTimes field to the main data table
+volTimes = [];
+for iTrial = 1:size(tbl, 1)
+    volTimes{iTrial} = ((1:tbl.nVolumes(iTrial)) ./ tbl.volumeRate(iTrial))';
+end
+tbl.volTimes = volTimes';
+
+
+
 % Create table of data for bar cycle analysis 
 cycleData = [];
+pvaOffset = {};
+panelsPosVols = {};
+bumpAmp = {};
 for iTrial = 1:size(tbl, 1)
+    currTbl = tbl(iTrial, :);
     disp(['Getting bar cycle data for trial #', num2str(iTrial), ' of ', num2str(size(tbl, 1))]);
     if tbl.usingPanels(iTrial)
-        currCycleData = get_bar_cycle_data(tbl(iTrial, :), flSmWin);
+        
+        % Get bar location for each imaging volume
+        panelsPosFrames = currTbl.panelsPosX{:};
+        volTimes = tbl.volTimes{iTrial};
+        panelsFrameTimes = (1:numel(panelsPosFrames)) ./ currTbl.panelsDisplayRate;
+        panelsPosVols{iTrial, 1} = [];
+        for iVol = 1:numel(volTimes)
+            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+            panelsPosVols{iTrial}(iVol, 1) = panelsPosFrames(currVol);
+        end
+        
+        % Get PVA-bar offset data
+        pva = currTbl.pvaRad{:} + pi; % Add pi so it ranges from 0-2*pi
+        panelsBarPhase = (2*pi * (panelsPosVols{iTrial} ./ max(panelsPosVols{iTrial})));
+        smPVA = mod(smoothdata(unwrap(pva), 'gaussian', flSmWin), 2*pi);
+        
+        % Calculate the bump offset for each volume
+        pvaOffset{iTrial, 1} = circ_dist(panelsBarPhase, smPVA);
+        
+        % Calculate bump amplitude for each volume
+        expDff = currTbl.expDff{:};
+        bumpAmp{iTrial, 1} = max(expDff, [], 2) - min(expDff, [], 2);
+        
+        % Get bar cycle data
+        currTbl.pvaOffset = {pvaOffset{iTrial}};
+        currTbl.bumpAmp = {bumpAmp{iTrial}};
+        currCycleData = get_bar_cycle_data(currTbl, flSmWin);
         cycleData  = [cycleData; currCycleData];
+            
+    else
+        pvaOffset{iTrial, 1} = [];
+        panelsPosVols{iTrial, 1} = [];
+        bumpAmp{iTrial, 1} = [];
     end
 end
+tbl.pvaOffset = pvaOffset;
+tbl.panelsPosVols = panelsPosVols;
+tbl.bumpAmp = bumpAmp;
 
-% Add fields containing cycle start vols and volTimes to main data table
+% Add fields containing cycle start vols to the main data table
 cycleStartVols = [];
 for iTrial = 1:size(tbl, 1)
     if tbl.usingPanels(iTrial)
@@ -64,99 +111,6 @@ for iTrial = 1:size(tbl, 1)
     end
 end
 tbl.cycStartVols = cycleStartVols';
-
-% Add a volTimes field to the main data table
-volTimes = [];
-for iTrial = 1:size(tbl, 1)
-    volTimes{iTrial} = (1:tbl.nVolumes(iTrial)) ./ tbl.volumeRate(iTrial);
-end
-tbl.volTimes = volTimes';
-
-% Calculate PVA-bar offset for each volume and add that to the main data table
-pvaOffset = {};
-panelsPosVols = {};
-bumpAmp = {};
-for iTrial = 1:size(tbl, 1)
-    currTbl = tbl(iTrial, :);
-    if currTbl.usingPanels
-        
-        % Get bar location for each imaging volume
-        panelsPosFrames = currTbl.panelsPosX{:};
-        volTimes = (1:numel(pva)) ./ currTbl.volumeRate;
-        panelsFrameTimes = (1:numel(panelsPosFrames)) ./ currTbl.panelsDisplayRate;
-        panelsPosVols{iTrial} = [];
-        for iVol = 1:numel(volTimes)
-            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
-            panelsPosVols{iTrial}(iVol) = panelsPosFrames(currVol);
-        end
-        
-        % Get PVA-bar offset data
-        pva = currTbl.pvaRad{:} + pi; % Add pi so it ranges from 0-2*pi
-        panelsBarPhase = (2*pi * (panelsPosVols{iTrial} ./ max(panelsPosVols{iTrial})));
-        smPVA = mod(smoothdata(unwrap(pva), 'gaussian', flSmWin), 2*pi);
-        
-        % Calculate the bump offset for each volume
-        pvaOffset{iTrial} = abs(circ_dist(panelsBarPhase, smPVA'));
-        
-        % Calculate bump amplitude for each volume
-        expDff = currTbl.expDff{:};
-        bumpAmp{iTrial} = max(expDff, [], 2) - min(expDff, [], 2);
-        
-    else
-        pvaOffset{iTrial} = [];
-        panelsPosVols{iTrial} = [];
-        bumpAmp{iTrial} = [];
-    end
-end
-
-
-
-%% Add offset and amplitude information
-
-bumpAmp = {};
-for iTrial = 1:size(tbl, 1)
-    currTbl = tbl(iTrial, :);
-    if currTbl.usingPanels
-        
-        % Get PVA-bar offset data
-        pva = currTbl.pvaRad{:} + pi;
-        panelsPosFrames = currTbl.panelsPosX{:};
-        volTimes = (1:numel(pva)) ./ currTbl.volumeRate;
-        panelsFrameTimes = (1:numel(panelsPosFrames)) ./ currTbl.panelsDisplayRate;
-        panelsPosVols = [];
-        for iVol = 1:numel(volTimes)
-            [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
-            panelsPosVols(iVol) = panelsPosFrames(currVol);
-        end
-        panelsBarPhase = (2*pi * (panelsPosVols ./ max(panelsPosVols)));
-        cycStartVols = currTbl.cycStartVols{:};
-        smPVA = mod(smoothdata(unwrap(pva), 'gaussian', smWin), 2*pi);
-        
-        % Calculate the bump offset for each volume
-        offset = abs(circ_dist(panelsBarPhase, smPVA'));
-        
-        % Calculate bump amplitude for each volume
-        expDff = currTbl.expDff{:};
-        bumpAmp = max(expDff, [], 2) - min(expDff, [], 2);
-        
-        % Identify volumes when the bar was behind the fly and set them to nan
-        % barBehindFlyPanelsPositions = [1:8, 81:96] - 1; % Subtract 1 for zero-indexed panels positions
-        barBehindFlyPanelsPositions = [1:12, 77:96] - 1; % Subtract 1 for zero-indexed panels positions
-        barBehindFlyVols = ismember(panelsPosVols, barBehindFlyPanelsPositions);
-        smPVA(barBehindFlyVols) = nan;
-        offset(barBehindFlyVols) = nan;
-        bumpAmp(barBehindFlyVols) = nan;
-        
-        
-        
-        
-        
-        
-    else
-        
-    end
-end
-
 
 
 %% PLOT OVERVIEW OF VISUAL TUNING AND MOVEMENT FOR A SINGLE TRIAL
@@ -411,7 +365,7 @@ end
 
 %% PLOT VECTOR STRENGTH OF EACH CYCLE THROUGHOUT THE EXPERIMENT
 
-currExpID = expList{1};
+currExpID = expList{3};
 trialNums = [];
 
 p = [];
@@ -460,6 +414,15 @@ cycVp = cell2mat(currCycleData.cycVectorPhase);
 cycVs = cycVs(logical(currCycleData.fullCycle), :);
 cycVp = cycVp(logical(currCycleData.fullCycle), :);
 cycTimes = cycTimes(logical(currCycleData.fullCycle));
+
+% Get bump amplitude
+bumpAmp = [];
+for iCycle = 1:size(currCycleData, 1)
+    if currCycleData.fullCycle(iCycle)
+        bumpAmp(end + 1) = mean(currCycleData.cycBumpAmp{iCycle});
+    end
+end
+
 
 % Get min and max expDff values from each cycle
 cycMins = [];
@@ -530,5 +493,15 @@ plot_stim_shading([drugStartTimes, drugEndTimes])
 xlim([0 cycTimes(end)])
 ylim(yL);
 
+% Plot max-min expDff for each bar cycle
+figure(8); clf
+plot(cycTimes, smoothdata(bumpAmp, 'gaussian', p.smWin), '-o')
+hold on;
+yL = ylim();
+plot([trialStartCycTimes; trialStartCycTimes], repmat(yL', 1, numel(trialStartCycTimes)), ...
+        'linewidth', 2, 'color', 'k')
+plot_stim_shading([drugStartTimes, drugEndTimes])
+xlim([0 cycTimes(end)])
+ylim(yL);
 
 

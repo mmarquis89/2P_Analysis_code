@@ -1,4 +1,3 @@
-
 function cycleData = get_bar_cycle_data(trialData, flSmWin)
 %===================================================================================================
 % For a trial with an open loop swinging bar (or other shape) visual stimulus, generates a table 
@@ -43,7 +42,8 @@ function cycleData = get_bar_cycle_data(trialData, flSmWin)
 %                          cycTrialDff         (same as above, but for dF/F with a trial baseline)
 %                          cycExpDff           (same as above, but for dF/F with a exp. baseline)
 %                          cycVectorStrength   (current cycle's vector strength value for each ROI)
-%                         cycVectorPhase      (current cycles vector phase value for each ROI)
+%                          cycVectorPhase      (current cycles vector phase value for each ROI)
+%                          cycPvaOffset        (bar phase-PVA offset)
 % 
 %===================================================================================================
 
@@ -67,12 +67,10 @@ panelsPosStr = regexprep(num2str(panelsPosVols == 0), ' ', '');
 cycStartVols = [1, regexp(panelsPosStr, '(?<=0)1')];
 cycEndVols = [cycStartVols(2:end) - 1, td.nVolumes];
 
-% Drop last cycle of the trial if it is incomplete
+% Indicate whether the last cycle of the trial is incomplete
 fullCycles = ones(size(cycStartVols))';
 if panelsPosVols(cycEndVols(end)) ~= panelsPosVols(cycEndVols(1))
     fullCycles(end) = 0;
-%     cycStartVols = cycStartVols(1:end-1);
-%     cycEndVols = cycEndVols(1:end-1);
 end
 nCycles = numel(cycStartVols);
 
@@ -101,6 +99,10 @@ for iCycle = 1:nCycles
     newRow.cycRawFl = {td.rawFl{:}(sVol:eVol, :)};
     newRow.cycTrialDff = {td.trialDff{:}(sVol:eVol, :)};
     newRow.cycExpDff = {td.expDff{:}(sVol:eVol, :)};
+    
+    % Add PVA-bar phase offset and bump amplitude
+    newRow.cycPvaOffset = {td.pvaOffset{:}(sVol:eVol)};
+    newRow.cycBumpAmp = {td.bumpAmp{:}(sVol:eVol)};
     
     % Use expDff to calculate vector strength and phase for each wedge or glomerulus
     smDff = smoothdata(newRow.cycExpDff{:}, 1, 'gaussian', flSmWin);

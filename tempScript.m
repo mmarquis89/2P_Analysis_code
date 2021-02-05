@@ -1,252 +1,206 @@
-%% Extract single-cycle summary data for all experiments
-
-% 5-5-5-5-5 timing
-darkExpList = {'20201201-1', '20201203-1', '20201203-2', '20201210-1', '20201210-2', '20201201-2'};
-darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
-
-% % 5-5-10 timing
-% visExpList = {'20201117-1', '20201117-3', '20201120-2', '20210118-1', '20210119-1'};
-% visExpTrialNums = {1:4, 2:5, 2:5, 2:5, 2:6};
-
-% % 5-5-5 timing
-% visExpList = {'20201117-1', '20201117-3', '20201117-4', '20201120-2', '20201201-3', '20210118-1', ...
-%     '20210118-2', '20210119-1'};
-% visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 3:5, 2:4, 2:4, 2:4};
-
-% % 10-5-5 timing
-% visExpList = {'20201117-3', '20201117-4', '20201120-2', '20210118-1', ...
-%     '20210118-2', '20210119-1'};
-% visExpTrialNums = {1:4, 1:4, 1:4, 1:4, 1:4, 1:4};
-
-% % 10-5-10 timing
-% visExpList = {'20201117-3', '20201120-2', '20210118-1', '20210119-1'};
-% visExpTrialNums = {1:5, 1:5, 1:5, 1:5};
-
-% % "First vis" 5-5-5 timing
-% visExpList = {'20201117-1', '20201117-3', '20201117-4', '20201120-2', '20201201-3', '20210118-1', ...
-%     '20210118-2', '20210119-1', '20201201-1', '20201203-1', '20201203-2', '20201210-1', ...
-%     '20201210-2', '20201201-2', '20210122-1', '20210122-2'};
-% visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 3:5, 2:4, 2:4, 2:4, 5:7, 5:7, 3:5, 5:7, 3:5, 4:6, 6:8, 5:7};
-
-% % "Every possible vis" 5-5-5 timing
-% visExpList = {  '20201117-1', '20201117-3', '20201117-4', '20201120-2', '20201201-3', ...
-%                 '20210118-1', '20210118-2', '20210119-1', '20201201-1', '20201203-1', ...
-%                 '20201203-2', '20201210-1', '20201210-2', '20201201-2', '20210122-1', ...
-%                 '20210122-2', '20201117-1', '20201117-3', '20201117-4', '20201120-2', ...
-%                 '20210118-1', '20201203-2'};
-% visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 3:5, ...
-%                    2:4, 2:4, 2:4, 5:7, 5:7, ...
-%                    3:5, 5:7, 3:5, 4:6, 6:8, ...
-%                    5:7, 4:6, 5:7, 4:6, 5:7, ...
-%                    5:7, 7:9};
-% 
-% % 10-5-5 vis genetic control
-% visExpList = {'20201120-1', '20201120-3'};
-% visExpTrialNums = {1:4, 1:4};
-
-visExpTrialNums = visExpTrialNums(~strcmp(visExpList, '20210118-2'));
-visExpList = visExpList(~strcmp(visExpList, '20210118-2'));
-
-currExpList = visExpList;
-trialNums = visExpTrialNums;
-% currExpList = darkExpList;
-% trialNums = darkExpTrialNums;
-
-allCycData = [];
-for iExp = 1:numel(currExpList)
-    
-    currExpID = currExpList{iExp};
-    currTrialNums = trialNums{iExp};   
-
-    % Separate data for current experiment and trial(s)
-    currTbl = tbl(strcmp(tbl.expID, currExpID) & ismember(tbl.trialNum, currTrialNums), :);
-    currCycleData = cycleData(strcmp(cycleData.expID, currExpID) & ismember(cycleData.trialNum, ...
-        currTrialNums), :);
-    
-    drugTrials = find(~isnan(currTbl.startTime));
-    
-    % Get mean cycle times and trial start cycle times for entire experiment
-    expVolTimes = [];
-    totalTrialDur = 0;
-    cycTimes = [];
-    trialStartCycTimes = [];
-    for iTrial = 1:size(currTbl, 1)
-        currVolTimes = cell2mat(currCycleData(currCycleData.trialNum == currTrialNums(iTrial), :).trialVolTimes);
-        currCycTimes = cellfun(@mean, currCycleData(currCycleData.trialNum == currTrialNums(iTrial), :).trialVolTimes');
-        expVolTimes = [expVolTimes; currVolTimes + totalTrialDur];
-        if isempty(currVolTimes)
-            trialStartCycTimes(iTrial) = expVolTimes(end);
-        else
-            trialStartCycTimes(iTrial) = currVolTimes(1) + totalTrialDur;
-        end
-        cycTimes = [cycTimes, currCycTimes + totalTrialDur];
-        totalTrialDur = totalTrialDur + currTbl(currTbl.trialNum == currTrialNums(iTrial), :).trialDuration;
-    end
-    
-    % Get cycle vector and phase data and drop any incomplete cycles
-    cycVs = cell2mat(currCycleData.cycVectorStrength);
-    cycVp = cell2mat(currCycleData.cycVectorPhase);
-    cycVs = cycVs(logical(currCycleData.fullCycle), :);
-    cycVp = cycVp(logical(currCycleData.fullCycle), :);
-    cycTimes = cycTimes(logical(currCycleData.fullCycle));
-    
-    % Get min and max expDff values from each cycle
-    cycMins = [];
-    cycMaxes = [];
-    for iCyc = 1:size(currCycleData, 1)
-        if currCycleData.fullCycle(iCyc)
-            cycMins(end + 1, :) = min(currCycleData.cycExpDff{iCyc}, [], 'omitnan');
-            cycMaxes(end + 1, :) = max(currCycleData.cycExpDff{iCyc}, [], 'omitnan');
-        end
-    end
-    cycRanges = cycMaxes - cycMins;
-    
-    % Identify drug application start and end times
-    drugStartTimes = [];
-    drugEndTimes = [];
-    if ~isempty(drugTrials)
-        for iTrial = 1:numel(drugTrials)
-            drugStartTimes(iTrial, 1) = trialStartCycTimes(drugTrials(iTrial)) + ...
-                currTbl(drugTrials(iTrial), :).startTime;
-            drugEndTimes(iTrial, 1) = drugStartTimes(iTrial) + currTbl(drugTrials(iTrial), ...
-                    :).duration;
-        end
-    end
-    
-    % Create new row for each ROI and append to the appropriate table
-    for iRoi = 1:size(cycVp, 2)
-        newRow = table({currExpID}, iRoi, 'variableNames', {'expID', 'roiNum'});
-        newRow.cycTimes = {cycTimes'};
-        newRow.cycVs = {cycVs(:, iRoi)};
-        newRow.cycVp = {cycVp(:, iRoi)};
-        newRow.cycMin = {cycMins(:, iRoi)};
-        newRow.cycMax = {cycMaxes(:, iRoi)};
-        newRow.cycRange = {cycRanges(:, iRoi)};
-        newRow.drugStartTimes = {drugStartTimes};
-        newRow.drugEndTimes = {drugEndTimes};
-        allCycData = [allCycData; newRow];
-    end
-    allCycData = [allCycData; newRow];
-end
-
-%
-
 smWin = 3;
-singleRois = 0;
-singleExpts = 0;
-shadeSEM = 1;
-shadeExpSEM = 1;
 
-cyc = allCycData;
+trialTbl = tbl(19, :);
 
-cycTimes = cyc.cycTimes{1};
-Vs = cell2mat(cyc.cycVs');
-Vp = cell2mat(cyc.cycVp');
-cycMin = cell2mat(cyc.cycMin');
-cycMax = cell2mat(cyc.cycMax');
-cycRanges = cell2mat(cyc.cycRange');
+% Calculate bump amplitude for each volume
+expDff = trialTbl.expDff{:};
+bumpAmp = max(expDff, [], 2) - min(expDff, [], 2);
 
-% Vector strength
-figure(1); clf; hold on;
-cm = lines(numel(unique(cyc.expID)));
-allExpIDs = unique(cyc.expID);
-xx = cycTimes - cyc.drugStartTimes{1}(1);
-for iExp = 1:numel(allExpIDs)
-    currExpID = allExpIDs{iExp};
-    currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-    if singleRois
-        for iRoi = 1:size(currCyc, 1)
-            plot(xx, smoothdata(currCyc.cycVs{iRoi}, 1, 'gaussian', smWin), 'color', ...
-                    cm(iExp, :));
-        end
-    elseif singleExpts
-        currData = smoothdata(cell2mat(currCyc.cycVs'), 1, 'gaussian', smWin);
-        SE = std_err(currData, 2);
-        plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
-        if shadeExpSEM
-            upperY = (mean(currData, 2) + SE);
-            lowerY = (mean(currData, 2) - SE);
-            jbfill(xx', upperY', lowerY', cm(iExp, :), cm(iExp, :), 1, 0.2);
-        end
+% Get PVA-bar offset data
+pva = trialTbl.pvaRad{:} + pi;
+panelsPosFrames = trialTbl.panelsPosX{:};
+volTimes = (1:numel(pva)) ./ trialTbl.volumeRate;
+panelsFrameTimes = (1:numel(panelsPosFrames)) ./ trialTbl.panelsDisplayRate;
+panelsPosVols = [];
+for iVol = 1:numel(volTimes)
+    [~, currVol] = min(abs(panelsFrameTimes - volTimes(iVol)));
+    panelsPosVols(iVol) = panelsPosFrames(currVol);
+end
+panelsBarPhase = (2*pi * (panelsPosVols ./ max(panelsPosVols)));
+cycStartVols = trialTbl.cycStartVols{:};
+smPVA = mod(smoothdata(unwrap(pva), 'gaussian', smWin), 2*pi);
+
+offset = (circ_dist(panelsBarPhase, smPVA')); + pi;
+absOffset = abs(circ_dist(panelsBarPhase, smPVA'));
+
+% barBehindFlyPanelsPositions = [1:8, 81:96] - 1; % Subtract 1 for zero-indexed panels positions
+barBehindFlyPanelsPositions = [1:12, 77:96] - 1; % Subtract 1 for zero-indexed panels positions
+barBehindFlyVols = ismember(panelsPosVols, barBehindFlyPanelsPositions);
+% 
+smPVA(barBehindFlyVols) = nan;
+offset(barBehindFlyVols) = nan;
+bumpAmp(barBehindFlyVols) = nan;
+
+cycMeans = [];
+cycStd = [];
+cycTimes = [];
+cycAmp = [];
+for iCyc = 1:numel(cycStartVols)
+    if iCyc < numel(cycStartVols)
+        currCycVols = cycStartVols(iCyc):(cycStartVols(iCyc + 1) - 1);
+        currOffset = offset(currCycVols);
+        currOffset = currOffset(~isnan(currOffset));
+        cycMeans(iCyc) = circ_mean(currOffset');
+        cycStd(iCyc) = circ_std(currOffset');
+        cycAmp(iCyc) = mean(bumpAmp(currCycVols(~isnan(currCycVols))), 'omitnan');
+        cycTimes(iCyc) = mean(volTimes([cycStartVols(iCyc), cycStartVols(iCyc + 1)]));
+    else
+        currOffset = offset(cycStartVols(iCyc):end);
+        currOffset = currOffset(~isnan(currOffset));
+        cycMeans(iCyc) = circ_mean(currOffset');
+        cycStd(iCyc) = circ_std(currOffset');
+        cycAmp(iCyc) = mean(bumpAmp(cycStartVols(iCyc):end), 'omitnan');
+        cycTimes(iCyc) = mean(volTimes([cycStartVols(iCyc), numel(volTimes)]));
     end
 end
-meanData = mean(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-if shadeSEM
-    SE = std_err(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-    upperY = (meanData + SE);
-    lowerY = (meanData - SE);
-    jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
+
+
+f = figure(1);clf; 
+f.Color = [1 1 1];
+
+% Bar phase and PVA
+subaxis(5, 3, 1:3, 'mt', 0.03); hold on;
+plot(volTimes, panelsBarPhase, 'color', 'r', 'linewidth', 1);
+plot(volTimes, smPVA, 'color', 'k', 'linewidth', 1);
+xlim([0 volTimes(end)])
+ylim([0 2*pi])
+ylabel('Bar and PVA')
+
+% Bump offset
+subaxis(5, 3, 4:6); hold on;
+plot(volTimes, offset, 'color', 'k', 'linewidth', 1);
+plot([0, volTimes(end)], [0 0], '--', 'color', 'b')
+% ylim([0 pi]);
+yL = ylim();
+for iCyc = 1:numel(cycStartVols)
+    plot([1 1] * volTimes(cycStartVols(iCyc)), yL, 'color', 'r'); 
 end
-if numel(cyc.drugStartTimes{1}) > 1
-    shadeColor = rgb('orange');
-else
-    shadeColor = rgb('green');
+xlim([0 volTimes(end)])
+ylabel('Bump offset')
+
+% Bump amplitude
+subaxis(5, 3, 7:9); hold on;
+plot(volTimes, bumpAmp, 'color', 'k', 'linewidth', 1);
+yL = ylim();
+for iCyc = 1:numel(cycStartVols)
+    plot([1 1] * volTimes(cycStartVols(iCyc)), yL, 'color', 'r'); 
 end
-plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-if numel(cyc.drugEndTimes{1}) > 1 
-    plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-        'color', rgb('green'))
+xlim([0 volTimes(end)])
+ylim(yL)
+ylabel('Bump amp')
+
+% Mean cycle offset
+subaxis(5, 3, [10 13]); hold on;
+plot(cycTimes, cycMeans, '-o', 'color', 'k', 'linewidth', 3)
+xlim([0 volTimes(end)])
+% ylim([0 pi]);
+if ~isnan(trialTbl.startTime)
+    plot([1 1] * trialTbl.startTime, ylim(), 'color', 'b', 'linewidth', 1);
+    plot([1 1] * (trialTbl.startTime + trialTbl.duration), ylim(), 'color', 'b', 'linewidth', 1);
 end
-xlim([xx(1) xx(end)])
-title('Vector strength')
+title('Mean bump offset')
 
-% Min - max
-figure(2); clf; hold on;
-cm = lines(numel(unique(cyc.expID)));
-allExpIDs = unique(cyc.expID);
-xx = cycTimes - cyc.drugStartTimes{1}(1);
-for iExp = 1:numel(allExpIDs)
-    currExpID = allExpIDs{iExp};
-    currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-    if singleRois
-        for iRoi = 1:size(currCyc, 1)
-            plot(xx, smoothdata(currCyc.cycRange{iRoi}, 1, 'gaussian', smWin), 'color', ...
-                    cm(iExp, :));
-        end
-    elseif singleExpts
-        currData = smoothdata(cell2mat(currCyc.cycRange'), 1, 'gaussian', smWin);
-        SE = std_err(currData, 2);
-        plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
-        if shadeExpSEM
-            upperY = (mean(currData, 2) + SE);
-            lowerY = (mean(currData, 2) - SE);
-            jbfill(xx', upperY', lowerY', cm(iExp, :), cm(iExp, :), 1, 0.2);
-        end
-    end
+
+% Cycle offset std_dev
+subaxis(5, 3, [11 14]); hold on;
+plot(cycTimes, cycStd, '-o', 'color', 'm', 'linewidth', 3)
+xlim([0 volTimes(end)])
+% ylim([0 1.2]);
+if ~isnan(trialTbl.startTime)
+    plot([1 1] * trialTbl.startTime, ylim(), 'color', 'b', 'linewidth', 1);
+    plot([1 1] * (trialTbl.startTime + trialTbl.duration), ylim(), 'color', 'b', 'linewidth', 1);
 end
-meanData = mean(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', smWin), 2);
-plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-if numel(cyc.drugStartTimes{1}) > 1
-    shadeColor = rgb('orange');
-else
-    shadeColor = rgb('green');
+
+% Mean cycle bump amplitude
+subaxis(5, 3, [12 15]); hold on;
+plot(cycTimes, cycAmp, '-o', 'color', rgb('orange'), 'linewidth', 3)
+xlim([0 volTimes(end)])
+ylim([0 5]);
+if ~isnan(trialTbl.startTime)
+    plot([1 1] * trialTbl.startTime, ylim(), 'color', 'b', 'linewidth', 1);
+    plot([1 1] * (trialTbl.startTime + trialTbl.duration), ylim(), 'color', 'b', 'linewidth', 1);
 end
-plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-if numel(cyc.drugEndTimes{1}) > 1 
-    plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-        'color', rgb('green'))
+title('Mean bump amplitude')
+
+%% Plot mean 
+allExpPanelsPos = cell2mat(tbl.panelsPosVols');
+allExpBumpAmp = cell2mat(tbl.bumpAmp);
+
+positions = unique(panelsPosVols);
+allExpPosAmps = [];
+for iPos = 1:numel(positions)
+    allExpPosAmps(iPos) = mean(allExpBumpAmp(allExpPanelsPos == positions(iPos)));
+    
 end
-if shadeSEM
-    SE = std_err(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-    upperY = (meanData + SE);
-    lowerY = (meanData - SE);
-    jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
+
+allExpList = unique(tbl.expID);
+expPosAmps = {};
+for iExp = 1:numel(allExpList)
+   currTbl = tbl(strcmp(tbl.expID, allExpList{iExp}), :);
+   currPanelsPos = cell2mat(currTbl.panelsPosVols');
+   currBumpAmp = cell2mat(currTbl.bumpAmp);
+   currPositions = unique(currPanelsPos);
+   
+   sortedAmps = sort(currBumpAmp);
+   minAmp = sortedAmps(round(numel(sortedAmps)*0.05));
+   maxAmp = sortedAmps(round(numel(sortedAmps)*0.95));
+   currPosAmps = [];
+   expPosAmps{iExp} = [];
+   for iPos = 1:numel(currPositions)
+       expPosAmps{iExp}(iPos) = mean(currBumpAmp(currPanelsPos == currPositions(iPos)));
+       expPosAmpsNorm{iExp}(iPos) = (expPosAmps{iExp}(iPos) - minAmp) ./ maxAmp;
+   end
 end
-title('Min - max dF/F')
-xlim([xx(1) xx(end)])
 
 
 
+startAngle = (-180 + (3.75 * 5));
+posAngles = [startAngle:3.75:180, (-180+3.75):3.75:(-180+(4*3.75))];
 
+f = figure(9);clf; hold on;
+f.Color = [1 1 1];
+plot(posAngles, allExpPosAmps, 'o', 'markersize', 7, 'color', 'k')
+yL = ylim();
+plot([0 0], yL, '--', 'color', 'r', 'linewidth', 2)
+plot([1 1]*-135, yL, '--', 'color', 'g', 'linewidth', 2)
+plot([1 1]*135, yL, '--', 'color', 'g', 'linewidth', 2)
+ax = gca();
+ax.FontSize = 14;
+ylabel('Mean bump amplitude (all experiments)')
+xlabel('Bar position')
+ax.XTick = [-180 -135 -90 -45 0 45 90 135 180];
 
+f = figure(10);clf; hold on;
+f.Color = [1 1 1];
+for iExp = 1:numel(expPosAmps)
+    plot(posAngles, expPosAmps{iExp}, 'o', 'markersize', 7)
+end
+yL = ylim();
+plot([0 0], yL, '--', 'color', 'r', 'linewidth', 1)
+plot([1 1]*-135, yL, '--', 'color', 'g', 'linewidth', 1)
+plot([1 1]*135, yL, '--', 'color', 'g', 'linewidth', 1)
+ax = gca();
+ax.FontSize = 14;
+ylabel('Mean bump amplitude')
+xlabel('Bar position')
 
-
-
-
-
-
-
-
-
+f = figure(12);clf;
+f.Color = [1 1 1];
+ax = subaxis(1, 1, 1, 'mb', 0.05, 'mt', 0.02, 'ml', 0.15); hold on;
+expCount = 0;
+for iExp = 1:numel(expPosAmps)
+    plot(posAngles, expPosAmpsNorm{iExp} + expCount, 'o', 'markersize', 7)
+    expCount = expCount + 0.4;
+end
+yL = [0, expCount + 0.4];
+plot([0 0], yL, '--', 'color', 'r', 'linewidth', 1)
+plot([1 1]*-135, yL, '--', 'color', 'g', 'linewidth', 1)
+plot([1 1]*135, yL, '--', 'color', 'g', 'linewidth', 1)
+ylim(yL);
+ax = gca();
+ax.FontSize = 14;
+ylabel('Mean bump amplitude')
+xlabel('Bar position')
+ax.YTickLabel = [];
+ax.XTick = [-135 0 135];
 
