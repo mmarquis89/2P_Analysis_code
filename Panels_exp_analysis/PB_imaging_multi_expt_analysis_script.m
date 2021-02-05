@@ -40,17 +40,17 @@ visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 3:5, 2:4, 2:4, 2:4};
 %                    5:7, 4:6, 5:7, 4:6, 5:7, ...
 %                    5:7, 7:9};
 % 
-% % 10-5-5 vis genetic control
+% 5-5-5 vis genetic control
 % visExpList = {'20201120-1', '20201120-3'};
-% visExpTrialNums = {1:4, 1:4};
+% visExpTrialNums = {2:4, 2:4};
 
 visExpTrialNums = visExpTrialNums(~strcmp(visExpList, '20210118-2'));
 visExpList = visExpList(~strcmp(visExpList, '20210118-2'));
-% 
-% currExpList = visExpList;
-% trialNums = visExpTrialNums;
-currExpList = darkExpList;
-trialNums = darkExpTrialNums;
+
+currExpList = visExpList;
+trialNums = visExpTrialNums;
+% currExpList = darkExpList;
+% trialNums = darkExpTrialNums;
 
 try
 allCycRoiData = [];
@@ -177,10 +177,29 @@ catch ME; rethrow(ME); end
 %%
 
 smWin = 3;
-    singleRois = 0;
+singleRois = 0;
 singleExpts = 1;
-shadeSEM = 1;
+shadeSEM = 0;
 shadeExpSEM = 0;
+
+
+% For visual stim experiments
+YF_epochs = [-150 -30; 240 360; 540 660];
+YF_epochs_relStim = YF_epochs - 90;
+YF_epochs_relEBDAN = YF_epochs - 75;
+epochs = YF_epochs_relEBDAN;
+epochs(end, :) = epochs(end, :) - 75; % To make the last epoch fit in the imaging time 
+epochs(1, :) = epochs(1, :) + 105; % Because it makes sense for the baseline to end at t=0
+
+% % For darkness+ATP experiments
+% lateEpochs = epochs + 600;
+% epochs = [epochs(1, :); lateEpochs];
+% % epochs(1:2, :) = epochs(1:2, :) + 105; 
+% epochs(1, :) = epochs(1, :) - 45; % Because there's no data after the ATP trial starts at t=(-45)
+
+
+disp(epochs ./ 60)
+disp((epochs(2:end, :) - 600 -45) ./ 60);
 
 try
 cyc = innerjoin(allCycRoiData, allCycExpData);
@@ -212,14 +231,9 @@ for iExp = 1:numel(allExpIDs)
         SE = std_err(currData, 2);
         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
         legendStr{end + 1} = currCyc.expID{1};
-        if shadeExpSEM
-            upperY = (mean(currData, 2) + SE);
-            lowerY = (mean(currData, 2) - SE);
-            jbfill(xx', upperY', lowerY', cm(iExp, :), cm(iExp, :), 1, 0.2);
-        end
     end
 end
-legend(legendStr, 'autoupdate', 'off');
+% legend(legendStr, 'autoupdate', 'off');
 meanData = mean(smoothdata(Vs, 1, 'gaussian', smWin), 2);
 plot(xx, meanData, 'color', 'k', 'linewidth', 3);
 if shadeSEM
@@ -240,7 +254,12 @@ if numel(cyc.drugEndTimes{1}) > 1
 end
 xlim([xx(1) xx(end)])
 title('Vector strength')
-% xlim([-90 300])
+yL = ylim();
+if ~isempty(epochs)
+    for iEpoch = 1:size(epochs, 1)
+        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+    end
+end
 
 % Min - max
 f = figure(2); clf; hold on;
@@ -264,11 +283,6 @@ for iExp = 1:numel(allExpIDs)
         SE = std_err(currData, 2);
         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
         legendStr{end + 1} = currCyc.expID{1};
-        if shadeExpSEM
-            upperY = (mean(currData, 2) + SE);
-            lowerY = (mean(currData, 2) - SE);
-            jbfill(xx', upperY', lowerY', cm(iExp, :), cm(iExp, :), 1, 0.2);
-        end
     end
 end
 meanData = mean(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', smWin), 2);
@@ -291,6 +305,13 @@ if shadeSEM
 end
 title('Min - max dF/F')
 xlim([xx(1) xx(end)])
+yL = ylim();
+if ~isempty(epochs)
+    for iEpoch = 1:size(epochs, 1)
+        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+    end
+end
+
 
 % PVA offset SD
 f = figure(3);clf;
@@ -304,6 +325,7 @@ legendStr = {};
 if singleExpts
     for iExp = 1:numel(allExpIDs)
         currExpID = allExpIDs{iExp};
+        legendStr{end + 1} = currExpID;
         currCyc = cyc(strcmp(cyc.expID, currExpID), :);
         currData = smoothdata(currCyc.cycOffsetStd{:}, 'gaussian', smWin);
         plot(xx, currData, 'linewidth', 2, 'color', cm(iExp, :));
@@ -329,6 +351,14 @@ if numel(cyc.drugEndTimes{1}) > 1
 end
 xlim([xx(1) xx(end)])
 title('Bar-bump offset SD')
+yL = ylim();
+legend(legendStr, 'autoupdate', 'off')
+if ~isempty(epochs)
+    for iEpoch = 1:size(epochs, 1)
+        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+    end
+end
+
 
 % Bump amplitude
 f = figure(4);clf;
@@ -366,7 +396,12 @@ if numel(cyc.drugEndTimes{1}) > 1
 end
 xlim([xx(1) xx(end)])
 title('Bump amplitude')
-
+yL = ylim();
+if ~isempty(epochs)
+    for iEpoch = 1:size(epochs, 1)
+        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+    end
+end
 
 
 
@@ -381,22 +416,9 @@ title('Bump amplitude')
 
 catch ME; rethrow(ME); end
 
-%%
+% Plot mean values across experimental epochs
+
 cyc = innerjoin(allCycRoiData, allCycExpData);
-    
-% epochs = [-90 0; ...
-%            120, 180; ...
-%            180, 240; ...
-%            240 300]; ...
-%       
-epochs = [-90 0; ...
-           60, 150; ...
-           210 300];
-% epochs = [-90, 0; ...
-%            210,  300];   
-
-epochs = epochs + 600;
-
 
 % Get mean vector strength and phase within each epoch
 epochVsMeans = [];
@@ -407,7 +429,7 @@ for iRoi = 1:size(cyc, 1)
     for iEpoch = 1:size(epochs, 1)
         epochCycles = t > (epochs(iEpoch, 1) + atpStart) & t < (epochs(iEpoch, 2) + atpStart);
         epochVsMeans(iRoi, iEpoch) = mean(cyc.cycVs{iRoi}(epochCycles));
-        epochVpMeans(iRoi, iEpoch) = circ_mean(cyc.cycVp{iRoi}(epochCycles));  
+        epochVpMeans(iRoi, iEpoch) = circ_mean(cyc.cycVp{iRoi}(epochCycles) + pi);  
     end
 end
 
@@ -486,6 +508,8 @@ plot(xx, mean(epochOffsetSD, 1), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
 title('Bar-bump offset SD')
+ax = gca();
+ax.XTick = xx;
 
 % Mean bump offset
 f = figure(6); clf;
@@ -500,6 +524,9 @@ end
 xlim([0.5 xx(end) + 0.5]);
 legend(legendStr, 'autoupdate', 'off')
 title('Mean bump offset')
+ax = gca();
+ax.XTick = xx;
+ylim([-pi, pi]);
 
 % Mean delta offsets
 f = figure(7); clf;
@@ -520,8 +547,10 @@ plot(xx, mean(allYY, 1), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
 legend(legendStr, 'autoupdate', 'off')
-title('Mean delta offset')
-% ylim([0 2.5])
+title('Mean \Delta offset')
+ax = gca();
+ax.XTick = xx;
+ylim([0 pi]);
 
 % Mean bump amplitude
 f = figure(8); clf;
@@ -538,35 +567,43 @@ plot(xx, mean(epochBumpAmpMean, 1), '-s', 'color', 'k', ...
 xlim([0.5 xx(end) + 0.5]);
 legend(legendStr, 'autoupdate', 'off')
 title('Mean bump amplitude')
+ax = gca();
+ax.XTick = xx;
 
+% Vector strength
+f = figure(9); clf;
+f.Color = [1 1 1];
+hold on;
+xx = 1:size(epochVsMeans, 2);
+plot(xx, epochVsMeans, '-s', 'linewidth', 2);
+plot(xx, mean(epochVsMeans, 1), '-s', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
+xlim([0.5 xx(end) + 0.5]);
+title('Vector strength');
+ax = gca();
+ax.XTick = xx;
 
-
-% relPhaseMeans = epochVpMeans + pi;
-% % relPhaseMeans = relPhaseMeans - repmat(relPhaseMeans(:, 1), 1, size(relPhaseMeans, 2));
-% 
-% test = unwrap(relPhaseMeans, [], 2);
-% yy = (test - repmat(test(:, 1), 1, size(test, 2)))';
-% f = figure(7);clf; 
-% violinplot(abs(diff(yy, 1, 1)'));
-% title('relative vector phase shifts')
-% 
-% f = figure(8); clf;
-% f.Color = [1 1 1];
-% hold on;
-% SEM = std_err(epochVsMeans, 1);
-% for iRoi = 1:size(epochVsMeans, 1)
-%     errorbar(1:size(epochVsMeans, 2), epochVsMeans(iRoi, :), epochVsSEM(iRoi, :), '-s');%, ...
-% end
-% errorbar(1:size(epochVsMeans, 2), mean(epochVsMeans, 1)', SEM, '-s', 'linewidth', 3, 'color', 'k', ...
-%         'markerSize', 12, 'markerfacecolor', 'k')
-% xlim([0.5 size(epochVsMeans, 2) + 0.5]);
-% % ylim([0, max(relPhaseMeans(:))]);
-% title('vector strength')
-
-
-
-
-
+% Mean preferred bar position shifts for individual EB wedges
+f = figure(10); clf;
+f.Color = [1 1 1];
+hold on;
+xx = 1:(size(epochVpMeans, 2) - 1);
+allYY = [];
+for iRoi = 1:size(epochVpMeans, 1)
+    for iEpoch = 1:(size(epochVpMeans, 2) - 1)
+        allYY(iRoi, iEpoch) = abs(circ_dist(epochVpMeans(iRoi, iEpoch + 1), ...
+                epochVpMeans(iRoi, iEpoch)));
+    end
+    plot(xx, allYY(iRoi, :), '-s', 'linewidth', 2);
+end
+% violinplot(allYY, []);
+plot(xx, mean(allYY, 1), '-s', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
+xlim([0.5 xx(end) + 0.5]);
+title('Mean \Delta preferred bar position')
+ax = gca();
+ax.XTick = xx;
+ylim([0 pi]);
 
 
 

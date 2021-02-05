@@ -27,18 +27,12 @@ end
 
 %% PREPARE DATA FOR MULTI-TRIAL ANALYSIS
 
-% temp = glomData;
-% for i=1:5
-%     temp.rawFl{i} = temp.rawFl{i}(:, 1:8);
-%     temp.trialDff{i} = temp.trialDff{i}(:, 1:8);
-%     temp.expDff{i} = temp.expDff{i}(:, 1:8);
-% end
-% temp.pvaRad = wedgeData.pvaRad;
-% temp.pvaWedge = wedgeData.pvaWedge;
 
 sourceData = wedgeData; % glomData or wedgeData
 flSmWin = 5;
 
+try 
+    
 tbl = inner_join(trialMd, expMd, sourceData, panelsMetadata);
 tbl = outerjoin(tbl, ftData, 'type', 'left', 'mergekeys', 1);
 tbl = outerjoin(tbl, drugTimingMd, 'type', 'left', 'mergekeys', 1);
@@ -49,8 +43,6 @@ for iTrial = 1:size(tbl, 1)
     volTimes{iTrial} = ((1:tbl.nVolumes(iTrial)) ./ tbl.volumeRate(iTrial))';
 end
 tbl.volTimes = volTimes';
-
-
 
 % Create table of data for bar cycle analysis 
 cycleData = [];
@@ -112,6 +104,7 @@ for iTrial = 1:size(tbl, 1)
 end
 tbl.cycStartVols = cycleStartVols';
 
+catch ME; rethrow(ME); end
 
 %% PLOT OVERVIEW OF VISUAL TUNING AND MOVEMENT FOR A SINGLE TRIAL
 
@@ -196,6 +189,8 @@ p.MR = 0.02;
 p.MT = 0;
 p.MB = 0.08;
 
+try 
+    
 % Separate data for current experiment and trial(s)
 if isempty(trialNums)
     trialNums = tbl.trialNum(strcmp(tbl.expID, currExpID));
@@ -241,6 +236,7 @@ if saveFig
     figTitle = [currExpID, '_visual_tuning_heatmaps'];
     save_figure(f, figDir, figTitle);
 end
+catch ME; rethrow(ME); end
 
 %% PLOT ALL TUNING CURVES ON POLAR PLOTS
 
@@ -269,6 +265,8 @@ p.MR = 0.03;
 p.MT = 0.3;
 p.MB = 0.05;
 
+try
+    
 % Separate data for current experiment and trial(s)
 if isempty(trialNums)
     trialNums = tbl.trialNum(strcmp(tbl.expID, currExpID));
@@ -315,6 +313,7 @@ if saveFig
     figTitle = [currExpID, '_visual_tuning_polarPlots'];
     save_figure(f, figDir, figTitle);
 end
+catch ME; rethrow(ME); end
 
 %% PLOT HEATMAPS ALIGNED BY BAR CYCLE
 
@@ -336,6 +335,8 @@ p.MR = 0.03;
 p.MT = 0.03;
 p.MB = 0.05;
 
+try
+    
 % Separate data for current experiment and trial(s)
 if isempty(trialNums)
     trialNums = tbl.trialNum(strcmp(tbl.expID, currExpID));
@@ -362,8 +363,9 @@ if saveFig
     figTitle = [currExpID, '_bar_cycle_aligned_heatmaps'];
     save_figure(f, figDir, figTitle);
 end
+catch ME; rethrow(ME); end
 
-%% PLOT VECTOR STRENGTH OF EACH CYCLE THROUGHOUT THE EXPERIMENT
+%% PLOT VECTOR STRENGTH AND OTHER METRICS OF EACH CYCLE THROUGHOUT THE EXPERIMENT
 
 currExpID = expList{3};
 trialNums = [];
@@ -380,6 +382,8 @@ p.MR = 0.03;
 p.MT = 0.03;
 p.MB = 0.05;
 
+try
+    
 % Separate data for current experiment and trial(s)
 if isempty(trialNums)
     trialNums = tbl.trialNum(strcmp(tbl.expID, currExpID));
@@ -504,4 +508,4 @@ plot_stim_shading([drugStartTimes, drugEndTimes])
 xlim([0 cycTimes(end)])
 ylim(yL);
 
-
+catch ME; rethrow(ME); end

@@ -44,6 +44,7 @@ function cycleData = get_bar_cycle_data(trialData, flSmWin)
 %                          cycVectorStrength   (current cycle's vector strength value for each ROI)
 %                          cycVectorPhase      (current cycles vector phase value for each ROI)
 %                          cycPvaOffset        (bar phase-PVA offset)
+%                          cycBumpAmp          (bump amplitude)
 % 
 %===================================================================================================
 
