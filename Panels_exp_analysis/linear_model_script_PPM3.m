@@ -4,23 +4,23 @@
 p = [];
 p.maxSpeed = 100;
 p.smWinVols = 5;
-p.roiName = 'FB-DAN';
+p.roiName = 'EB-DAN';
 p.smWinFrames = 7;
 p.smReps = 20;
 p.ftLagVols = 3;
 p.speedType = 'forwardSpeed';
 
-expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...
+p.expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...
         '20201027-1', '20201029-1', '20201029-2', '20201029-3', '20201029-4', '20201030-1', ...
         '20201030-2'};
 
-skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, ...
+p.skipTrials = {[11:15], [11:16], [8:15], [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, ...
         7:9, 7:10};
 
-skipVols = repmat({[]}, 1, numel(skipTrials));
+p.skipVols = repmat({[]}, 1, numel(p.skipTrials));
                      
          
-expInfoTbl = table(expIDList', skipTrials', skipVols', 'VariableNames', {'expID', 'skipTrials', ...
+expInfoTbl = table(p.expIDList', p.skipTrials', p.skipVols', 'VariableNames', {'expID', 'skipTrials', ...
         'skipVols'});
 
 % Create analysis object
@@ -30,7 +30,7 @@ rm = RegressionModelAnalysis_PPM3(expInfoTbl, p);
 mp = [];
 mp.trainTestSplit = 0.8;
 mp.criterion = 'adjrsquared'; % 'sse, 'aic', 'bic', '', or 'adjrsquared'
-mp.upper = [];
+mp.upper = ['linear'];
 mp.pEnter = [0.03];
 mp.pRemove = [0];
 mp.verbose = 0;
@@ -73,11 +73,19 @@ catch ME; rethrow(ME); end
 saveFig = 1;
 try
     
-plotArr = [rm_full.modelData.fullMdlAdjR2, rm_noRunSpeed.modelData.fullMdlAdjR2, ...
-        rm_noYawSpeed.modelData.fullMdlAdjR2]';
+full_R2 = []; noYaw_R2 = []; noFw_R2 = [];
+for iMdl = 1:size(rm_full.modelData, 1)
+    full_R2(iMdl, 1) = rm_full.modelData.fullMdls{iMdl}.Rsquared.Ordinary;
+    noYaw_R2(iMdl, 1) = rm_noYawSpeed.modelData.fullMdls{iMdl}.Rsquared.Ordinary;
+    noFw_R2(iMdl, 1) = rm_noRunSpeed.modelData.fullMdls{iMdl}.Rsquared.Ordinary;
+end
+plotArr = [full_R2, noFw_R2, noYaw_R2]';
+%     
+% plotArr = [rm_full.modelData.fullMdlAdjR2, rm_noRunSpeed.modelData.fullMdlAdjR2, ...
+%         rm_noYawSpeed.modelData.fullMdlAdjR2]';
 
 % groupNames = {'Full model', ['No ', rm_noRunSpeed.sourceDataParams.speedType], 'No yawSpeed'};
-groupNames = {'Full model', 'No fwSpeed', 'No yawSpeed'};
+groupNames = {'Full model', 'Yaw only', 'Fw only'};
 
 f = figure(3);clf; hold on 
 f.Color = [1 1 1];
@@ -95,22 +103,15 @@ ylim([-0.001, 1])
 ax = gca();
 ax.XTick = 1:size(plotArr, 1);
 ax.XTickLabel = groupNames;
-ylabel('Model adjusted R^2');
+ylabel('Model R^2');
 ax.FontSize = 14;
-if strcmpi(rm_full.modelParams.upper, 'linear')
-    titleStr = 'No interaction terms';
-    fileNameStr = 'no';
-else
-    titleStr = 'Interaction terms allowed';
-    fileNameStr = 'with';
-end
-title({['Adj. R^2 step thresh: ', num2str(rm_full.modelParams.pEnter)], titleStr});
+title('expDff ~ yawSpeed + fwSpeed', 'fontSize', 12)
+
+
 f.UserData.sourceDataParams = rm_full.sourceDataParams;
 f.UserData.modelParams = rm_full.modelParams;
 if saveFig
-    pEnterStr = num2str(rm_full.modelParams.pEnter);
-    saveFileName = [p.roiName, '_adj_R2_summary_stepThresh_', pEnterStr(3:end), ...
-            '_', fileNameStr, '_interactions'];
+    saveFileName = 'EB-DAN_linear_model_R2_comparison';
     save_figure(f, figDir, saveFileName);
 end
     
