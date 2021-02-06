@@ -221,13 +221,13 @@ smReps = 50;
 
 % expNums = [];
 % trialNums = repmat({[]}, numel(expList), 1);
-expNums = [3 4];
-trialNums = {[1:7], [5:8,10:11]};
+expNums = [5 6];
+trialNums = {4, 5}%{[1:6], [11:16]};
 % trialNums = {[1:6, 11:16], [1:7, 13:17]};
 
 % roiNames, moveSpeed, fwSpeed, yawSpeed, 'barPos'
 ax1_varNames = {'EB-DAN'};
-ax2_varNames = {'fwSpeed', 'yawSpeed'};
+ax2_varNames = {'fwSpeed', 'yawSpeed', 'EB-DAN'};
 
 plotTrialBounds = 1;
 
@@ -330,7 +330,7 @@ for iExp = 1:numel(currExpList)
             {'moveSpeed', 'fwSpeed', 'yawSpeed', 'barPos'});
     for iRoi = 1:numel(roiNames)
         currFl = flData(:, iRoi) - min(flData(:, iRoi));
-        tbl.(roiNames{iRoi}) = currFl %./ max(currFl);
+        tbl.(roiNames{iRoi}) = currFl ./ max(currFl);
     end
     
     trialStartVols = 1:size(flMat, 1):size(flData, 1);
@@ -1140,6 +1140,157 @@ if saveFig
     f.UserData.params = p;
     f.UserData.moveSpeedAnalysisParams = allParams;
     save_figure(f, figDir, fileName);
+end
+
+catch ME; rethrow(ME); end
+
+%% Compare correlation coefficients with yaw vs. fw speed
+
+saveFig = 0;
+
+parentDir = figDir;
+matFileName = 'moveSpeedAnalysis_corrCoeffs.mat';
+load(fullfile(parentDir, matFileName), 'allRs_fw', 'allRs_yaw', 'analysisParams');
+
+try 
+plotData = [allRs_yaw; allRs_fw];
+
+f = figure(1); clf; hold on
+f.Color = [1 1 1];
+plot(plotData, '-o', 'color', 'k', 'markerfacecolor', rgb('green'), 'markerEdgeColor', ...
+        rgb('green'));
+SEM = std_err(plotData, 2);
+errorbar(1:size(plotData, 1), mean(plotData, 2)', SEM, '-s', 'color', 'k', ...
+        'markerFaceColor', 'k', 'linewidth', 3, 'markersize', 10);
+xlim([0.5, size(plotData, 1) + 0.5]);    
+ylim([0, 1])
+ax = gca();
+ax.XTick = 1:size(plotData, 1);
+ax.XTickLabel = {'Rotational speed', 'Forward speed'};
+ylabel('\DeltaF/F correlation coeff')
+ax.FontSize = 14;
+pTest = signrank(plotData(1,:), plotData(2, :));
+title(['Wilcoxon signed rank test: p = ', num2str(pTest, 1)], 'FontSize', 12);
+
+% Save figure
+if saveFig
+    roiName = analysisParams.plotParams.roiName;
+    fileName = [roiName, '_speed_vs_', flType, '_corrCoeffs'];
+    f.UserData.params = analysisParams;
+    save_figure(f, figDir, fileName);
+end
+catch ME; rethrow(ME); end
+
+%% Plot example traces of Fl and speed data for a specific epoch
+p = [];
+
+p.smWin = 5;
+p.smReps = 50;
+
+saveFig = 0;
+fileNameSuffix = '';
+
+expNums = [5 6];
+trialNums = {4, 5};
+trialTimes = {[65 95], [88 120]};
+
+% roiNames, moveSpeed, fwSpeed, yawSpeed, 'barPos'
+p.flType = 'expDff';
+varNames = {'EB-DAN', 'yawSpeed', 'fwSpeed'};
+
+try
+roiName = unique(varNames(ismember(varNames, unique(roiData.roiName))));
+
+cm = [0,0,0; rgb('red'); rgb('blue')];
+
+currExpList = expList;
+currExpList = currExpList(expNums);
+for iExp = 1:numel(currExpList)
+        
+    % Get current ExpID and trial num
+    currExpID = currExpList{iExp};
+    currTrialNum = trialNums{iExp};
+    currTrialTimes = trialTimes{iExp};
+    currTrialMd = trialMd(strcmp(trialMd.expID, currExpID), :);
+    
+    % Extract ROI data
+    currRoiData = roiData(strcmp(roiData.expID, currExpID) & roiData.trialNum == currTrialNum & ...
+            strcmp(roiData.roiName, roiName), :);
+    currExpFl = currRoiData.rawFl{:};
+    if strcmp(p.flType, 'trialDff')
+        currExpFl = (currExpFl - currRoiData.trialBaseline) ./ currRoiData.trialBaseline;
+    elseif strcmp(p.flType, 'expDff')
+        currExpFl = (currExpFl - currRoiData.expBaseline) ./ currRoiData.expBaseline;
+    end
+    flData = smoothdata(currExpFl, 1, 'gaussian', p.smWin);
+
+    % Extract FicTrac data
+    currFtData = ftData(strcmp(ftData.expID, currExpID) & ftData.trialNum == currTrialNum, :);
+    moveSpeed = repeat_smooth(currFtData.moveSpeed{:}, p.smReps, 'smWin', p.smWin);
+    fwSpeed = repeat_smooth(currFtData.fwSpeed{:}, p.smReps, 'smWin', p.smWin);
+    yawSpeed = rad2deg(abs(repeat_smooth(currFtData.yawSpeed{:}, p.smReps, 'smWin', p.smWin)));
+    sideSpeed = repeat_smooth(currFtData.sideSpeed{:}, p.smReps, 'smWin', p.smWin);
+    totalSpeed = (abs(fwSpeed) + abs(yawSpeed) + abs(sideSpeed)) ./ 3;
+
+    % Get downsampled FicTrac data
+    volTimes = (1:currTrialMd(currTrialMd.trialNum == currTrialNum, :).nVolumes) ...
+            ./ expMd(strcmp(expMd.expID, currExpID), :).volumeRate;
+    moveSpeedVols = []; fwSpeedVols = []; yawSpeedVols = [];
+    for iVol = 1:numel(volTimes)
+        dsFrame = argmin(abs(currFtData.frameTimes{:} - volTimes(iVol)));
+        moveSpeedVols(iVol) = moveSpeed(dsFrame);
+        fwSpeedVols(iVol) = fwSpeed(dsFrame);
+        yawSpeedVols(iVol) = yawSpeed(dsFrame);
+    end
+    
+    smMoveSpeed = smoothdata(moveSpeedVols', 1, 'gaussian', p.smWin);
+    smFwSpeed = smoothdata(fwSpeedVols', 1, 'gaussian', p.smWin);
+    smYawSpeed = smoothdata(yawSpeedVols', 1, 'gaussian', p.smWin);
+ 
+    % Create source data table, normalizing each variable so its max == 1
+    tbl = table(smMoveSpeed, smFwSpeed, smYawSpeed, 'variablenames', {'moveSpeed', 'fwSpeed', ...
+            'yawSpeed'});
+    tbl.(roiName{:}) = flData;
+    
+    % Create figure
+    f = figure(iExp);clf; hold on;
+    f.Color = [1 1 1];
+    f.Position(3:4) = [1500 500];
+    
+    % Plot data
+    nPlots = numel(varNames);
+    clear ax;
+    for iPlot = 1:nPlots
+        ax(iPlot) = subaxis(nPlots, 1, iPlot, 'sv', 0.05, 'mb', 0.12, 'mr', 0.03);
+        hold on;
+        xx = (1:size(tbl, 1)) ./ expMd(strcmp(expMd.expID, currExpID), :).volumeRate;
+        plot(xx, tbl.(varNames{iPlot}), 'linewidth', 1.5, 'color', cm(iPlot, :));
+        xlim(currTrialTimes);
+        ylabel(regexprep(varNames{iPlot}, roiName, p.flType));
+        currAx = ax(iPlot);
+        currAx.FontSize = 13;
+        if iPlot < nPlots
+            currAx.XTickLabel = [];
+            if iPlot == 1
+                titleStr = [currExpID, '  —  Trial #', num2str(currTrialNum), '  —  ', roiName{:}];
+                title(titleStr)
+            end
+        else
+            xlabel('Time (sec)');
+        end
+    end    
+    
+    % Link X-axis limits
+    linkaxes(ax, 'x')    
+
+    % Save figure
+    if saveFig
+        fileName = [roiName{:}, '_', currExpID, '_trial_', num2str(currTrialNum), '_', ....
+                num2str(currTrialTimes(1)), '-', num2str(currTrialTimes(2)), '_', p.flType, ...
+                '_example_traces', fileNameSuffix];
+        f.UserData.plotParams = p;
+        save_figure(f, figDir, fileName);
+    end
 end
 catch ME; rethrow(ME); end
 
