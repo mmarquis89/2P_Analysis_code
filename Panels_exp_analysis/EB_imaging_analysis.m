@@ -30,32 +30,37 @@ panelsMetadata = load_panels_metadata(expList, parentDir);
 
 a = MoveSpeedAnalysis(expList', parentDir);
 
+%% LOAD SAVED MOVE SPEED ANALYSIS OBJECT
+fileName = '75B10_moveSpeedAnalysis.mat';
+load(fullfile(parentDir, 'saved_moveSpeedAnalysis_objects', fileName))
+
 %% RUN MOVE SPEED ANALYSIS
+p = [];
 
-saveFig = 0;
+saveFig = 1;
 
-expNums = [1, 2, 5:13];
+p.expNums = [1:13];
 
-skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
+p.skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
         7:10}';
     
     
-skipTrials = {[1:10, 16:19], [1:10, 14:16], [], [], [1:6, 11:16], [1:7, 13:17], 1:5, 1:6, 1:7, 1:6, ...
-    1:6, 1:6, 1:6}';    
+% skipTrials = {[1:10, 16:19], [1:10, 14:16], [], [], [1:6, 11:16], [1:7, 13:17], 1:5, 1:6, 1:7, 1:6, ...
+%     1:6, 1:6, 1:6}';    
 
 useSavedObj = 0;
 
-speedType = 'yaw';
+p.speedType = 'yaw';
 
-plotting_minSpeed = 0;
-nAnalysisBins = 45;
+p.plotting_minSpeed = [0];
+p.nAnalysisBins = 45;
 
-roiName = 'EB-DAN';
-flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
-figDims = [1750 1000]%[1520 840];
+p.roiName = 'EB-DAN';
+p.flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
+figDims = [1520 940];%[1520 840];
     
 xLim = [0 400];
-yLim = [];
+yLim = [0 5.5];
 fontSize = 12;
 
 % Adjust plot spacing and margins
@@ -65,17 +70,16 @@ ML = 0.05;
 MR = 0.02;
 MT = 0.04;
 MB = 0.07;
-
 try
-if isempty(expNums)
-   expNums = 1:numel(expList);
+if isempty(p.expNums)
+   p.expNums = 1:numel(expList);
 else
-    skipTrials = skipTrials(expNums);
+    p.skipTrials = skipTrials(p.expNums);
 end
-if numel(expNums) == 3
+if numel(p.expNums) == 3
     plotLayoutDims = [2, 2];
 else
-    plotLayoutDims = numSubplots(numel(expNums));
+    plotLayoutDims = numSubplots(numel(p.expNums));
 end
 savedAnalysisObjects = [];
 % if isempty(savedAnalysisObjects) || ~useSavedObj
@@ -88,33 +92,33 @@ f.Color = [1 1 1];
 if ~isempty(figDims)
    f.Position(3:4) = figDims; 
 end
-allRs = [];
-for iExp = 1:numel(expNums)   
+allRs = []; allParams = {};
+for iExp = 1:numel(p.expNums)   
     
     % Get current expID and params
-    currExpID = expList{expNums(iExp)};
+    currExpID = expList{p.expNums(iExp)};
     disp(currExpID);
     
-    a.params.roiName = roiName;
+    a.params.roiName = p.roiName;
     a.params.nHistBins = 25;
-    a.params.flType = flType;
+    a.params.flType = p.flType;
     a.params.convertSpeedUnits = 0;
     a.params.smWinVols = 5;
     a.params.smWinFrames = 7;
     a.params.nSmoothRepsFrames = 20;
-    a.params.skipTrials = skipTrials{iExp};
-    a.params.plotting_minSpeed = plotting_minSpeed;
-    a.params.nAnalysisBins = nAnalysisBins;
+    a.params.skipTrials = p.skipTrials{iExp};
+    a.params.plotting_minSpeed = p.plotting_minSpeed;
+    a.params.nAnalysisBins = p.nAnalysisBins;
     
     % Create axes for current plot
     ax = subaxis(plotLayoutDims(1), plotLayoutDims(2), iExp, ...
             'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, 'sv', SV, 'sh', SH);
     
-    if ~useSavedObj || isempty(savedAnalysisObjects.obj{expNums(iExp)})
+    if ~useSavedObj || isempty(savedAnalysisObjects.obj{p.expNums(iExp)})
         
         % Initialize filters
         a.filterDefs.expID = currExpID;
-        a.filterDefs.roiName = roiName;
+        a.filterDefs.roiName = p.roiName;
         a = a.init_filters();
         
         % If the filter matches more than one ROI, just use the first one
@@ -127,26 +131,26 @@ for iExp = 1:numel(expNums)
         % Run analysis
         a = a.analyze();
         
-        savedAnalysisObjects.obj{expNums(iExp)} = a;
+        savedAnalysisObjects.obj{p.expNums(iExp)} = a;
     else
         % Re-use existing analysis object
-        a = savedAnalysisObjects.obj{expNums(iExp)};
+        a = savedAnalysisObjects.obj{p.expNums(iExp)};
     end
 %     
     % Plot binned speed vs. dF/F
-    a = a.generate_binned_flData(flType, speedType);
+    a = a.generate_binned_flData(p.flType, p.speedType);
     a.plot_binned_fl(ax);
     ax.FontSize = fontSize;
     ax.YLabel.String = 'Mean dF/F';
-    if strcmp(speedType, 'forward')
+    if strcmp(p.speedType, 'forward')
         cf = a.analysisOutput.r(1);
     else
         cf = a.analysisOutput.r(2);
     end
     allRs(end + 1) = cf;
-    ax.Title.String = [currExpID, ' — ', roiName, ' — r = ', num2str(cf, 2)];
+    ax.Title.String = [currExpID, ' — ', p.roiName, ' — r = ', num2str(cf, 2)];
     box off
-    yStr = flType;
+    yStr = p.flType;
 
 %     % Forward speed vs. Yaw
 %     [binMidpoints, binMeans, binSEM] = MoveSpeedAnalysis.bin_data(a.analysisOutput.fwSpeedData, ...
@@ -171,10 +175,10 @@ for iExp = 1:numel(expNums)
 %     box off
 
     % Remove axis labels if not in last row (for X) or first column (for Y)
-    if iExp <= numel(expNums) - plotLayoutDims(2)
+    if iExp <= numel(p.expNums) - plotLayoutDims(2)
         ax.XLabel.String = [];
     end
-    if ~ismember(iExp, 1:plotLayoutDims(2):numel(expNums))
+    if ~ismember(iExp, 1:plotLayoutDims(2):numel(p.expNums))
         ax.YLabel.String = [];
     end
 
@@ -185,6 +189,8 @@ for iExp = 1:numel(expNums)
     if ~isempty(yLim)
         ylim(ax, yLim);
     end
+    
+    allParams{iExp} = a.params;
 end%iExp
 
 if saveFig
@@ -198,12 +204,15 @@ if saveFig
     else
         ylStr = 'matchedY';
     end
-    fileName = [roiName, '_binned_', speedType, 'Speed_vs_', yStr, '_', xlStr, '_', ylStr]
+    f.UserData.plotParams = p;
+    f.UserData.moveSpeedAnalysisParams = allParams;
+    fileName = [p.roiName, '_binned_', speedType, 'Speed_vs_', yStr, '_', xlStr, '_', ylStr]
     save_figure(f, figDir, fileName);
 end
 
 
 catch ME; rethrow(ME); end
+
 
 %% Plot ROI data
 
@@ -212,13 +221,13 @@ smReps = 50;
 
 % expNums = [];
 % trialNums = repmat({[]}, numel(expList), 1);
-expNums = [15];
-trialNums = {[]};
+expNums = [3 4];
+trialNums = {[1:7], [5:8,10:11]};
 % trialNums = {[1:6, 11:16], [1:7, 13:17]};
 
 % roiNames, moveSpeed, fwSpeed, yawSpeed, 'barPos'
-ax1_varNames = {'EB', 'BU-L', 'BU-R'};
-ax2_varNames = {'EB-DAN'};
+ax1_varNames = {'EB-DAN'};
+ax2_varNames = {'fwSpeed', 'yawSpeed'};
 
 plotTrialBounds = 1;
 
@@ -316,12 +325,12 @@ for iExp = 1:numel(currExpList)
     end
 
     % Create source data table, normalizing each variable so its max == 1
-    h = table(allMoveSpeed ./ max(allMoveSpeed), allFwSpeed ./ max(allFwSpeed), allYawSpeed ...
+    tbl = table(allMoveSpeed ./ max(allMoveSpeed), allFwSpeed ./ max(allFwSpeed), allYawSpeed ...
             ./ max(allYawSpeed), allPanelsPosX ./ max(allPanelsPosX), 'variablenames', ...
             {'moveSpeed', 'fwSpeed', 'yawSpeed', 'barPos'});
     for iRoi = 1:numel(roiNames)
         currFl = flData(:, iRoi) - min(flData(:, iRoi));
-        tbl.(roiNames{iRoi}) = currFl ./ max(currFl);
+        tbl.(roiNames{iRoi}) = currFl %./ max(currFl);
     end
     
     trialStartVols = 1:size(flMat, 1):size(flData, 1);
@@ -455,7 +464,7 @@ catch ME; rethrow(ME); end
 
 %% COMPARE SPEED-FL RELATIONSHIP WITH AND WITHOUT SWINGING BAR PANELS STIM
 
-saveFig = 1;
+saveFig = 0;
 
 expNums = [1, 2, 5:13];
 
@@ -830,25 +839,26 @@ catch ME; rethrow(ME); end
 %% PLOT 2D HEATMAPS OF MEAN FL BINNED BY FORWARD AND YAW SPEED
 
 saveFig = 0;
+fileNameSuffix = '_allindividualExpts';
 
-expNums = [];
+p.expNums = [5 11 12];
 
-skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
+p.skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
         7:10}';
 
-useSavedObj = 0;
+useSavedObj = 1;
 
-speedType = 'yaw';
+p.speedType = 'yaw';
 
-plotting_minSpeed = 0;
-nAnalysisBins = 15;
+p.colorScaleMax = [3.12];
 
-roiName = 'FB-DAN';
-flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
-figDims = [1750 1000]%[1520 840];
+p.plotting_minSpeed = 0;
+p.nAnalysisBins = 15;
+
+p.roiName = 'EB-DAN';
+p.flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
+figDims = [1100 900]%[1650 930];
     
-xLim = [];
-yLim = [];
 fontSize = 12;
 
 try 
@@ -861,49 +871,49 @@ MR = 0.02;
 MT = 0.04;
 MB = 0.07;
 
-if isempty(expNums)
-   expNums = 1:numel(expList);
+p.expList = expList;
+if isempty(p.expNums)
+   p.expNums = 1:numel(expList);
 else
-    skipTrials = skipTrials(expNums);
+    p.skipTrials = p.skipTrials(p.expNums);
 end
-if numel(expNums) == 3
+if numel(p.expNums) == 3
     plotLayoutDims = [2, 2];
 else
-    plotLayoutDims = numSubplots(numel(expNums));
+    plotLayoutDims = numSubplots(numel(p.expNums));
 end
-
 f = figure(1); clf;
 f.Color = [1 1 1];
 if ~isempty(figDims)
    f.Position(3:4) = figDims; 
 end
-allRs = [];
-for iExp = 1:numel(expNums)   
+allRs = []; allParams = {};
+for iExp = 1:numel(p.expNums)   
     
     % Get current expID and params
-    currExpID = expList{expNums(iExp)};
+    currExpID = expList{p.expNums(iExp)};
     disp(currExpID);
     
-    a.params.roiName = roiName;
+    a.params.roiName = p.roiName;
     a.params.nHistBins = 25;
-    a.params.flType = flType;
+    a.params.flType = p.flType;
     a.params.convertSpeedUnits = 0;
     a.params.smWinVols = 5;
     a.params.smWinFrames = 5;
     a.params.nSmoothRepsFrames = 50;
-    a.params.skipTrials = skipTrials{iExp};
-    a.params.plotting_minSpeed = plotting_minSpeed;
-    a.params.nAnalysisBins = nAnalysisBins;
+    a.params.skipTrials = p.skipTrials{iExp};
+    a.params.plotting_minSpeed = p.plotting_minSpeed;
+    a.params.nAnalysisBins = p.nAnalysisBins;
     
     % Create axes for current plot
     ax = subaxis(plotLayoutDims(1), plotLayoutDims(2), iExp, ...
             'ml', ML, 'mr', MR, 'mt', MT, 'mb', MB, 'sv', SV, 'sh', SH);
     
-    if ~useSavedObj || isempty(savedAnalysisObjects.obj{expNums(iExp)})
+    if ~useSavedObj || isempty(savedAnalysisObjects.obj{p.expNums(iExp)})
         
         % Initialize filters
         a.filterDefs.expID = currExpID;
-        a.filterDefs.roiName = roiName;
+        a.filterDefs.roiName = p.roiName;
         a = a.init_filters();
         
         % If the filter matches more than one ROI, just use the first one
@@ -916,10 +926,10 @@ for iExp = 1:numel(expNums)
         % Run analysis
         a = a.analyze();
         
-        savedAnalysisObjects.obj{expNums(iExp)} = a;
+        savedAnalysisObjects.obj{p.expNums(iExp)} = a;
     else
         % Re-use existing analysis object
-        a = savedAnalysisObjects.obj{expNums(iExp)};
+        a = savedAnalysisObjects.obj{p.expNums(iExp)};
     end
 
     % Get yawSpeed, fwSpeed, and dF/F data
@@ -928,73 +938,64 @@ for iExp = 1:numel(expNums)
     flData = a.analysisOutput.flData;
     
     % Calculate bin edges
-    yBinSize = max(yawSpeed) / nAnalysisBins;
-    xBinSize = max(fwSpeed) / nAnalysisBins;
-    xBinEdges = 0:xBinSize:max(fwSpeed);
-    yBinEdges = 0:yBinSize:max(yawSpeed);
-    
+    xBinSize = max(yawSpeed) / p.nAnalysisBins;
+    yBinSize = max(fwSpeed) / p.nAnalysisBins;
+    xBinEdges = 0:xBinSize:max(yawSpeed);
+    yBinEdges = 0:yBinSize:max(fwSpeed);
     
     % Calculate bin averages
-    binAverages = nan(nAnalysisBins);
-    for xBin = 1:nAnalysisBins
-        for yBin = 1:nAnalysisBins
-            xBinInds = fwSpeed >= xBinEdges(xBin) & fwSpeed < xBinEdges(xBin + 1);
-            yBinInds = yawSpeed >= yBinEdges(yBin) & yawSpeed < yBinEdges(yBin + 1);
+    binAverages = nan(p.nAnalysisBins);
+    for xBin = 1:p.nAnalysisBins
+        for yBin = 1:p.nAnalysisBins
+            xBinInds = yawSpeed >= xBinEdges(xBin) & yawSpeed < xBinEdges(xBin + 1);
+            yBinInds = fwSpeed >= yBinEdges(yBin) & fwSpeed < yBinEdges(yBin + 1);
             meanVal = mean(flData(xBinInds & yBinInds), 'omitnan');
             if ~isnan(meanVal)
                 binAverages(yBin, xBin) = meanVal;
             end
         end
     end
-    
+        
     % Plot figure
-    imagesc(ax, flipud(binAverages));
-%     imagesc(ax, imgaussfilt(flipud(binAverages), 0.5))
-%     imagesc(ax, inpaint_nans(flipud(binAverages)))
-    colormap(viridis)
+    xx = [xBinEdges(1) - (xBinSize/2), xBinEdges(end) + (xBinSize/2)];
+    yy = [yBinEdges(1) - (yBinSize/2), yBinEdges(end) + (yBinSize/2)];
+    xL = xx;
+    if ~isempty(p.colorScaleMax)
+        binAverages(:, end + 1) = p.colorScaleMax;
+        xx(end) = xx(end) + xBinSize;
+    end
+    imagesc(xx, yy, binAverages);
+    xlim(xL);
+    colormap(magma)
     colorbar()
+    axis square;
+    ax.YDir = 'normal';
     
     % Format axes
     ax.FontSize = fontSize;
-    ax.YLabel.String = 'Yaw speed (deg/sec)';
-    ax.XLabel.String = 'Forward speed (mm/sec)';
-    if mod(nAnalysisBins, 2)
-        midBinInd = ceil(nAnalysisBins / 2);
-    else
-        midBinInd = nAnalysisBins / 2;
-    end
-    ax.XTick = [1,  midBinInd - 1, nAnalysisBins];
-    ax.XTickLabel = [0, round(mean(xBinEdges((midBinInd - 1):midBinInd))), ...
-            round(mean(xBinEdges(end-1:end)))];
-    ax.YTick = [1,  midBinInd - 1, nAnalysisBins];
-    ax.YTickLabel = [round(mean(yBinEdges(end-1:end))), ...
-            round(mean(yBinEdges((midBinInd - 1):midBinInd))), 0];    
-   
+    ax.XLabel.String = 'Yaw speed (deg/sec)';
+    ax.YLabel.String = 'Forward speed (mm/sec)';
+
     % Add titles    
-    if strcmp(speedType, 'forward')
+    if strcmp(p.speedType, 'forward')
         cf = a.analysisOutput.r(1);
     else
         cf = a.analysisOutput.r(2);
     end
     allRs(end + 1) = cf;
-    ax.Title.String = [currExpID, ' — ', roiName, ' — r = ', num2str(cf, 2)];
+    ax.Title.String = [currExpID, ' — ', p.roiName, ' — r = ', num2str(cf, 2)];
+    ax.Title.FontSize = 12;
     box off
 
     % Remove axis labels if not in last row (for X) or first column (for Y)
-    if iExp <= numel(expNums) - plotLayoutDims(2)
+    if iExp <= numel(p.expNums) - plotLayoutDims(2)
         ax.XLabel.String = [];
     end
-    if ~ismember(iExp, 1:plotLayoutDims(2):numel(expNums))
+    if ~ismember(iExp, 1:plotLayoutDims(2):numel(p.expNums))
         ax.YLabel.String = [];
     end
-
-    % Manually set axis limits if necessary
-    if ~isempty(xLim)
-        xlim(ax, xLim);
-    end
-    if ~isempty(yLim)
-        ylim(ax, yLim);
-    end
+    
+    allParams{iExp} = a.params;
 end%iExp
 
 % Set NaN color to black
@@ -1002,11 +1003,144 @@ f.Colormap(1,:) = [0 0 0];
     
 % Save figure
 if saveFig
-    fileName = [roiName, '_2D_heatmap_speed_vs_', flType]
-    f.UserData.params = a.params;
+    fileName = [roiName, '_2D_heatmap_speed_vs_', p.flType, fileNameSuffix]
+    f.UserData.plotParams = p;
+    f.UserData.params = allParams;
     save_figure(f, figDir, fileName);
 end
 
+catch ME; rethrow(ME); end
+
+%% PLOT 2D HEATMAPS COMBINING DATA FROM ALL EXPERIMENTS 
+
+saveFig = 0;
+fileNameSuffix = '';
+
+p.expNums = [];
+
+p.skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
+        7:10}';
+
+p.speedType = 'yaw';
+
+useSavedObj = 1;
+
+p.plotting_minSpeed = 0;
+p.nAnalysisBins = 17;
+
+p.roiName = 'EB-DAN';
+p.flType = 'expDff'; % 'slidingbaseline', 'normalized', 'trialDff', 'expDff', 'rawFl' 
+figDims = [1000 850];%[1520 840];
+    
+fontSize = 18;
+
+try 
+f = figure(1); clf;
+f.Color = [1 1 1];
+if ~isempty(figDims)
+   f.Position(3:4) = figDims; 
+end
+p.expList = expList;
+if isempty(p.expNums)
+   p.expNums = 1:numel(expList);
+else
+    p.skipTrials = p.skipTrials(p.expNums);
+end
+
+allParams = {};
+allYaw = []; allFwSpeed = []; allFlData = [];
+for iExp = 1:numel(expNums)
+    
+    % Get current expID and params
+    currExpID = expList{p.expNums(iExp)};
+    disp(currExpID);
+    
+    a.params.roiName = p.roiName;
+    a.params.nHistBins = 25;
+    a.params.flType = p.flType;
+    a.params.convertSpeedUnits = 0;
+    a.params.smWinVols = 5;
+    a.params.smWinFrames = 5;
+    a.params.nSmoothRepsFrames = 50;
+    a.params.skipTrials = p.skipTrials{iExp};
+    a.params.plotting_minSpeed = p.plotting_minSpeed;
+    a.params.nAnalysisBins = p.nAnalysisBins;
+    if ~useSavedObj || isempty(savedAnalysisObjects.obj{p.expNums(iExp)})
+        
+        % Initialize filters
+        a.filterDefs.expID = currExpID;
+        a.filterDefs.roiName = p.roiName;
+        a = a.init_filters();
+        
+        % If the filter matches more than one ROI, just use the first one
+        uniqueRois = unique(a.sourceDataTable.subset.roiName);
+        if numel(uniqueRois) > 1
+            a.filterDefs.roiName = uniqueRois{1};
+            a = a.init_filters();
+        end
+        
+        % Run analysis
+        a = a.analyze();
+        
+        savedAnalysisObjects.obj{p.expNums(iExp)} = a;
+    else
+        % Re-use existing analysis object
+        a = savedAnalysisObjects.obj{p.expNums(iExp)};
+    end
+    
+    % Get yawSpeed, fwSpeed, and dF/F data
+    allYaw = [allYaw; a.analysisOutput.yawSpeedData];
+    allFwSpeed = [allFwSpeed; a.analysisOutput.fwSpeedData];
+    allFlData = [allFlData; a.analysisOutput.flData];
+    
+    allParams{iExp} = a.params;
+end
+
+% Calculate bin edges
+xBinSize = max(allYaw) / p.nAnalysisBins;
+yBinSize = max(allFwSpeed) / p.nAnalysisBins;
+xBinEdges = 0:xBinSize:max(allYaw);
+yBinEdges = 0:yBinSize:max(allFwSpeed);
+
+% Calculate bin averages
+binAverages = nan(p.nAnalysisBins);
+for xBin = 1:p.nAnalysisBins
+    for yBin = 1:p.nAnalysisBins
+        xBinInds = allYaw >= xBinEdges(xBin) & allYaw < xBinEdges(xBin + 1);
+        yBinInds = allFwSpeed >= yBinEdges(yBin) & allFwSpeed < yBinEdges(yBin + 1);
+        meanVal = mean(allFlData(xBinInds & yBinInds), 'omitnan');
+        if ~isnan(meanVal)
+            binAverages(yBin, xBin) = meanVal;
+        end
+    end
+end
+
+% Plot figure
+xx = [xBinEdges(1) - (xBinSize/2), xBinEdges(end) + (xBinSize/2)];
+yy = [yBinEdges(1) - (yBinSize/2), yBinEdges(end) + (yBinSize/2)];
+imagesc(xx, yy, binAverages);
+colormap(viridis)
+% colormap(bone)
+colorbar()
+axis square
+ax = gca();
+ax.YDir = 'normal';
+
+% Set NaN color to black
+f.Colormap(1,:) = [0 0 0];
+
+% Format axes
+ax.FontSize = fontSize;
+ax.XLabel.String = 'Yaw speed (deg/sec)';
+ax.YLabel.String = 'Forward speed (mm/sec)';
+
+% Save figure
+if saveFig
+    fileName = [roiName, '_2D_heatmap_speed_vs_', flType, '_allExperiments', fileNameSuffix];
+    f.UserData.params = p;
+    f.UserData.moveSpeedAnalysisParams = allParams;
+    save_figure(f, figDir, fileName);
+end
 catch ME; rethrow(ME); end
 
 %% Pairwise scatter plots of all ROIs
