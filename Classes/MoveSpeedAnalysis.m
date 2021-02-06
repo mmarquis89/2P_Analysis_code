@@ -545,8 +545,10 @@ methods
             ax = axes();
         end    
         binnedData = obj.analysisOutput.binnedData;
-        errorbar(ax, binnedData.speedBinMidpoints, binnedData.flBinMeans, binnedData.flBinSEM, ...
-                '-o', 'color', 'k', 'linewidth', 1);    
+        plot(ax, binnedData.speedBinMidpoints, binnedData.flBinMeans, 'color', 'k', ...
+                'linewidth', 1.5);
+%         errorbar(ax, binnedData.speedBinMidpoints, binnedData.flBinMeans, binnedData.flBinSEM, ...
+%                 '-o', 'color', 'k', 'linewidth', 1);    
         switch binnedData.speedType
             case 'forward'
                 labelStr = 'Forward speed (mm/sec)';
