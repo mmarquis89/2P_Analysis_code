@@ -7,7 +7,7 @@ darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
 % % 5-5-10 timing
 % visExpList = {'20201117-1', '20201117-3', '20201120-2', '20210118-1', '20210119-1'};
 % visExpTrialNums = {1:4, 2:5, 2:5, 2:5, 2:6};
-
+% 
 % % 5-5-5 timing
 % visExpList = {'20201117-1', '20201117-3', '20201117-4', '20201120-2', '20210118-1', ...
 %     '20210118-2', '20210119-1', '20201201-3'};
@@ -39,7 +39,7 @@ darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
 %                    3:5, 5:7, 3:5, 4:6, 6:8, ...
 %                    5:7, 4:6, 5:7, 4:6, 5:7, ...
 %                    5:7, 7:9};
-% % 
+
 % 5-5-5 vis genetic control
 visExpList = {'20201120-1', '20201120-3'};
 visExpTrialNums = {2:4, 2:4};
@@ -177,7 +177,9 @@ catch ME; rethrow(ME); end
 %%
 
 saveFig = 0;
-fileNameSuffix = '_withVisualStim';
+fileNameSuffix = '_controlFlies';
+
+figDims = [220 400];
 
 smWin = 3;
 singleRois = 0;
@@ -194,7 +196,7 @@ epochs = [-120 0; 120 240; 360 480];% -2-0 min, 2-4 min, 6-8 min
 % epochs = [epochs(1, :); 300 420; lateEpochs];
 % % epochs(1:2, :) = epochs(1:2, :) + 105; 
 % epochs(1, :) = epochs(1, :) - 45; % Because there's no data after the ATP trial starts at t=(-45)
-
+% % epochs = [-120 0; 300 420]
 
 disp(epochs ./ 60)
 
@@ -500,23 +502,25 @@ f = figure(5); clf;
 f.Color = [1 1 1];
 hold on;
 legendStr = {};
-xx = 1:size(epochOffsetSD, 2)-1;
+xx = 1:size(epochOffsetSD, 2);
 for iExp = 1:size(epochOffsetSD, 1)
-    plot(xx, rad2deg(epochOffsetSD(iExp, 1:end-1)), '-', 'linewidth', 2);
+    plot(xx, rad2deg(epochOffsetSD(iExp, :)), '-', 'linewidth', 2);
     legendStr{end + 1} = currExpList{iExp};
 end
 % legend(legendStr, 'autoupdate', 'off')
-plot(xx, rad2deg(mean(epochOffsetSD(:, 1:end-1), 1)), '-s', 'color', 'k', ...
+plot(xx, rad2deg(mean(epochOffsetSD, 1)), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
 ylabel('Bar-bump offset SD')
 ax = gca();
 ax.XTick = xx;
 ax.FontSize = 12;
-ax.XTickLabel = {'Before', 'After'};
-title('ATP + visual', 'fontsize', 12)
+ax.XTickLabel = {'Baseline', '+3 min', '+7 min'};
+p3 = signrank(epochOffsetSD(:, 1), epochOffsetSD(:, 2));
+p7 = signrank(epochOffsetSD(:, 1), epochOffsetSD(:, 3));
+title({'ATP + visual', ['WSRT p = ', num2str(p3, 2), ' (+3), ', num2str(p7, 2), ' (+7)']}, 'fontsize', 10)
 ylim([0 120])
-f.Position(3:4) = [220 400];
+f.Position(3:4) = figDims + [50 0];
 if saveFig
     f.UserData.smWin = smWin;
     f.UserData.epochs = epochs;
@@ -525,6 +529,39 @@ if saveFig
     fileName = ['EB-DAN_prePost_ATP_offsetSD_crunch', fileNameSuffix];
     save_figure(f, figDir, fileName);
 end
+
+% Bar-bump DELTA offset SD
+f = figure(6); clf;
+f.Color = [1 1 1];
+hold on;
+legendStr = {};
+xx = 1:size(epochOffsetSD, 2)-1;
+yy = [epochOffsetSD(:, 2) - epochOffsetSD(:, 1), epochOffsetSD(:, 3) - epochOffsetSD(:, 1)];
+for iExp = 1:size(epochOffsetSD, 1)
+    plot(xx, rad2deg(yy(iExp, :)), 'o', 'linewidth', 2);
+    legendStr{end + 1} = currExpList{iExp};
+end
+% legend(legendStr, 'autoupdate', 'off')
+plot(xx, rad2deg(mean(yy, 1)), 's', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 8, 'markerfaceColor', 'k');
+xlim([0.5 numel(xx) + 0.5]);
+ylabel('\Delta offset SD')
+ax = gca();
+ax.XTick = xx;
+ax.FontSize = 12;
+ax.XTickLabel = {'+3 min', '+7 min'};
+title('ATP + visual', 'fontsize', 12)
+ylim([-70 25])
+f.Position(3:4) = figDims;
+if saveFig
+    f.UserData.smWin = smWin;
+    f.UserData.epochs = epochs;
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_prePost_ATP_deltaOffsetSD_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
+end
+
 
 % % Mean bump offset
 % f = figure(6); clf;
@@ -567,9 +604,10 @@ ax = gca();
 ax.XTick = xx;
 ylim([0 120]);
 ax.FontSize = 12;
-title('ATP + visual', 'fontsize', 12)
+p = signrank(allYY(:, 1), allYY(:, 2));
+title({'ATP + visual', ['WSRT p = ', num2str(p, 2)]}, 'fontsize', 10)
 ax.XTickLabel = {'+ATP', 'post-ATP'};
-f.Position(3:4) = [220 400];
+f.Position(3:4) = figDims;
 if saveFig
     f.UserData.smWin = smWin;
     f.UserData.epochs = epochs;
@@ -632,9 +670,10 @@ ax = gca();
 ax.XTick = xx;
 ylim([0 180]);
 ax.FontSize = 12;
-title('ATP + visual', 'fontsize', 12)
+p = signrank(allYY(:, 1), allYY(:, 2));
+title({'ATP + visual', ['WSRT p = ', num2str(p, 2)]}, 'fontsize', 10)
 ax.XTickLabel = {'+ATP', 'post-ATP'};
-f.Position(3:4) = [220 400];
+f.Position(3:4) = figDims;
 if saveFig
     f.UserData.smWin = smWin;
     f.UserData.epochs = epochs;
