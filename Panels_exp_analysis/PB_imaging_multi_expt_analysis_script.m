@@ -10,8 +10,8 @@ darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
 
 % % 5-5-5 timing
 % visExpList = {'20201117-1', '20201117-3', '20201117-4', '20201120-2', '20210118-1', ...
-%     '20210118-2', '20210119-1'};
-% visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 2:4, 2:4, 2:4};
+%     '20210118-2', '20210119-1', '20201201-3'};
+% visExpTrialNums = {1:3, 2:4, 2:4, 2:4, 2:4, 2:4, 2:4, 3:5};
 
 % % 10-5-5 timing
 % visExpList = {'20201117-3', '20201117-4', '20201120-2', '20210118-1', ...
@@ -39,7 +39,7 @@ darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
 %                    3:5, 5:7, 3:5, 4:6, 6:8, ...
 %                    5:7, 4:6, 5:7, 4:6, 5:7, ...
 %                    5:7, 7:9};
-% 
+% % 
 % 5-5-5 vis genetic control
 visExpList = {'20201120-1', '20201120-3'};
 visExpTrialNums = {2:4, 2:4};
@@ -176,8 +176,8 @@ catch ME; rethrow(ME); end
 
 %%
 
-saveFig = 1;
-fileNameSuffix = '_controlFlies';
+saveFig = 0;
+fileNameSuffix = '_withVisualStim';
 
 smWin = 3;
 singleRois = 0;
@@ -207,111 +207,112 @@ Vp = cell2mat(cyc.cycVp');
 cycMin = cell2mat(cyc.cycMin');
 cycMax = cell2mat(cyc.cycMax');
 cycRanges = cell2mat(cyc.cycRange');
-
-% Vector strength
-f = figure(1); clf; hold on;
-f.Color = [1 1 1];
-cm = lines(numel(unique(cyc.expID)));
-allExpIDs = unique(cyc.expID);
-xx = cycTimes - cyc.drugStartTimes{1}(1);
-legendStr = {};
-for iExp = 1:numel(allExpIDs)
-    currExpID = allExpIDs{iExp};
-    currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-    if singleRois
-        for iRoi = 1:size(currCyc, 1)
-            yy = smoothdata(currCyc.cycVs{iRoi}, 1, 'gaussian', smWin);
-            plot(xx(~isnan(yy)), yy(~isnan(yy)) , 'color', ...
-                    cm(iExp, :));
-        end
-    elseif singleExpts
-        currData = smoothdata(cell2mat(currCyc.cycVs'), 1, 'gaussian', smWin);
-        SE = std_err(currData, 2);
-        plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
-        legendStr{end + 1} = currCyc.expID{1};
-    end
-end
-% legend(legendStr, 'autoupdate', 'off');
-meanData = mean(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-if shadeSEM
-    SE = std_err(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-    upperY = (meanData + SE);
-    lowerY = (meanData - SE);
-    jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
-end
-if numel(cyc.drugStartTimes{1}) > 1
-    shadeColor = rgb('orange');
-else
-    shadeColor = rgb('green');
-end
-plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-if numel(cyc.drugEndTimes{1}) > 1 
-    plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-        'color', rgb('green'))
-end
-xlim([xx(1) xx(end)])
-title('Vector strength')
-yL = ylim();
-if ~isempty(epochs)
-    for iEpoch = 1:size(epochs, 1)
-        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
-    end
-end
-
-% Min - max
-f = figure(2); clf; hold on;
-f.Color = [1 1 1];
-cm = lines(numel(unique(cyc.expID)));
-allExpIDs = unique(cyc.expID);
-xx = cycTimes - cyc.drugStartTimes{1}(1);
-for iExp = 1:numel(allExpIDs)
-    currExpID = allExpIDs{iExp};
-    currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-    if singleRois
-        for iRoi = 1:size(currCyc, 1)
-            plot(xx, smoothdata(currCyc.cycRange{iRoi}, 1, 'gaussian', smWin), 'color', ...
-                    cm(iExp, :));
-        end
-    elseif singleExpts
-        currData = smoothdata(cell2mat(currCyc.cycRange'), 1, 'gaussian', smWin);
-        SE = std_err(currData, 2);
-        plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
-        legendStr{end + 1} = currCyc.expID{1};
-    end
-end
-meanData = mean(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', smWin), 2);
-plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-if numel(cyc.drugStartTimes{1}) > 1
-    shadeColor = rgb('orange');
-else
-    shadeColor = rgb('green');
-end
-plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-if numel(cyc.drugEndTimes{1}) > 1 
-    plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-        'color', rgb('green'))
-end
-if shadeSEM
-    SE = std_err(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', 1), 2);
-    upperY = (meanData + SE);
-    lowerY = (meanData - SE);
-    jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
-end
-title('Min - max dF/F')
-xlim([xx(1) xx(end)])
-yL = ylim();
-if ~isempty(epochs)
-    for iEpoch = 1:size(epochs, 1)
-        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
-    end
-end
+% 
+% % Vector strength
+% f = figure(1); clf; hold on;
+% f.Color = [1 1 1];
+% cm = lines(numel(unique(cyc.expID)));
+% allExpIDs = unique(cyc.expID);
+% xx = cycTimes - cyc.drugStartTimes{1}(1);
+% legendStr = {};
+% for iExp = 1:numel(allExpIDs)
+%     currExpID = allExpIDs{iExp};
+%     currCyc = cyc(strcmp(cyc.expID, currExpID), :);
+%     if singleRois
+%         for iRoi = 1:size(currCyc, 1)
+%             yy = smoothdata(currCyc.cycVs{iRoi}, 1, 'gaussian', smWin);
+%             plot(xx(~isnan(yy)), yy(~isnan(yy)) , 'color', ...
+%                     cm(iExp, :));
+%         end
+%     elseif singleExpts
+%         currData = smoothdata(cell2mat(currCyc.cycVs'), 1, 'gaussian', smWin);
+%         SE = std_err(currData, 2);
+%         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
+%         legendStr{end + 1} = currCyc.expID{1};
+%     end
+% end
+% % legend(legendStr, 'autoupdate', 'off');
+% meanData = mean(smoothdata(Vs, 1, 'gaussian', smWin), 2);
+% plot(xx, meanData, 'color', 'k', 'linewidth', 3);
+% if shadeSEM
+%     SE = std_err(smoothdata(Vs, 1, 'gaussian', smWin), 2);
+%     upperY = (meanData + SE);
+%     lowerY = (meanData - SE);
+%     jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
+% end
+% if numel(cyc.drugStartTimes{1}) > 1
+%     shadeColor = rgb('orange');
+% else
+%     shadeColor = rgb('green');
+% end
+% plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
+% if numel(cyc.drugEndTimes{1}) > 1 
+%     plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
+%         'color', rgb('green'))
+% end
+% xlim([xx(1) xx(end)])
+% title('Vector strength')
+% yL = ylim();
+% if ~isempty(epochs)
+%     for iEpoch = 1:size(epochs, 1)
+%         plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+%     end
+% end
+% 
+% % Min - max
+% f = figure(2); clf; hold on;
+% f.Color = [1 1 1];
+% cm = lines(numel(unique(cyc.expID)));
+% allExpIDs = unique(cyc.expID);
+% xx = cycTimes - cyc.drugStartTimes{1}(1);
+% for iExp = 1:numel(allExpIDs)
+%     currExpID = allExpIDs{iExp};
+%     currCyc = cyc(strcmp(cyc.expID, currExpID), :);
+%     if singleRois
+%         for iRoi = 1:size(currCyc, 1)
+%             plot(xx, smoothdata(currCyc.cycRange{iRoi}, 1, 'gaussian', smWin), 'color', ...
+%                     cm(iExp, :));
+%         end
+%     elseif singleExpts
+%         currData = smoothdata(cell2mat(currCyc.cycRange'), 1, 'gaussian', smWin);
+%         SE = std_err(currData, 2);
+%         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
+%         legendStr{end + 1} = currCyc.expID{1};
+%     end
+% end
+% meanData = mean(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', smWin), 2);
+% plot(xx, meanData, 'color', 'k', 'linewidth', 3);
+% if numel(cyc.drugStartTimes{1}) > 1
+%     shadeColor = rgb('orange');
+% else
+%     shadeColor = rgb('green');
+% end
+% plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
+% if numel(cyc.drugEndTimes{1}) > 1 
+%     plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
+%         'color', rgb('green'))
+% end
+% if shadeSEM
+%     SE = std_err(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', 1), 2);
+%     upperY = (meanData + SE);
+%     lowerY = (meanData - SE);
+%     jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
+% end
+% title('Min - max dF/F')
+% xlim([xx(1) xx(end)])
+% yL = ylim();
+% if ~isempty(epochs)
+%     for iEpoch = 1:size(epochs, 1)
+%         plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+%     end
+% end
 
 
 % PVA offset SD
 f = figure(3);clf;
 hold on;
 f.Color = [1 1 1];
+f.Position(3:4) = [945 495];
 cyc = allCycExpData;
 cm = lines(numel(unique(cyc.expID)));
 allExpIDs = unique(cyc.expID);
@@ -322,12 +323,12 @@ if singleExpts
         currExpID = allExpIDs{iExp};
         legendStr{end + 1} = currExpID;
         currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-        currData = smoothdata(currCyc.cycOffsetStd{:}, 'gaussian', smWin);
+        currData = rad2deg(smoothdata(currCyc.cycOffsetStd{:}, 'gaussian', smWin));
 %         plot(xx, currData, 'linewidth', 1, 'color', cm(iExp, :));
         plot(xx(~isnan(currData)), currData(~isnan(currData)), 'linewidth', 1, 'color', 0.5*[1 1 1])
     end
 end
-meanData = mean(smoothdata(cell2mat(cyc.cycOffsetStd'), 1, 'gaussian', smWin), 2);
+meanData = rad2deg(mean(smoothdata(cell2mat(cyc.cycOffsetStd'), 1, 'gaussian', smWin), 2));
 plot(xx, meanData, 'color', 'k', 'linewidth', 5);
 if shadeSEM
     SE = std_err(smoothdata(cell2mat(cyc.cycOffsetStd'), 1, 'gaussian', smWin), 2);
@@ -340,6 +341,7 @@ if numel(cyc.drugStartTimes{1}) > 1
 else
     shadeColor = rgb('green');
 end
+ylim([0 180]);
 yL = ylim();
 % plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
 plot([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], [1 1] * yL(2) * 0.98, 'color', ...
@@ -361,60 +363,59 @@ end
 ax = gca();
 ax.FontSize = 14;
 xlabel('Time (sec)');
-% Save figure
 if saveFig
     f.UserData.expList = currExpList;
     f.UserData.trialNums = trialNums;
     f.UserData.smWin = smWin;
-    figTitle = ['EB-DAN_ATP+bar_mean_bar-bump_offset_SD'];
-    save_figure(f, figDir, figTitle);
+    fileName = ['EB-DAN_+ATP_mean_bar-bump_offset_SD', fileNameSuffix];
+    save_figure(f, figDir, fileName);
 end
 
 
 
-
-% Bump amplitude
-f = figure(4);clf;
-hold on;
-f.Color = [1 1 1];
-cm = lines(numel(unique(cyc.expID)));
-allExpIDs = unique(cyc.expID);
-xx = cycTimes - cyc.drugStartTimes{1}(1);
-legendStr = {};
-if singleExpts
-    for iExp = 1:numel(allExpIDs)
-        currExpID = allExpIDs{iExp};
-        currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-        currData = smoothdata(currCyc.cycBumpAmp{:}, 'gaussian', smWin);
-        plot(xx, currData, 'linewidth', 2, 'color', cm(iExp, :));
-    end
-end
-meanData = mean(smoothdata(cell2mat(cyc.cycBumpAmp'), 1, 'gaussian', smWin), 2);
-plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-if shadeSEM
-    SE = std_err(smoothdata(cell2mat(cyc.cycBumpAmp'), 1, 'gaussian', smWin), 2);
-    upperY = (meanData + SE);
-    lowerY = (meanData - SE);
-    jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
-end
-if numel(cyc.drugStartTimes{1}) > 1
-    shadeColor = rgb('orange');
-else
-    shadeColor = rgb('green');
-end
-plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-if numel(cyc.drugEndTimes{1}) > 1 
-    plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-        'color', rgb('green'))
-end
-xlim([xx(1) xx(end)])
-title('Bump amplitude')
-yL = ylim();
-if ~isempty(epochs)
-    for iEpoch = 1:size(epochs, 1)
-        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
-    end
-end
+% 
+% % Bump amplitude
+% f = figure(4);clf;
+% hold on;
+% f.Color = [1 1 1];
+% cm = lines(numel(unique(cyc.expID)));
+% allExpIDs = unique(cyc.expID);
+% xx = cycTimes - cyc.drugStartTimes{1}(1);
+% legendStr = {};
+% if singleExpts
+%     for iExp = 1:numel(allExpIDs)
+%         currExpID = allExpIDs{iExp};
+%         currCyc = cyc(strcmp(cyc.expID, currExpID), :);
+%         currData = smoothdata(currCyc.cycBumpAmp{:}, 'gaussian', smWin);
+%         plot(xx, currData, 'linewidth', 2, 'color', cm(iExp, :));
+%     end
+% end
+% meanData = mean(smoothdata(cell2mat(cyc.cycBumpAmp'), 1, 'gaussian', smWin), 2);
+% plot(xx, meanData, 'color', 'k', 'linewidth', 3);
+% if shadeSEM
+%     SE = std_err(smoothdata(cell2mat(cyc.cycBumpAmp'), 1, 'gaussian', smWin), 2);
+%     upperY = (meanData + SE);
+%     lowerY = (meanData - SE);
+%     jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
+% end
+% if numel(cyc.drugStartTimes{1}) > 1
+%     shadeColor = rgb('orange');
+% else
+%     shadeColor = rgb('green');
+% end
+% plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
+% if numel(cyc.drugEndTimes{1}) > 1 
+%     plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
+%         'color', rgb('green'))
+% end
+% xlim([xx(1) xx(end)])
+% title('Bump amplitude')
+% yL = ylim();
+% if ~isempty(epochs)
+%     for iEpoch = 1:size(epochs, 1)
+%         plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+%     end
+% end
 
 catch ME; rethrow(ME); end
 
@@ -501,11 +502,11 @@ hold on;
 legendStr = {};
 xx = 1:size(epochOffsetSD, 2)-1;
 for iExp = 1:size(epochOffsetSD, 1)
-    plot(xx, epochOffsetSD(iExp, 1:end-1), '-', 'linewidth', 2);
+    plot(xx, rad2deg(epochOffsetSD(iExp, 1:end-1)), '-', 'linewidth', 2);
     legendStr{end + 1} = currExpList{iExp};
 end
 % legend(legendStr, 'autoupdate', 'off')
-plot(xx, mean(epochOffsetSD(:, 1:end-1), 1), '-s', 'color', 'k', ...
+plot(xx, rad2deg(mean(epochOffsetSD(:, 1:end-1), 1)), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
 ylabel('Bar-bump offset SD')
@@ -514,13 +515,15 @@ ax.XTick = xx;
 ax.FontSize = 12;
 ax.XTickLabel = {'Before', 'After'};
 title('ATP + visual', 'fontsize', 12)
-ylim([0 2])
+ylim([0 120])
 f.Position(3:4) = [220 400];
 if saveFig
     f.UserData.smWin = smWin;
     f.UserData.epochs = epochs;
-    figTitle = ['EB-DAN_prePost_ATP_offsetSD_crunch', fileNameSuffix];
-    save_figure(f, figDir, figTitle);
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_prePost_ATP_offsetSD_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
 end
 
 % % Mean bump offset
@@ -552,17 +555,17 @@ for iExp = 1:size(epochOffsetMean, 1)
         allYY(iExp, iEpoch) = abs(circ_dist(epochOffsetMean(iExp, iEpoch + 1), ...
                 epochOffsetMean(iExp, iEpoch)));
     end
-    plot(xx, allYY(iExp, :), '-', 'linewidth', 2);
+    plot(xx, rad2deg(allYY(iExp, :)), '-', 'linewidth', 2);
     legendStr{end + 1} = currExpList{iExp};
 end
-plot(xx, mean(allYY, 1), '-s', 'color', 'k', ...
+plot(xx, rad2deg(mean(allYY, 1)), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
 % legend(legendStr, 'autoupdate', 'off')
 ylabel('Mean \Delta offset')
 ax = gca();
 ax.XTick = xx;
-ylim([0 pi]);
+ylim([0 120]);
 ax.FontSize = 12;
 title('ATP + visual', 'fontsize', 12)
 ax.XTickLabel = {'+ATP', 'post-ATP'};
@@ -570,8 +573,10 @@ f.Position(3:4) = [220 400];
 if saveFig
     f.UserData.smWin = smWin;
     f.UserData.epochs = epochs;
-    figTitle = ['EB-DAN_prePost_ATP_meanDeltaOffset_crunch', fileNameSuffix];
-    save_figure(f, figDir, figTitle);
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_prePost_ATP_meanDeltaOffset_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
 end
 
 % % Mean bump amplitude
@@ -616,16 +621,16 @@ for iRoi = 1:size(epochVpMeans, 1)
         allYY(iRoi, iEpoch) = abs(circ_dist(epochVpMeans(iRoi, iEpoch + 1), ...
                 epochVpMeans(iRoi, iEpoch)));
     end
-    plot(xx, allYY(iRoi, :), '-', 'linewidth', 2);
+    plot(xx, rad2deg(allYY(iRoi, :)), '-', 'linewidth', 2);
 end
 % violinplot(allYY, []);
-plot(xx, mean(allYY, 1), '-s', 'color', 'k', ...
+plot(xx, rad2deg(mean(allYY, 1)), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
 ylabel('Mean \Delta preferred bar position')
 ax = gca();
 ax.XTick = xx;
-ylim([0 pi]);
+ylim([0 180]);
 ax.FontSize = 12;
 title('ATP + visual', 'fontsize', 12)
 ax.XTickLabel = {'+ATP', 'post-ATP'};
@@ -633,8 +638,10 @@ f.Position(3:4) = [220 400];
 if saveFig
     f.UserData.smWin = smWin;
     f.UserData.epochs = epochs;
-    figTitle = ['EB-DAN_prePost_ATP_meanDeltaPreferredPos_crunch', fileNameSuffix];
-    save_figure(f, figDir, figTitle);
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_prePost_ATP_meanDeltaPreferredPos_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
 end
 
 
