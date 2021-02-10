@@ -3,7 +3,7 @@ load(fullfile(parentDir, 'nlm_testing_base_standardized_120-60-240.mat'), 'rm');
 
 
 % Choose experiment and odor history window size
-expNum = 1;   % 1-9
+expNum = 4;   % 1-9
 histWin = 120; % 120, 180, 240
 
 % nOdorStims = 5; % Calculates average of first n odor stims as the response kernal

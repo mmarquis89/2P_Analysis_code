@@ -1,8 +1,8 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Saved_linear_models\'; 
 % load(fullfile(parentDir, 'nlm_testing_base_PPL201_standardized_120-60-240.mat'), 'rm');
 % load(fullfile(parentDir, 'nlm_testing_base_PPL203_standardized_60-30-240.mat'), 'rm');
-load(fullfile(parentDir, 'nlm_testing_base_PPL201_normalized_60-60-180.mat'), 'rm');
-% load(fullfile(parentDir, 'nlm_testing_base_PPL203_normalized_60-30-150.mat'), 'rm');
+% load(fullfile(parentDir, 'nlm_testing_base_PPL201_normalized_60-60-180.mat'), 'rm');
+load(fullfile(parentDir, 'nlm_testing_base_PPL203_normalized_60-30-150.mat'), 'rm');
 
 % Choose experiment and odor history window size
 expNum = 9;   % 1-9
@@ -20,7 +20,7 @@ odorKernelDur = 8;
 histTerm = ['odorHistory_', num2str(histWin)];
 tbl = rm.modelData.fullDataTbl{expNum};
 tblPred = tbl(:, {'moveSpeed', 'odorResp', histTerm, 'fl'}); 
-if expNum == 8
+if expNum == 8 && odorKernelDur == 8
     tblPred.fl(5245:end) = nan;
 end
 
@@ -32,6 +32,7 @@ avgWinStartVols = odorOnsetVols;
 volumeRate = rm.sourceData.volumeRate(expNum);
 kernelLenVols = floor(volumeRate * odorKernelDur);
 avgWinEndVols = avgWinStartVols + kernelLenVols - 1;
+warning('off');
 
 % Calculate new odor response kernel
 odorRespKernel = zeros(kernelLenVols, 1);
@@ -131,6 +132,7 @@ disp(coefTbl);
 if ~all(isnan(yhat_odor))
     % Plot final results
     clear ax;
+    warning('on')
     nPlots = 3;
     f = figure(3);clf;
     f.Color = [1 1 1];

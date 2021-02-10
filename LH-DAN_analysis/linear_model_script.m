@@ -1,5 +1,5 @@
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData';
-% dataDir = fullfile(parentDir, 'all_experiments');
+dataDir = fullfile(parentDir, 'all_experiments');
 dataDir = fullfile(parentDir, 'new_PPL201_experiments');
 figDir = ...
         'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\Figs\linear_regression_analysis';
@@ -51,11 +51,11 @@ mp.verbose = 0;
 mp.useYaw = 1;
 mp.useDriftCorrection = 0;
 % mp.odorIntegrationWin = [30:20:200];
-mp.odorIntegrationWin = [120:60:270];
+mp.odorIntegrationWin = [60:60:180];
 mp.speedPadDist = 5;
 mp.speedIntegrationWin = [];
-mp.standardizeInputs = 1;
-mp.normalizeInputs = 0;
+mp.standardizeInputs = 0;
+mp.normalizeInputs = 1;
 
 
 % % PPL203
@@ -63,7 +63,7 @@ mp.normalizeInputs = 0;
 %                '20190401-2', '20190411-1', '20190411-2', '20190411-3'};       
 % skipTrials = {[], [], [], [], [], [], [], [], []};
 % skipVols = {[], [1:1500], [], [], [], [], [], [], [1:2200]};
-% 
+% % 
 %             
 % % PPM1201
 % expIDList = {'20180329-2', '20180405-2', '20180414-1', '20180414-2', '20180416-1', '20180523-2', ...
@@ -76,8 +76,8 @@ expIDList = {'20201222-1', '20201222-2', '20201228-1', '20201228-2', '20201228-3
         '20210102-2', '20210102-3', '20210102-4'};
 skipTrials = {[6], [6], [6], [6], ...
               [4:6], [6], [6], [6 7], [6 7]};      
-% skipTrials = {[1 3:6], [1 3:6], [1 3:6], [1 3:6], ...
-%               [1 3:6], [1 3:6], [1 3:6], [1 3:6 7], [1 3:6 7]};
+% % skipTrials = {[1 3:6], [1 3:6], [1 3:6], [1 3:6], ...
+% %               [1 3:6], [1 3:6], [1 3:6], [1 3:6 7], [1 3:6 7]};
 skipVols = repmat({[]}, 1, numel(skipTrials));
 
                      
