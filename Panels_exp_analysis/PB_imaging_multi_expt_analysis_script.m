@@ -1,8 +1,9 @@
 %% Extract single-cycle summary data for all experiments
 
 % 5-5-5-5-5 timing
-darkExpList = {'20201201-1', '20201203-1', '20201203-2', '20201210-1', '20201210-2', '20201201-2'};
-darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6};
+darkExpList = {'20201201-1', '20201203-1', '20201203-2', '20201210-1', '20201210-2', '20201201-2', ...
+        '20210122-2'};
+darkExpTrialNums = {3:7, 3:7, 1:5, 3:7, 1:5, 2:6 [2:4, 6:7]};
 
 % % 5-5-10 timing
 % visExpList = {'20201117-1', '20201117-3', '20201120-2', '20210118-1', '20210119-1'};
@@ -46,7 +47,7 @@ visExpTrialNums = {2:4, 2:4};
 
 visExpTrialNums = visExpTrialNums(~strcmp(visExpList, '20210118-2'));
 visExpList = visExpList(~strcmp(visExpList, '20210118-2'));
-
+% 
 currExpList = visExpList;
 trialNums = visExpTrialNums;
 % currExpList = darkExpList;
@@ -92,7 +93,6 @@ for iExp = 1:numel(currExpList)
         newRow.cycRange = {cycRanges(:, iRoi)};
         allCycRoiData = [allCycRoiData; newRow];
     end
-    allCycRoiData = [allCycRoiData; newRow];
 end
 
 
@@ -174,10 +174,10 @@ catch ME; rethrow(ME); end
 
 
 
-%%
+%% Plot mean cycle summaries and crunch plots (VISUAL EXPTS ONLY)
 
-saveFig = 0;
-fileNameSuffix = '_controlFlies';
+saveFig = 1;
+fileNameSuffix = '_doubleBaseline_ctrlExpts';
 
 figDims = [220 400];
 
@@ -189,14 +189,8 @@ shadeExpSEM = 0;
 
 
 % For visual stim experiments
-epochs = [-120 0; 120 240; 360 480];% -2-0 min, 2-4 min, 6-8 min
-% 
-% % For darkness+ATP experiments
-% lateEpochs = epochs + 600;
-% epochs = [epochs(1, :); 300 420; lateEpochs];
-% % epochs(1:2, :) = epochs(1:2, :) + 105; 
-% epochs(1, :) = epochs(1, :) - 45; % Because there's no data after the ATP trial starts at t=(-45)
-% % epochs = [-120 0; 300 420]
+epochs = [-300, -180; -120 0; 120 240; 360 480];% -2-0 min, 2-4 min, 6-8 min
+% epochs = [-330, 0; 120 480]
 
 disp(epochs ./ 60)
 
@@ -209,106 +203,6 @@ Vp = cell2mat(cyc.cycVp');
 cycMin = cell2mat(cyc.cycMin');
 cycMax = cell2mat(cyc.cycMax');
 cycRanges = cell2mat(cyc.cycRange');
-% 
-% % Vector strength
-% f = figure(1); clf; hold on;
-% f.Color = [1 1 1];
-% cm = lines(numel(unique(cyc.expID)));
-% allExpIDs = unique(cyc.expID);
-% xx = cycTimes - cyc.drugStartTimes{1}(1);
-% legendStr = {};
-% for iExp = 1:numel(allExpIDs)
-%     currExpID = allExpIDs{iExp};
-%     currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-%     if singleRois
-%         for iRoi = 1:size(currCyc, 1)
-%             yy = smoothdata(currCyc.cycVs{iRoi}, 1, 'gaussian', smWin);
-%             plot(xx(~isnan(yy)), yy(~isnan(yy)) , 'color', ...
-%                     cm(iExp, :));
-%         end
-%     elseif singleExpts
-%         currData = smoothdata(cell2mat(currCyc.cycVs'), 1, 'gaussian', smWin);
-%         SE = std_err(currData, 2);
-%         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
-%         legendStr{end + 1} = currCyc.expID{1};
-%     end
-% end
-% % legend(legendStr, 'autoupdate', 'off');
-% meanData = mean(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-% plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-% if shadeSEM
-%     SE = std_err(smoothdata(Vs, 1, 'gaussian', smWin), 2);
-%     upperY = (meanData + SE);
-%     lowerY = (meanData - SE);
-%     jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
-% end
-% if numel(cyc.drugStartTimes{1}) > 1
-%     shadeColor = rgb('orange');
-% else
-%     shadeColor = rgb('green');
-% end
-% plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-% if numel(cyc.drugEndTimes{1}) > 1 
-%     plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-%         'color', rgb('green'))
-% end
-% xlim([xx(1) xx(end)])
-% title('Vector strength')
-% yL = ylim();
-% if ~isempty(epochs)
-%     for iEpoch = 1:size(epochs, 1)
-%         plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
-%     end
-% end
-% 
-% % Min - max
-% f = figure(2); clf; hold on;
-% f.Color = [1 1 1];
-% cm = lines(numel(unique(cyc.expID)));
-% allExpIDs = unique(cyc.expID);
-% xx = cycTimes - cyc.drugStartTimes{1}(1);
-% for iExp = 1:numel(allExpIDs)
-%     currExpID = allExpIDs{iExp};
-%     currCyc = cyc(strcmp(cyc.expID, currExpID), :);
-%     if singleRois
-%         for iRoi = 1:size(currCyc, 1)
-%             plot(xx, smoothdata(currCyc.cycRange{iRoi}, 1, 'gaussian', smWin), 'color', ...
-%                     cm(iExp, :));
-%         end
-%     elseif singleExpts
-%         currData = smoothdata(cell2mat(currCyc.cycRange'), 1, 'gaussian', smWin);
-%         SE = std_err(currData, 2);
-%         plot(xx, mean(currData, 2), 'linewidth', 2, 'color', cm(iExp, :));
-%         legendStr{end + 1} = currCyc.expID{1};
-%     end
-% end
-% meanData = mean(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', smWin), 2);
-% plot(xx, meanData, 'color', 'k', 'linewidth', 3);
-% if numel(cyc.drugStartTimes{1}) > 1
-%     shadeColor = rgb('orange');
-% else
-%     shadeColor = rgb('green');
-% end
-% plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
-% if numel(cyc.drugEndTimes{1}) > 1 
-%     plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
-%         'color', rgb('green'))
-% end
-% if shadeSEM
-%     SE = std_err(smoothdata(cell2mat(cyc.cycRange'), 1, 'gaussian', 1), 2);
-%     upperY = (meanData + SE);
-%     lowerY = (meanData - SE);
-%     jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
-% end
-% title('Min - max dF/F')
-% xlim([xx(1) xx(end)])
-% yL = ylim();
-% if ~isempty(epochs)
-%     for iEpoch = 1:size(epochs, 1)
-%         plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
-%     end
-% end
-
 
 % PVA offset SD
 f = figure(3);clf;
@@ -421,6 +315,7 @@ end
 
 catch ME; rethrow(ME); end
 
+try
 % Plot mean values across experimental epochs
 cyc = innerjoin(allCycRoiData, allCycExpData);
 
@@ -504,8 +399,11 @@ hold on;
 legendStr = {};
 xx = 1:size(epochOffsetSD, 2);
 for iExp = 1:size(epochOffsetSD, 1)
-    plot(xx, rad2deg(epochOffsetSD(iExp, :)), '-', 'linewidth', 2);
+    plot(xx, rad2deg(epochOffsetSD(iExp, :)), '-', 'linewidth', 1, 'color', 0.5*[1 1 1]);
     legendStr{end + 1} = currExpList{iExp};
+%     if strcmp(currExpList{iExp}, '20201117-1')
+%         plot(xx, rad2deg(epochOffsetSD(iExp, :)), '-', 'linewidth', 1, 'color', 'r');
+%     end
 end
 % legend(legendStr, 'autoupdate', 'off')
 plot(xx, rad2deg(mean(epochOffsetSD, 1)), '-s', 'color', 'k', ...
@@ -515,10 +413,8 @@ ylabel('Bar-bump offset SD')
 ax = gca();
 ax.XTick = xx;
 ax.FontSize = 12;
-ax.XTickLabel = {'Baseline', '+3 min', '+7 min'};
-p3 = signrank(epochOffsetSD(:, 1), epochOffsetSD(:, 2));
-p7 = signrank(epochOffsetSD(:, 1), epochOffsetSD(:, 3));
-title({'ATP + visual', ['WSRT p = ', num2str(p3, 2), ' (+3), ', num2str(p7, 2), ' (+7)']}, 'fontsize', 10)
+ax.XTickLabel = {'-4', '-1', '+3', '+7'};
+% title({'ATP + visual', ['WSRT p = ', num2str(p3, 2), ' (+3), ', num2str(p7, 2), ' (+7)']}, 'fontsize', 10)
 ylim([0 120])
 f.Position(3:4) = figDims + [50 0];
 if saveFig
@@ -535,8 +431,11 @@ f = figure(6); clf;
 f.Color = [1 1 1];
 hold on;
 legendStr = {};
-xx = 1:size(epochOffsetSD, 2)-1;
-yy = [epochOffsetSD(:, 2) - epochOffsetSD(:, 1), epochOffsetSD(:, 3) - epochOffsetSD(:, 1)];
+% yy = [epochOffsetSD(:, 2) - epochOffsetSD(:, 1), epochOffsetSD(:, 3) - epochOffsetSD(:, 1)];
+yy = [epochOffsetSD(:, 2) - epochOffsetSD(:, 1), ...
+        epochOffsetSD(:, 3) - epochOffsetSD(:, 2), ...
+        epochOffsetSD(:, 4) - epochOffsetSD(:, 2)];
+xx = 1:size(yy, 2);
 for iExp = 1:size(epochOffsetSD, 1)
     plot(xx, rad2deg(yy(iExp, :)), 'o', 'linewidth', 2);
     legendStr{end + 1} = currExpList{iExp};
@@ -549,8 +448,12 @@ ylabel('\Delta offset SD')
 ax = gca();
 ax.XTick = xx;
 ax.FontSize = 12;
-ax.XTickLabel = {'+3 min', '+7 min'};
-title('ATP + visual', 'fontsize', 12)
+ax.XTickLabel = {'base1 vs. base2', 'base2 vs. +3', 'base2 vs. +7'};
+ax.XTickLabelRotation = 45;
+% [h(1) mu(1) ul(1) ll(1)] = circ_mtest(yy(:,1), 0);
+% [h(2) mu(2) ul(2) ll(2)] = circ_mtest(yy(:,2), 0);
+% [h(3) mu(3) ul(3) ll(3)] = circ_mtest(yy(:,3), 0);
+% title(['circ\_mtest: ', num2str(h)], 'fontsize', 10);
 ylim([-70 25])
 f.Position(3:4) = figDims;
 if saveFig
@@ -561,24 +464,6 @@ if saveFig
     fileName = ['EB-DAN_prePost_ATP_deltaOffsetSD_crunch', fileNameSuffix];
     save_figure(f, figDir, fileName);
 end
-
-
-% % Mean bump offset
-% f = figure(6); clf;
-% f.Color = [1 1 1];
-% hold on;
-% legendStr = {};
-% xx = 1:size(epochOffsetMean, 2);
-% for iExp = 1:size(epochOffsetMean, 1)
-%     plot(xx, epochOffsetMean(iExp, :), '-', 'linewidth', 2);
-%     legendStr{end + 1} = currExpList{iExp};
-% end
-% xlim([0.5 xx(end) + 0.5]);
-% % legend(legendStr, 'autoupdate', 'off')
-% title('Mean bump offset')
-% ax = gca();
-% ax.XTick = xx;
-% ylim([-pi, pi]);
 
 % Mean delta offsets
 f = figure(7); clf;
@@ -592,8 +477,11 @@ for iExp = 1:size(epochOffsetMean, 1)
         allYY(iExp, iEpoch) = abs(circ_dist(epochOffsetMean(iExp, iEpoch + 1), ...
                 epochOffsetMean(iExp, iEpoch)));
     end
-    plot(xx, rad2deg(allYY(iExp, :)), '-', 'linewidth', 2);
+    plot(xx, rad2deg(allYY(iExp, :)), '-', 'linewidth', 1, 'color', 0.5*[1 1 1]);
     legendStr{end + 1} = currExpList{iExp};
+%     if strcmp(currExpList{iExp}, '20201117-1')
+%         plot(xx, rad2deg(allYY(iExp, :)), '-', 'linewidth', 1, 'color', 'r');
+%     end
 end
 plot(xx, rad2deg(mean(allYY, 1)), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
@@ -604,9 +492,7 @@ ax = gca();
 ax.XTick = xx;
 ylim([0 120]);
 ax.FontSize = 12;
-p = signrank(allYY(:, 1), allYY(:, 2));
-title({'ATP + visual', ['WSRT p = ', num2str(p, 2)]}, 'fontsize', 10)
-ax.XTickLabel = {'+ATP', 'post-ATP'};
+rax.XTickLabel = {'Base', '+ATP', 'Post'};
 f.Position(3:4) = figDims;
 if saveFig
     f.UserData.smWin = smWin;
@@ -617,51 +503,25 @@ if saveFig
     save_figure(f, figDir, fileName);
 end
 
-% % Mean bump amplitude
-% f = figure(8); clf;
-% f.Color = [1 1 1];
-% hold on;
-% legendStr = {};
-% xx = 1:size(epochBumpAmpMean, 2);
-% for iExp = 1:size(epochBumpAmpMean, 1)
-%     plot(xx, epochBumpAmpMean(iExp, :), '-', 'linewidth', 2);
-%     legendStr{end + 1} = currExpList{iExp};
-% end
-% plot(xx, mean(epochBumpAmpMean, 1), '-s', 'color', 'k', ...
-%         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
-% xlim([0.5 xx(end) + 0.5]);
-% % legend(legendStr, 'autoupdate', 'off')
-% title('Mean bump amplitude')
-% ax = gca();
-% ax.XTick = xx;
-% 
-% % Vector strength
-% f = figure(9); clf;
-% f.Color = [1 1 1];
-% hold on;
-% xx = 1:size(epochVsMeans, 2);
-% plot(xx, epochVsMeans, '-', 'linewidth', 2);
-% plot(xx, mean(epochVsMeans, 1), '-s', 'color', 'k', ...
-%         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
-% xlim([0.5 xx(end) + 0.5]);
-% title('Vector strength');
-% ax = gca();
-% ax.XTick = xx;
-
 % Mean preferred bar position shifts for individual EB wedges
 f = figure(10); clf;
 f.Color = [1 1 1];
 hold on;
-xx = 1:(size(epochVpMeans, 2) - 1);
 allYY = [];
-for iRoi = 1:size(epochVpMeans, 1)
-    for iEpoch = 1:(size(epochVpMeans, 2) - 1)
-        allYY(iRoi, iEpoch) = abs(circ_dist(epochVpMeans(iRoi, iEpoch + 1), ...
-                epochVpMeans(iRoi, iEpoch)));
+xx = 1:(size(epochVpMeans, 2) - 1);
+nExpts= size(epochVpMeans, 1) / 8;
+for iExp = 1:nExpts
+    currRois = epochVpMeans((8*(iExp-1) + 1):(8*iExp), :);
+    expMeans = [];
+    for iRoi = 1:size(currRois, 1)
+        for iEpoch = 1:(size(currRois, 2) - 1)
+            expMeans(iRoi, iEpoch) = abs(circ_dist(currRois(iRoi, iEpoch + 1), ...
+                currRois(iRoi, iEpoch)));
+        end
     end
-    plot(xx, rad2deg(allYY(iRoi, :)), '-', 'linewidth', 2);
+    allYY(iExp, :) = mean(expMeans, 1);
+    plot(rad2deg(expMeans(:, :))', '-', 'linewidth', 1, 'color', 0.5*[1 1 1]);
 end
-% violinplot(allYY, []);
 plot(xx, rad2deg(mean(allYY, 1)), '-s', 'color', 'k', ...
         'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
 xlim([0.5 xx(end) + 0.5]);
@@ -670,9 +530,9 @@ ax = gca();
 ax.XTick = xx;
 ylim([0 180]);
 ax.FontSize = 12;
-p = signrank(allYY(:, 1), allYY(:, 2));
-title({'ATP + visual', ['WSRT p = ', num2str(p, 2)]}, 'fontsize', 10)
-ax.XTickLabel = {'+ATP', 'post-ATP'};
+% title({'ATP + visual', ['WSRT p = ', num2str(p, 2)]}, 'fontsize', 10)
+% ax.XTickLabel = {'+ATP', 'post-ATP'};
+ax.XTickLabel = {'Base', '+ATP', 'Post'};
 f.Position(3:4) = figDims;
 if saveFig
     f.UserData.smWin = smWin;
@@ -683,6 +543,326 @@ if saveFig
     save_figure(f, figDir, fileName);
 end
 
+catch ME; rethrow(ME); end
 
+%% Same, but for ATP+Darkness experiments
+
+saveFig = 0;
+fileNameSuffix = '_darknessExpts';
+
+figDims = [220 400];
+
+smWin = 3;
+singleRois = 0;
+singleExpts = 1;
+shadeSEM = 0;
+shadeExpSEM = 0;
+
+
+% For darkness+ATP experiments
+epochs = [-120 0; 360 480];
+epochs = [-165 -45; epochs + 600];
+% epochs(2, :) = epochs(2, :) -80;
+% epochs = [-250 -45; 260 600; 720 1080]
+
+
+disp(epochs ./ 60)
+
+try
+cyc = innerjoin(allCycRoiData, allCycExpData);
+
+cycTimes = cyc.cycTimes{1};
+Vs = cell2mat(cyc.cycVs');
+Vp = cell2mat(cyc.cycVp');
+cycMin = cell2mat(cyc.cycMin');
+cycMax = cell2mat(cyc.cycMax');
+cycRanges = cell2mat(cyc.cycRange');
+
+% PVA offset SD
+f = figure(3);clf;
+hold on;
+f.Color = [1 1 1];
+f.Position(3:4) = [945 495];
+cyc = allCycExpData;
+cm = lines(numel(unique(cyc.expID)));
+allExpIDs = unique(cyc.expID);
+xx = cycTimes - cyc.drugStartTimes{1}(1);
+legendStr = {};
+if singleExpts
+    for iExp = 1:numel(allExpIDs)
+        currExpID = allExpIDs{iExp};
+        legendStr{end + 1} = currExpID;
+        currCyc = cyc(strcmp(cyc.expID, currExpID), :);
+        currData = rad2deg(smoothdata(currCyc.cycOffsetStd{:}, 'gaussian', smWin));
+        %         plot(xx, currData, 'linewidth', 1, 'color', cm(iExp, :));
+        plot(xx(~isnan(currData)), currData(~isnan(currData)), 'linewidth', 1, 'color', 0.5*[1 1 1])
+    end
+end
+meanData = rad2deg(mean(smoothdata(cell2mat(cyc.cycOffsetStd'), 1, 'gaussian', smWin), 2));
+plot(xx, meanData, 'color', 'k', 'linewidth', 5);
+if shadeSEM
+    SE = std_err(smoothdata(cell2mat(cyc.cycOffsetStd'), 1, 'gaussian', smWin), 2);
+    upperY = (meanData + SE);
+    lowerY = (meanData - SE);
+    jbfill(xx', upperY', lowerY', rgb('black'), rgb('black'), 1, 0.2);
+end
+if numel(cyc.drugStartTimes{1}) > 1
+    shadeColor = rgb('orange');
+else
+    shadeColor = rgb('green');
+end
+ylim([0 180]);
+yL = ylim();
+% plot_stim_shading([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], 'color', shadeColor)
+plot([0, cyc.drugEndTimes{1}(1) - cyc.drugStartTimes{1}(1)], [1 1] * yL(2) * 0.98, 'color', ...
+        shadeColor, 'linewidth', 8)
+if numel(cyc.drugEndTimes{1}) > 1 
+%     plot_stim_shading([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
+%         'color', rgb('green'))
+    plot([cyc.drugStartTimes{1}(2), cyc.drugEndTimes{1}(2)] - cyc.drugStartTimes{1}(1), ...
+            [1 1] * yL(2) * 0.98, 'color', rgb('green'), 'linewidth', 8)
+end
+xlim([xx(1) xx(end)])
+ylabel('Bar-bump offset SD')
+% legend(legendStr, 'autoupdate', 'off')
+if ~isempty(epochs)
+    for iEpoch = 1:size(epochs, 1)
+        plot(epochs(iEpoch, :), [1 1] * yL(2) * 0.98, 'linewidth', 8, 'color', 'k')
+    end
+end
+ax = gca();
+ax.FontSize = 14;
+xlabel('Time (sec)');
+if saveFig
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    f.UserData.smWin = smWin;
+    fileName = ['EB-DAN_+ATP_mean_bar-bump_offset_SD', fileNameSuffix];
+    save_figure(f, figDir, fileName);
+end
+
+
+catch ME; rethrow(ME); end
+
+try
+% Plot mean values across experimental epochs
+cyc = innerjoin(allCycRoiData, allCycExpData);
+
+% Get mean vector strength and phase within each epoch
+epochVsMeans = [];
+epochVpMeans = [];
+for iRoi = 1:size(cyc, 1)
+    t = cyc.cycTimes{iRoi};
+    atpStart = cyc.drugStartTimes{iRoi}(1);
+    for iEpoch = 1:size(epochs, 1)
+        epochCycles = t > (epochs(iEpoch, 1) + atpStart) & t < (epochs(iEpoch, 2) + atpStart);
+        epochVsMeans(iRoi, iEpoch) = mean(cyc.cycVs{iRoi}(epochCycles));
+        epochVpMeans(iRoi, iEpoch) = circ_mean(cyc.cycVp{iRoi}(epochCycles) + pi);  
+    end
+end
+
+% Get the mean bar-bump offset, offset SD, and bump amplitude for each epoch
+epochOffsetMean = [];
+epochOffsetSD = [];
+epochBumpAmpMean = [];
+for iExp = 1:numel(currExpList)
+    currExpID = currExpList{iExp};
+    currTrialNums = trialNums{iExp};
+    currTbl = tbl(strcmp(tbl.expID, currExpID) & ismember(tbl.trialNum, currTrialNums), :);
+    
+    % Get volTimes for the whole block
+    expVolTimes = [];
+    totalTrialDur = 0;
+    expDrugStartTimes = [];
+    expDrugEndTimes = [];
+    for iTrial = 1:size(currTbl, 1)
+        currVolTimes = cell2mat(currTbl(currTbl.trialNum == currTrialNums(iTrial), :).volTimes);
+        expVolTimes = [expVolTimes; currVolTimes + totalTrialDur];
+        if ~isnan(currTbl.startTime(iTrial))
+            expDrugStartTimes(end + 1) = currTbl.startTime(iTrial) + totalTrialDur;
+            expDrugEndTimes(end + 1) = expDrugStartTimes(end) + currTbl.duration(iTrial);
+        end
+        totalTrialDur = totalTrialDur + currTbl(currTbl.trialNum == currTrialNums(iTrial), :).trialDuration;
+    end
+    
+    % Extract bump offset, amplitude, and panels pos for entire exp (filling in volumes from 
+    % darkness trials with NaN as needed)
+    expOffset = []; expBumpAmp = []; expPanelsPos = [];
+    for iTrial = 1:size(currTbl, 1)
+        if currTbl.usingPanels(iTrial)
+            expOffset = [expOffset; currTbl.pvaOffset{iTrial}];
+            expBumpAmp = [expBumpAmp; currTbl.bumpAmp{iTrial}];
+            expPanelsPos = [expPanelsPos; currTbl.panelsPosVols{iTrial}];
+        else
+            expOffset = [expOffset; nan(currTbl.nVolumes(iTrial), 1)];
+            expBumpAmp = [expBumpAmp; nan(currTbl.nVolumes(iTrial), 1)];
+            expPanelsPos = [expPanelsPos; nan(currTbl.nVolumes(iTrial), 1)];
+        end
+    end
+    
+    % Identify bar positions that are behind the fly and set them to NaN in the data
+    barBehindFlyPanelsPositions = [1:8, 81:96] - 1; % Subtracting 1 for zero-indexed
+%     barBehindFlyPanelsPositions = [1:12, 77:96] - 1; % Subtracting 1 for zero-indexing
+    barBehindFlyVols = ismember(expPanelsPos, barBehindFlyPanelsPositions);
+    expOffset(barBehindFlyVols) = nan;
+    expBumpAmp(barBehindFlyVols) = nan;
+
+    for iEpoch = 1:size(epochs, 1)
+        relEpochTimes = epochs(iEpoch, :) + expDrugStartTimes(1);
+        epochVols = expVolTimes > relEpochTimes(1) & expVolTimes < relEpochTimes(2);
+        
+        currOffset = expOffset(epochVols) + pi;
+        currBumpAmp = expBumpAmp(epochVols);
+        
+        epochOffsetMean(iExp, iEpoch) = circ_mean(currOffset(~isnan(currOffset)));
+        [~, epochOffsetSD(iExp, iEpoch)] = circ_std(currOffset(~isnan(currOffset)));
+        epochBumpAmpMean(iExp, iEpoch) = mean(currBumpAmp, 'omitnan');
+    end
+end
+catch ME; rethrow(ME); end
+
+try
+% Bar-bump offset SD
+f = figure(5); clf;
+f.Color = [1 1 1];
+hold on;
+legendStr = {};
+xx = 1:size(epochOffsetSD, 2);
+for iExp = 1:size(epochOffsetSD, 1)
+    plot(xx, rad2deg(epochOffsetSD(iExp, :)), '-', 'linewidth', 1, 'color', 0.5*[1 1 1]);
+    legendStr{end + 1} = currExpList{iExp};
+end
+% legend(legendStr, 'autoupdate', 'off')
+plot(xx, rad2deg(mean(epochOffsetSD, 1)), '-s', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
+xlim([0.5 xx(end) + 0.5]);
+ylabel('Bar-bump offset SD')
+ax = gca();
+ax.XTick = xx;
+ax.FontSize = 12;
+ax.XTickLabel = {'Base', 'Dark', 'Vis'};
+p3 = signrank(epochOffsetSD(:, 1), epochOffsetSD(:, 2));
+p7 = signrank(epochOffsetSD(:, 2), epochOffsetSD(:, 3));
+title(['WSRT p = ', num2str(p3, 2), ' (dark), ', num2str(p7, 2), ' (vis)'], 'fontsize', 10)
+ylim([0 120])
+f.Position(3:4) = figDims + [50 0];
+if saveFig
+    f.UserData.smWin = smWin;
+    f.UserData.epochs = epochs;
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_dark_vs_visual_offsetSD_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
+end
+
+% Bar-bump DELTA offset SD
+f = figure(6); clf;
+f.Color = [1 1 1];
+hold on;
+legendStr = {};
+yy = [epochOffsetSD(:, 2) - epochOffsetSD(:, 1), epochOffsetSD(:, 3) - epochOffsetSD(:, 2)];
+xx = 1:size(yy, 2);
+for iExp = 1:size(epochOffsetSD, 1)
+    plot(xx, rad2deg(yy(iExp, :)), 'o', 'linewidth', 1, 'color', 0.5*[1 1 1]);
+    legendStr{end + 1} = currExpList{iExp};
+end
+plot(xx, rad2deg(mean(yy, 1)), 's', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 8, 'markerfaceColor', 'k');
+xlim([0.5 numel(xx) + 0.5]);
+ylabel('\Delta offset SD')
+ax = gca();
+ax.XTick = xx;
+ax.FontSize = 12;
+ax.XTickLabel = {'Darkness', 'Visual'};
+p = signrank(yy(:, 1), yy(:, 2));
+title(['WSRT p = ', num2str(p, 2)], 'fontsize', 10)
+ylim([-50 80])
+f.Position(3:4) = figDims;
+if saveFig
+    f.UserData.smWin = smWin;
+    f.UserData.epochs = epochs;
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_dark_vs_visual_deltaOffsetSD_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
+end
+
+% Mean delta offsets
+f = figure(7); clf;
+f.Color = [1 1 1];
+hold on;
+legendStr = {};
+xx = 1:(size(epochOffsetMean, 2) - 1);
+allYY = [];
+for iExp = 1:size(epochOffsetMean, 1)
+    for iEpoch = 1:(size(epochOffsetMean, 2) - 1)
+        allYY(iExp, iEpoch) = abs(circ_dist(epochOffsetMean(iExp, iEpoch + 1), ...
+                epochOffsetMean(iExp, iEpoch)));
+    end
+    plot(xx, rad2deg(allYY(iExp, :)), '-', 'linewidth', 1, 'color', 0.5*[1 1 1]);
+    legendStr{end + 1} = currExpList{iExp};
+end
+plot(xx, rad2deg(mean(allYY, 1)), '-s', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
+xlim([0.5 xx(end) + 0.5]);
+ylabel('Mean \Delta offset')
+ax = gca();
+ax.XTick = xx;
+ylim([0 180]);
+ax.FontSize = 12;
+% [pval, med, P] = circ_cmtest(allYY(:, 1), allYY(:,2));
+title(['WSRT p = ', num2str(p, 2)], 'fontsize', 10)
+ax.XTickLabel = {'Darkness', 'Visual'};
+f.Position(3:4) = figDims;
+if saveFig
+    f.UserData.smWin = smWin;
+    f.UserData.epochs = epochs;
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_dark_vs_visual_meanDeltaOffset_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
+end
+
+% Mean preferred bar position shifts for individual EB wedges
+f = figure(10); clf;
+f.Color = [1 1 1];
+hold on;
+xx = 1:(size(epochVpMeans, 2) - 1);
+allYY = [];
+nExpts= size(epochVpMeans, 1) / 8;
+for iExp = 1:nExpts
+    currRois = epochVpMeans((8*(iExp-1) + 1):(8*iExp), :);
+    expMeans = [];
+    for iRoi = 1:size(currRois, 1)
+        for iEpoch = 1:(size(currRois, 2) - 1)
+            expMeans(iRoi, iEpoch) = abs(circ_dist(currRois(iRoi, iEpoch + 1), ...
+                currRois(iRoi, iEpoch)));
+        end
+    end
+    allYY(iExp, :) = mean(expMeans, 1);
+    plot(xx, rad2deg(allYY(iExp, :)), '-', 'linewidth', 1, 'color', 0.5*[1 1 1]);
+end
+plot(xx, rad2deg(mean(allYY, 1)), '-s', 'color', 'k', ...
+        'linewidth', 3, 'markersize', 12, 'markerfaceColor', 'k');
+xlim([0.5 xx(end) + 0.5]);
+ylabel('Mean \Delta preferred bar position')
+ax = gca();
+ax.XTick = xx;
+ylim([0 180]);
+ax.FontSize = 12;
+p = signrank(allYY(:, 1), allYY(:, 2));
+title(['WSRT p = ', num2str(p, 2)], 'fontsize', 10)
+ax.XTickLabel = {'Darkness', 'Visual'};
+f.Position(3:4) = figDims;
+if saveFig
+    f.UserData.smWin = smWin;
+    f.UserData.epochs = epochs;
+    f.UserData.expList = currExpList;
+    f.UserData.trialNums = trialNums;
+    fileName = ['EB-DAN_dark_vs_visual_meanDeltaPreferredPos_crunch', fileNameSuffix];
+    save_figure(f, figDir, fileName);
+end
+
+catch ME; rethrow(ME); end
 
 

@@ -6,11 +6,11 @@ figDir = fullfile(parentDir, 'Figs');
 
 % expList = [{'20201114-1', '20201117-1', '20201117-2', '20201120-2', '20201201-1', '20201201-2', ...
 %         '20201201-3', '20201203-1', '20201203-2', '20201210-1'}];%%
-expList = {'20201117-1'}
+expList = {'20201210-1'}
 
-[expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...
+[expMd, trialMd, ~, ftData, flailingEvents, locEvents, panelsMetadata, wedgeData, glomData] = ...
         load_PB_data(parentDir, expList);
-
+    
 % Load file with info about the details of the bath applications
 drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter', ',');
 
@@ -19,11 +19,11 @@ drugTimingMd = readtable(fullfile(parentDir, 'drug_timing_data.csv'), 'delimiter
 % expID = '20201210-1';
 expID = expMd.expID{1};
 
-trialNums = [4 5];
+trialNums = [];
 
 sourceData = wedgeData; %glomData;%
 
-showBehaviorPlots = 0;
+showBehaviorPlots = 1;
 
 washoutTime = 0;
 
@@ -32,7 +32,9 @@ flSmWin = 5;
 flowSmWin = 6;
 moveThresh = unique(flailingEvents.eventData.moveThresh(strcmp(flailingEvents.eventData.expID, ...
         expID)));
-
+    
+    
+    
 try 
     
 % Generate consolidated source data table
@@ -582,8 +584,13 @@ for iPlot = 1:nPlots
     
     currData = squeeze(plotFl(:, iPlot, :)); % --> [barPos, trial]
     
+    % Get bar angles at each panels X position
+    panelsDotAngles = (-180 + (3.75/2)):3.75:180;
+    panelsXPosBarAngles = panelsDotAngles([5:96, 1:4]) + (3.75/2);
+    xx = panelsXPosBarAngles;
+    
     % Plot data
-    xx = -180:3.75:(180 - 3.75);
+%     xx = -180:3.75:(180 - 3.75);
     imagesc(xx, [1 size(currData, 2)], currData');
     hold on; plot([0 0], [0 size(currData, 2) + 1], 'color', 'k', 'linewidth', 2)
     ylim([0.5 size(currData, 2) + 0.5])
@@ -948,7 +955,7 @@ catch ME; rethrow(ME); end
 
 %% PLOT ALL TUNING CURVES ON OVERLAID POLAR PLOTS
 
-saveFig = 1;
+saveFig = 0;
 
 smWin = 5;
 
@@ -1002,7 +1009,8 @@ for iPlot = 1:nPlots
     
     % Plot data
     currData = tuningFl(:, :, iPlot);
-    cm = hsv(nRois) .* 0.9;
+%     cm = hsv(nRois) .* 0.9;
+    cm = phasemap(nRois);
     for iWedge = 1:nRois
 %         plotData = currData(:, iWedge) - min(currData(:));
         plotData = currData(:, iWedge);
