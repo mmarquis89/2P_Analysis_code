@@ -4,7 +4,12 @@
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
 % parentDir = 'D:\Dropbox (HMS)\Shared_2p_Data_MY\20210122-1_38A11_P2X2_60D05_7f\ProcessedData';
-expList = {'20210119-1','20210122-1', '20210122-2'};
+% expList = {'20201201-1', '20201203-1', '20201203-2', '20201210-1', '20201210-2', '20201201-2', ...
+%         '20201117-1', '20201117-3', '20201117-4', '20201120-2', '20201201-3', '20210118-1', ...
+%         '20210118-2', '20210119-1', '20201120-1', '20201120-3', '20210122-1', '20210122-2'};
+expList = {'20201117-1', '20201117-4', '20201201-1', '20201210-2', '20201120-2'};
+expList = sort(expList);
+
 figDir = fullfile(parentDir, 'Figs');
 
 [expMd, trialMd, roiData, ftData, flailingEvents, locEvents, panelsMetadata, wedgeData, glomData] = ...
@@ -108,15 +113,15 @@ catch ME; rethrow(ME); end
 
 %% PLOT OVERVIEW OF VISUAL TUNING AND MOVEMENT FOR A SINGLE TRIAL
 
-expID = expList{1};
-trialNum = 6;
+expID = expList{5}
+trialNum = 3;
 
 p = [];
 p.flType = 'expDff';  % rawFl, trialDff, or expDff
 p.plotPVA = 1;
 p.plotMeanPVA = 1;
 p.plotBarCycles = 1;
-p.useFlow = 0;
+p.useFlow = 1;
 p.flMax = [];
 p.smWin = 5;
 p.figNum = [];
@@ -129,8 +134,8 @@ f = plot_single_trial_visual_tuning_summary(tbl(strcmp(tbl.expID, expID) & ...
 
 %% PLOT SEVERAL STACKED SINGLE-TRIAL HEATMAPS
 
-currExpID = expList{3};
-trialNums = [];
+currExpID = expList{1};
+trialNums = [1:3];
 
 saveFig = 0;
 
@@ -243,16 +248,16 @@ catch ME; rethrow(ME); end
 
 % TODO: add empty axes for visual stim trials
 
-currExpID = expList{2};
-trialNums = [];
+currExpID = expList{1};
+trialNums = [1 3 4 5];
 
-saveFig = 0;
+saveFig = 1;
 
 startTimes = [];
 endTimes = [];
 
 p = [];
-p.drugTrialStartDelay = 200;
+p.drugTrialStartDelay = 120;
 p.smWin = 5;
 p.flType = 'expDff';
 p.matchRLims = 0;
@@ -307,10 +312,16 @@ end
 h = suptitle(titleStr);
 h.FontSize = 12;
 
+
+f.Children(4).Title.String = 'baseline';
+f.Children(1).Title.String = 'post-ATP';
+
+
+
 % Save figure
 if saveFig
     f.UserData.plotParams = p;
-    figTitle = [currExpID, '_visual_tuning_polarPlots'];
+    figTitle = [currExpID, '_visual_tuning_polarPlots_second_ATP_trial'];
     save_figure(f, figDir, figTitle);
 end
 catch ME; rethrow(ME); end

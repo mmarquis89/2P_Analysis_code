@@ -239,9 +239,9 @@ end
 
 %% Plot example data from a selected experiment
 
-expNum = 4;
+expNum = 9;
 
-timeWin = [960 1490];
+timeWin = [250 750];
 % timeWin = [];
 
 figDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData\new_PPL201_experiments\Saved_linear_models\Thesis figs';
@@ -253,7 +253,9 @@ currTbl = allExpTblPred{expNum};
 currCoeffs = allCoeffs{1:6, expNum};
 [predFl, mdlOdor, mdlMoveSpeed] = nlmFun_double_tau_fixed(currCoeffs, currTbl{:, 1:end-1});
 rawMoveSpeed = currTbl.moveSpeed;
+rawOdor = currTbl.odorResp;
 odorHist = currTbl.(histTerm);
+odorOnsets = currTbl.odorOnsets;
 measFl = currTbl.fl;
 volTimes = allVolTimes{expNum};
 
@@ -280,6 +282,8 @@ plot(volTimes, odorHist, 'color', 'k');
 plot(volTimes, mdlOdor, 'color', 'r');
 plot(volTimes, rawMoveSpeed, 'color', 'm');
 plot(volTimes, mdlMoveSpeed, 'color', 'b');
+plot(volTimes, odorOnsets, 'color', 'g');
+plot(volTimes, rawOdor, 'color', 'c');
 ax(2).FontSize = 14;
 ax(2).YTickLabel = [];
 if ~isempty(timeWin)

@@ -1012,11 +1012,12 @@ end
 catch ME; rethrow(ME); end
 
 %% PLOT 2D HEATMAPS COMBINING DATA FROM ALL EXPERIMENTS 
+p = [];
 
-saveFig = 0;
-fileNameSuffix = '';
+saveFig = 1;
+fileNameSuffix = '_grays_fullScale';
 
-p.expNums = [];
+p.expNums = [1:13];
 
 p.skipTrials = {11:15, 11:16, 8:15, [1:4, 9, 12:13], 7:10, 8:12, 6:8, 7:10, 8:10, 7:9, 7:11, 7:9, ...
         7:10}';
@@ -1049,7 +1050,7 @@ end
 
 allParams = {};
 allYaw = []; allFwSpeed = []; allFlData = [];
-for iExp = 1:numel(expNums)
+for iExp = 1:numel(p.expNums)
     
     % Get current expID and params
     currExpID = expList{p.expNums(iExp)};
@@ -1116,15 +1117,22 @@ for xBin = 1:p.nAnalysisBins
 end
 
 % Plot figure
-xx = [xBinEdges(1) - (xBinSize/2), xBinEdges(end) + (xBinSize/2)];
-yy = [yBinEdges(1) - (yBinSize/2), yBinEdges(end) + (yBinSize/2)];
+xx = [0, xBinEdges(end)];
+yy = [0, yBinEdges(end)];
+
 imagesc(xx, yy, binAverages);
-colormap(viridis)
+colormap(gray)
 % colormap(bone)
 colorbar()
 axis square
 ax = gca();
 ax.YDir = 'normal';
+
+% Fix the tick marks and labels to accurately reflect bin edges
+ax.XTick = ax.XTick - (xBinSize/2);
+ax.XTickLabel = ax.XTick + (xBinSize/2);
+ax.YTick = ax.YTick - (yBinSize/2);
+ax.YTickLabel = ax.YTick + (yBinSize/2);
 
 % Set NaN color to black
 f.Colormap(1,:) = [0 0 0];
@@ -1136,7 +1144,7 @@ ax.YLabel.String = 'Forward speed (mm/sec)';
 
 % Save figure
 if saveFig
-    fileName = [roiName, '_2D_heatmap_speed_vs_', flType, '_allExperiments', fileNameSuffix];
+    fileName = [p.roiName, '_2D_heatmap_speed_vs_', p.flType, '_allExperiments', fileNameSuffix];
     f.UserData.params = p;
     f.UserData.moveSpeedAnalysisParams = allParams;
     save_figure(f, figDir, fileName);
@@ -1187,7 +1195,7 @@ p = [];
 p.smWin = 5;
 p.smReps = 50;
 
-saveFig = 0;
+saveFig = 1;
 fileNameSuffix = '';
 
 expNums = [5 6];

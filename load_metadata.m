@@ -63,6 +63,10 @@ for iExp = 1:numel(expList)
        trialMdFile = fullfile(parentDir, [currExpID, '_trialMetadata.mat']);
        load(trialMdFile, 'trialMetadata');
        currTrialMd = trialMetadata;
+% TEMP 
+if ~ismember(fieldnames(currTrialMd), 'optoStimTiming')
+    currTrialMd.optoStimTiming = repmat({[]}, size(currTrialMd, 1), 1);
+end
        trialMd = [trialMd; currTrialMd];
    else
        disp(['Skipping ', currExpID, '...file not found']);
