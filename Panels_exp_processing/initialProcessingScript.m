@@ -593,7 +593,9 @@ if exist(ballRoiFlowFile, 'file')
     load(ballRoiFlowFile, 'meanFlowMags')
     meanFlowMagsBallROI = meanFlowMags;
 end
-load(fullfile(outputDir, 'flowMags.mat'), 'meanFlowMags')
+if exist(fullfile(outputDir, 'flowMags.mat'), 'file')
+    load(fullfile(outputDir, 'flowMags.mat'), 'meanFlowMags')
+end
 
 % Load raw FicTrac data
 load(fullfile(expDir, 'rawFicTracData.mat'), 'ftData');
