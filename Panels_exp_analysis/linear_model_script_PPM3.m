@@ -7,7 +7,7 @@ p.smWinVols = 5;
 p.roiName = 'EB-DAN';
 p.smWinFrames = 7;
 p.smReps = 20;
-p.ftLagVols = 3;
+p.ftLagVols = 2;
 p.speedType = 'forwardSpeed';
 
 p.expIDList = {'20201015-1', '20201015-2', '20201019-1', '20201019-2', '20201023-1', '20201023-2', ...

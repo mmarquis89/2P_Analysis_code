@@ -132,10 +132,10 @@ catch ME; rethrow(ME); end
 %% Same, but for darkness trials
 
 
-saveFig = 1;
+saveFig = 0;
 
-currExpID = expList{3}
-trialNum = 2;
+currExpID = expList{4}
+trialNum = 3;
 
 p = [];
 p.smWin = 5;

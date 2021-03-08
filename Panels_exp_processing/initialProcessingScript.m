@@ -241,15 +241,23 @@ for iFile = 1:numel(imgDataFiles)
     
     % Calculate panels information if available
     if mD.usingPanels
-        xPosFunc = mD.xDimPosFun.func;
-        yPosFunc = mD.yDimPosFun.func;
-        panelsCycleFrames = numel(mD.xDimPosFun.func);
-        panelsCycleTime = panelsCycleFrames / double(mD.displayRate);
-        xPosRep = repmat(xPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
-        yPosRep = repmat(yPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
+        
         nPanelsFrames = mD.displayRate * mD.trialDuration;
-        panelsPosX = xPosRep(1:nPanelsFrames);
-        panelsPosY = yPosRep(1:nPanelsFrames);
+%         if strcmp(mD.panelsMode, 'open loop')
+            xPosFunc = mD.xDimPosFun.func;
+            yPosFunc = mD.yDimPosFun.func;
+            panelsCycleFrames = numel(mD.xDimPosFun.func);
+            panelsCycleTime = panelsCycleFrames / double(mD.displayRate);
+            xPosRep = repmat(xPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
+            yPosRep = repmat(yPosFunc, 1, ceil(mD.trialDuration / panelsCycleTime));
+            
+            panelsPosX = xPosRep(1:nPanelsFrames);
+            panelsPosY = yPosRep(1:nPanelsFrames);
+%         else
+%             xPosFunc = [];
+%             yPosFunc = [];
+%         end
+        
     else
         xPosFunc = [];
         yPosFunc = [];
@@ -623,9 +631,15 @@ for iTrial = 1:numel(rawFt)
         
         % Add video-related data
         newRow.badVidFrames = {zeros(size(ftFrameTimes))};
+        if exist('meanFlowMags', 'var')
         newRow.meanFlow = {meanFlowMags{iTrial}'};
+        else
+            newRow.meanFlow = {[]};
+        end
         if exist('meanFlowMagsBallROI', 'var')
             newRow.meanFlowBall = {meanFlowMagsBallROI{iTrial}'};
+        else
+            newRow.meanFlowBall = {[]};
         end
         rawVidFrameTimes = rawFt(iTrial).rawVidFrameTimes;
         trialVidFrameTimes = rawVidFrameTimes(...
@@ -650,7 +664,7 @@ catch ME; rethrow(ME); end
 %       roiData (unique identifier columns: [expID][trialNum][roiName])
 % and then saves it as "roiData.mat".
 %
-% NOTE: for PB or EB-DAN imaging experiments, you should run one of the next two sections *before* 
+% NOTE: for EPG or EB-DAN imaging experiments, you should run one of the next two sections *before* 
 % this one to create compound ROIs.
 
 imgDataType = 'reg'; % 'raw' or 'reg' to specify whether to use motion corrected data.
@@ -910,11 +924,11 @@ catch ME; rethrow(ME); end
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data';
 
 % groupedAnalysisDirName = 'GroupedAnalysisData\new_PPL201_experiments';
-groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
-
+% groupedAnalysisDirName = 'GroupedAnalysisData_60D05_7f';
+groupedAnalysisDirName = 'EB-DAN_GroupedAnalysisData';
 analysisDir = fullfile('D:\Dropbox (HMS)\2P Data\Imaging Data', groupedAnalysisDirName);
 
-expList = {'20201117-3', '20201117-4', '20201120-2'};
+% expList = {'20210118-2'};
 
 %---------------------------------------------------------------------------------------------------
 try
@@ -929,3 +943,4 @@ for iExp = 1:numel(expList)
     end
 end
 catch ME; rethrow(ME); end
+

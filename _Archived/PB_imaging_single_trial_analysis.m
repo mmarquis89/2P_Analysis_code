@@ -4,7 +4,7 @@
 % ordered EB wedges and individual PB glomeruli. 
 
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\GroupedAnalysisData_60D05_7f';
-expList = {'20210118-1', '20210118-2'};
+expList = {'20200117-1', '20210118-2'};
 figDir = fullfile(parentDir, 'Figs');
 
 [expMd, trialMd, roiData, ftData, flailingEvents, panelsMetadata, wedgeData, glomData] = ...

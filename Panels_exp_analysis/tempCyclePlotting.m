@@ -1,7 +1,7 @@
 
 % Plot all data for each wedge stacked according to bar cycle
 
-currTrial = 7;
+currTrial = 3;
 prevTrialCycles = 5;
 smWin = 5;
 
