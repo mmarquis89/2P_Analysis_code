@@ -389,23 +389,20 @@ for iFile = 1:numel(ftVidFiles)
     % Load main FicTrac data file
     rawFtData = csvread(fullfile(ftDir, ftDataFiles(iFile).name));
     
-    % Deal with dropped frames by repeating last recorded value
+    % Deal with FicTrac resets
     for iFrame = 2:(size(rawFtData, 1) - 1)
-        if rawFtData(iFrame, 1) ~= (rawFtData(iFrame - 1, 1) + 1)
+        if rawFtData(iFrame, 23) < rawFtData(iFrame - 1, 23)
             
             % Integrated XY position
-            rawFtData(iFrame, 15:16) = rawFtData(iFrame + 1, 15:16); 
             rawFtData(iFrame:end, 15:16) = rawFtData(iFrame:end, 15:16) + ...
-                    rawFtData(iFrame - 1, 15:16);
-                
+                rawFtData(iFrame - 1, 15:16);
+            
             % Heading direction
-            rawFtData(iFrame, 17) = rawFtData(iFrame + 1, 17);
             rawFtData(iFrame:end, 17) = mod(rawFtData(iFrame:end, 17) + ...
-                    rawFtData(iFrame - 1, 17), 2 * pi);
+                rawFtData(iFrame - 1, 17), 2 * pi);
             
             % Movement speed
             rawFtData(iFrame, 19) = rawFtData(iFrame + 1, 19);
-            
         end
     end
     
@@ -418,7 +415,7 @@ for iFile = 1:numel(ftVidFiles)
     trialVidFrames = false(size(frameLog));
     trialVidFrames(startVidFrame:endVidFrame) = 1;
     rawFtFrameTimes = cumsum(rawFtData(:, 24)) ./ 1e9;
-    rawVidFrameTimes = rawFtFrameTimes(frameLog + 1);
+    rawVidFrameTimes = rawFtFrameTimes(ismember(currFtData(:, 1), frameLog));
     
     % Save processed data files along with luminance values and frame log
     ftData(iFile).trialNum = trialNum;
