@@ -243,7 +243,7 @@ for iFile = 1:numel(imgDataFiles)
     if mD.usingPanels
         
         nPanelsFrames = mD.displayRate * mD.trialDuration;
-%         if strcmp(mD.panelsMode, 'open loop')
+        if strcmp(mD.panelsMode, 'open loop')
             xPosFunc = mD.xDimPosFun.func;
             yPosFunc = mD.yDimPosFun.func;
             panelsCycleFrames = numel(mD.xDimPosFun.func);
@@ -253,10 +253,53 @@ for iFile = 1:numel(imgDataFiles)
             
             panelsPosX = xPosRep(1:nPanelsFrames);
             panelsPosY = yPosRep(1:nPanelsFrames);
-%         else
-%             xPosFunc = [];
-%             yPosFunc = [];
-%         end
+        else
+            xPosFunc = [];
+            yPosFunc = [];
+            panelsCycleFrames = [];
+            panelsCycleTime = [];
+            
+            % Get X and Y panels position telegraphs
+            panelsXDimTelegraph = trialData(:, strcmp(columnLabels.in, 'PanelsXDimTelegraph'));
+            panelsYDimTelegraph = trialData(:, strcmp(columnLabels.in, 'PanelsYDimTelegraph'));
+            
+            % There's a voltage ramp-up artifact in the first few frames of each acquisition
+            panelsXDimTelegraph(1:100) = panelsXDimTelegraph(101);
+            panelsYDimTelegraph(1:100) = panelsYDimTelegraph(101);
+            
+            % Offset to zero
+            if min(panelsXDimTelegraph) < 0
+                panelsXDimTelegraph = panelsXDimTelegraph - min(panelsXDimTelegraph);
+            end
+            if min(panelsYDimTelegraph) < 0
+                panelsYDimTelegraph = panelsYDimTelegraph - min(panelsYDimTelegraph);
+            end
+            
+            % Filter out 60, 180, and 300 Hz noise from voltage signal
+            Fs = 10000;
+            x = panelsXDimTelegraph;
+            d = designfilt('bandstopiir','FilterOrder',2, ...
+                    'HalfPowerFrequency1',59.75,'HalfPowerFrequency2',60.25, ...
+                    'DesignMethod','butter','SampleRate',Fs);
+            xF = filtfilt(d,x);
+            d = designfilt('bandstopiir','FilterOrder',2, ...
+                    'HalfPowerFrequency1',179.75,'HalfPowerFrequency2',180.25, ...
+                    'DesignMethod','butter','SampleRate',Fs);
+            xF = filtfilt(d,xF);
+            d = designfilt('bandstopiir','FilterOrder',2, ...
+                    'HalfPowerFrequency1',299.75,'HalfPowerFrequency2',300.25, ...
+                    'DesignMethod','butter','SampleRate',Fs);
+            xF = filtfilt(d, xF);
+
+            % Downsample to 50 Hz (the panels frame rate)
+            p = 50;
+            q = mD.SAMPLING_RATE;
+            ds = resample(xF, p, q, 1);
+            norm = normalize(ds, 'range', [0.5 size(mD.pattern.Pats, 3) + 0.499]);
+            panelsPosX = round(norm)' - 1;
+            panelsPosY = ones(size(panelsPosX)) - 1;            
+            
+        end
         
     else
         xPosFunc = [];
@@ -641,11 +684,14 @@ for iTrial = 1:numel(rawFt)
             newRow.meanFlowBall = {[]};
         end
         rawVidFrameTimes = rawFt(iTrial).rawVidFrameTimes;
+        try
         trialVidFrameTimes = rawVidFrameTimes(...
                 rawFt(iTrial).startVidFrame:rawFt(iTrial).endVidFrame);
         trialVidFrameTimes = trialVidFrameTimes - rawVidFrameTimes(rawFt(iTrial).startVidFrame - 1);
         newRow.vidFrameTimes = {trialVidFrameTimes};
-        
+        catch
+           newRow.vidFrameTimes = {[]}; 
+        end
         
         % Append to main table
         ftData = [ftData; newRow];
